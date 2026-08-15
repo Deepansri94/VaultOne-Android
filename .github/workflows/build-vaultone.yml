@@ -15,34 +15,50 @@ jobs:
     name: Build VaultOne APK
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: VaultOne-Android
+
     steps:
-      # 1. Checkout VaultOne source code
+
+      # ---------------------------------------------------------
+      # 1. Checkout repository
+      # ---------------------------------------------------------
       - name: Checkout VaultOne
         uses: actions/checkout@v4
 
-      # 2. Setup Java
+      # ---------------------------------------------------------
+      # 2. Setup Java 17
+      # ---------------------------------------------------------
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
 
+      # ---------------------------------------------------------
       # 3. Setup Android SDK
+      # ---------------------------------------------------------
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 4. Install common Android SDK components
+      # ---------------------------------------------------------
+      # 4. Install required Android SDK components
+      # ---------------------------------------------------------
       - name: Install Android SDK components
         run: |
-          sdkmanager "platform-tools"
-          sdkmanager "platforms;android-35"
-          sdkmanager "build-tools;35.0.0"
+          yes | sdkmanager --licenses || true
 
-      # 5. Verify project structure
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-36"
+          sdkmanager "build-tools;36.0.0"
+
+      # ---------------------------------------------------------
+      # 5. Verify VaultOne Android project
+      # ---------------------------------------------------------
       - name: Verify Android project
         run: |
-          echo "Current directory:"
+          echo "Working directory:"
           pwd
 
           echo ""
@@ -50,61 +66,99 @@ jobs:
           ls -la
 
           echo ""
-          echo "Searching for Gradle wrapper:"
-          find . -maxdepth 3 -name "gradlew" -type f -print
+          echo "App directory:"
+          ls -la app
 
-      # 6. Make Gradle Wrapper executable
-      - name: Prepare Gradle Wrapper
-        run: |
-          if [ ! -f "./gradlew" ]; then
-            echo "ERROR: gradlew was not found in the repository root."
-            echo "The Android project must contain a Gradle Wrapper."
-            exit 1
-          fi
+          echo ""
+          echo "Gradle files:"
+          find . -maxdepth 3 \
+            \( -name "*.gradle" -o -name "*.gradle.kts" -o -name "gradle-wrapper.properties" \) \
+            -print
 
-          chmod +x ./gradlew
-
-      # 7. Use the project's Gradle Wrapper
-      # Do NOT specify a Gradle version here.
-      - name: Setup Gradle
+      # ---------------------------------------------------------
+      # 6. Setup Gradle 9.5
+      # ---------------------------------------------------------
+      - name: Setup Gradle 9.5
         uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.5.0'
 
-      # 8. Check Gradle version
+      # ---------------------------------------------------------
+      # 7. Verify Gradle
+      # ---------------------------------------------------------
       - name: Check Gradle
         run: |
-          ./gradlew --version
+          gradle --version
 
+      # ---------------------------------------------------------
+      # 8. Validate Android project
+      # ---------------------------------------------------------
+      - name: Validate Android project
+        run: |
+          gradle tasks --stacktrace
+
+      # ---------------------------------------------------------
       # 9. Clean previous build
+      # ---------------------------------------------------------
       - name: Clean project
         run: |
-          ./gradlew clean
+          gradle clean --stacktrace
 
+      # ---------------------------------------------------------
       # 10. Build Debug APK
+      # ---------------------------------------------------------
       - name: Build VaultOne Debug APK
         run: |
-          ./gradlew assembleDebug --stacktrace
+          gradle assembleDebug --stacktrace --no-daemon
 
-      # 11. Find generated APK
+      # ---------------------------------------------------------
+      # 11. Locate generated APK
+      # ---------------------------------------------------------
       - name: Locate APK
         run: |
           echo "Searching for generated APK files..."
           find . -type f -name "*.apk" -print
 
-      # 12. Upload APK as GitHub Actions artifact
+      # ---------------------------------------------------------
+      # 12. Rename APK for easy identification
+      # ---------------------------------------------------------
+      - name: Prepare APK
+        run: |
+          mkdir -p release
+
+          APK=$(find app/build/outputs/apk/debug \
+            -type f \
+            -name "*.apk" \
+            | head -n 1)
+
+          if [ -z "$APK" ]; then
+            echo "ERROR: APK was not generated."
+            exit 1
+          fi
+
+          cp "$APK" release/VaultOne-debug.apk
+
+          echo "APK prepared:"
+          ls -lh release/VaultOne-debug.apk
+
+      # ---------------------------------------------------------
+      # 13. Upload APK
+      # ---------------------------------------------------------
       - name: Upload VaultOne APK
         uses: actions/upload-artifact@v4
         with:
           name: VaultOne-APK
-          path: |
-            **/build/outputs/apk/**/*.apk
+          path: VaultOne-Android/release/VaultOne-debug.apk
           if-no-files-found: error
 
-      # 13. Upload build reports if available
+      # ---------------------------------------------------------
+      # 14. Upload build reports
+      # ---------------------------------------------------------
       - name: Upload build reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: VaultOne-Build-Reports
           path: |
-            **/build/reports/**
+            VaultOne-Android/**/build/reports/**
           if-no-files-found: ignore
