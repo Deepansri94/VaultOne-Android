@@ -17,213 +17,452 @@ jobs:
 
     steps:
 
-      # 1. Checkout repository
+      # ============================================================
+      # 1. CHECKOUT
+      # ============================================================
+
       - name: Checkout VaultOne
         uses: actions/checkout@v4
 
-      # 2. Setup Java
+
+      # ============================================================
+      # 2. JAVA
+      # ============================================================
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # 3. Setup Android SDK
+
+      # ============================================================
+      # 3. ANDROID SDK
+      # ============================================================
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 4. Install Android SDK components
-      - name: Install Android SDK components
+
+      - name: Install Android SDK
         shell: bash
         run: |
           yes | sdkmanager --licenses || true
+
           sdkmanager "platform-tools"
           sdkmanager "platforms;android-35"
           sdkmanager "build-tools;35.0.0"
 
-      # 5. Inspect repository
-      - name: Inspect repository
+
+      # ============================================================
+      # 4. FIND VAULTONE HTML
+      # ============================================================
+
+      - name: Find VaultOne HTML
         shell: bash
         run: |
-          echo "========================================"
-          echo "VAULTONE REPOSITORY INSPECTION"
-          echo "========================================"
 
-          echo ""
-          echo "Current directory:"
-          pwd
+          echo "Searching for VaultOne HTML..."
 
-          echo ""
-          echo "Root contents:"
-          ls -la
+          HTML_FILE=""
 
-          echo ""
-          echo "Directories:"
-          find . -maxdepth 3 -type d -print | sort
+          if [ -f "VaultOne_document_details_fixed.html" ]; then
+            HTML_FILE="VaultOne_document_details_fixed.html"
+          else
+            HTML_FILE=$(find . -type f \
+              -iname "VaultOne_document_details_fixed.html" \
+              | head -n 1)
+          fi
 
-          echo ""
-          echo "Gradle files:"
-          find . -maxdepth 6 -type f \
-            \( -name "settings.gradle" \
-            -o -name "settings.gradle.kts" \
-            -o -name "build.gradle" \
-            -o -name "build.gradle.kts" \
-            -o -name "gradlew" \
-            -o -name "gradle-wrapper.properties" \) \
-            -print | sort
-
-          echo ""
-          echo "APK/project detection complete."
-
-      # 6. Detect Android project automatically
-      - name: Detect Android project
-        shell: bash
-        run: |
-          echo "Searching for Android Gradle project..."
-
-          SETTINGS_FILE=$(find . -maxdepth 6 -type f \
-            \( -name "settings.gradle" -o -name "settings.gradle.kts" \) \
-            | head -n 1)
-
-          if [ -z "$SETTINGS_FILE" ]; then
+          if [ -z "$HTML_FILE" ]; then
             echo ""
-            echo "ERROR: No settings.gradle or settings.gradle.kts found."
+            echo "ERROR: VaultOne_document_details_fixed.html was not found."
             echo ""
-            echo "This repository does not currently contain a recognizable"
-            echo "Android/Gradle project."
-            echo ""
-            echo "Repository contents:"
-            find . -maxdepth 4 -type f -print | sort
+            echo "HTML files found:"
+            find . -type f -iname "*.html" -print
             exit 1
           fi
 
-          PROJECT_DIR=$(dirname "$SETTINGS_FILE")
+          echo "VaultOne HTML found:"
+          echo "$HTML_FILE"
 
-          if [ "$PROJECT_DIR" = "." ]; then
-            PROJECT_DIR="."
-          fi
+          echo "HTML_FILE=$HTML_FILE" >> "$GITHUB_ENV"
 
-          echo "Android project found at:"
-          echo "$PROJECT_DIR"
 
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+      # ============================================================
+      # 5. CREATE ANDROID PROJECT
+      # ============================================================
 
-      # 7. Show detected project
-      - name: Verify detected project
+      - name: Create Android project
         shell: bash
         run: |
-          echo "========================================"
-          echo "DETECTED PROJECT"
-          echo "========================================"
 
-          echo "PROJECT_DIR=$PROJECT_DIR"
+          echo "Creating native Android project..."
 
-          echo ""
-          echo "Project contents:"
-          ls -la "$PROJECT_DIR"
+          mkdir -p vaultone-android
+          mkdir -p vaultone-android/app/src/main/java/com/vaultone/app
+          mkdir -p vaultone-android/app/src/main/assets
+          mkdir -p vaultone-android/app/src/main/res/values
+          mkdir -p vaultone-android/app/src/main/res/xml
 
-          echo ""
-          echo "Gradle files:"
-          find "$PROJECT_DIR" -maxdepth 3 -type f \
-            \( -name "settings.gradle*" \
-            -o -name "build.gradle*" \
-            -o -name "gradlew" \
-            -o -name "gradle-wrapper.properties" \) \
-            -print
+          cp "$HTML_FILE" \
+            vaultone-android/app/src/main/assets/index.html
 
-      # 8. Setup Gradle
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
 
-      # 9. Check whether Gradle Wrapper exists
-      - name: Check Gradle Wrapper
+      # ============================================================
+      # 6. SETTINGS.GRADLE
+      # ============================================================
+
+      - name: Create settings.gradle
         shell: bash
         run: |
-          if [ -f "$PROJECT_DIR/gradlew" ]; then
-            echo "Gradle Wrapper found."
-            chmod +x "$PROJECT_DIR/gradlew"
-            "$PROJECT_DIR/gradlew" --version
-          else
-            echo ""
-            echo "WARNING: Gradle Wrapper not found."
-            echo "Using GitHub Actions Gradle installation."
-          fi
 
-      # 10. Build Android project
+          cat > vaultone-android/settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.name = "VaultOne"
+
+          include(":app")
+          EOF
+
+
+      # ============================================================
+      # 7. ROOT BUILD.GRADLE
+      # ============================================================
+
+      - name: Create root build.gradle
+        shell: bash
+        run: |
+
+          cat > vaultone-android/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.6.1' apply false
+          }
+          EOF
+
+
+      # ============================================================
+      # 8. APP BUILD.GRADLE
+      # ============================================================
+
+      - name: Create app build.gradle
+        shell: bash
+        run: |
+
+          cat > vaultone-android/app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.vaultone.app'
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId 'com.vaultone.app'
+                  minSdk 23
+                  targetSdk 35
+
+                  versionCode 1
+                  versionName '1.0'
+              }
+
+              buildTypes {
+
+                  debug {
+                      minifyEnabled false
+                  }
+
+                  release {
+                      minifyEnabled false
+                  }
+              }
+          }
+
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.7.0'
+          }
+          EOF
+
+
+      # ============================================================
+      # 9. ANDROID MANIFEST
+      # ============================================================
+
+      - name: Create AndroidManifest.xml
+        shell: bash
+        run: |
+
+          cat > vaultone-android/app/src/main/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <uses-permission android:name="android.permission.INTERNET" />
+
+              <application
+                  android:allowBackup="false"
+                  android:usesCleartextTraffic="false"
+                  android:label="VaultOne"
+                  android:theme="@style/AppTheme"
+                  android:hardwareAccelerated="true">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:screenOrientation="portrait">
+
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+
+                  </activity>
+
+              </application>
+
+          </manifest>
+          EOF
+
+
+      # ============================================================
+      # 10. APP THEME
+      # ============================================================
+
+      - name: Create Android theme
+        shell: bash
+        run: |
+
+          cat > vaultone-android/app/src/main/res/values/styles.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+
+          <resources>
+
+              <style
+                  name="AppTheme"
+                  parent="android:style/Theme.Material.NoActionBar">
+
+                  <item name="android:fontFamily">sans</item>
+
+                  <item name="android:windowLightStatusBar">false</item>
+
+                  <item name="android:statusBarColor">#080B14</item>
+
+                  <item name="android:navigationBarColor">#080B14</item>
+
+                  <item name="android:colorAccent">#7C3AED</item>
+
+                  <item name="android:windowActionModeOverlay">true</item>
+
+              </style>
+
+          </resources>
+          EOF
+
+
+      # ============================================================
+      # 11. MAIN ACTIVITY
+      # ============================================================
+
+      - name: Create MainActivity
+        shell: bash
+        run: |
+
+          cat > vaultone-android/app/src/main/java/com/vaultone/app/MainActivity.java <<'EOF'
+          package com.vaultone.app;
+
+          import android.annotation.SuppressLint;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+
+          public class MainActivity extends Activity {
+
+              private WebView webView;
+
+              @SuppressLint("SetJavaScriptEnabled")
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+
+                  webView = new WebView(this);
+
+                  setContentView(webView);
+
+                  WebSettings settings = webView.getSettings();
+
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setDatabaseEnabled(true);
+
+                  settings.setAllowFileAccess(true);
+                  settings.setAllowContentAccess(true);
+
+                  settings.setBuiltInZoomControls(false);
+                  settings.setDisplayZoomControls(false);
+
+                  settings.setSupportZoom(false);
+
+                  settings.setLoadWithOverviewMode(false);
+                  settings.setUseWideViewPort(false);
+
+                  webView.setWebViewClient(new WebViewClient());
+                  webView.setWebChromeClient(new WebChromeClient());
+
+                  webView.loadUrl("file:///android_asset/index.html");
+              }
+
+              @Override
+              public void onBackPressed() {
+
+                  if (webView != null && webView.canGoBack()) {
+                      webView.goBack();
+                  } else {
+                      super.onBackPressed();
+                  }
+              }
+          }
+          EOF
+
+
+      # ============================================================
+      # 12. GRADLE WRAPPER
+      # ============================================================
+
+      - name: Create Gradle wrapper
+        shell: bash
+        run: |
+
+          cd vaultone-android
+
+          gradle wrapper \
+            --gradle-version 8.7
+
+
+      # ============================================================
+      # 13. VERIFY PROJECT
+      # ============================================================
+
+      - name: Verify Android project
+        shell: bash
+        run: |
+
+          echo "========================================"
+          echo "VAULTONE ANDROID PROJECT"
+          echo "========================================"
+
+          cd vaultone-android
+
+          echo ""
+          echo "Project:"
+          pwd
+
+          echo ""
+          echo "Files:"
+          find . -maxdepth 5 -type f | sort
+
+
+      # ============================================================
+      # 14. BUILD APK
+      # ============================================================
+
       - name: Build VaultOne APK
         shell: bash
         run: |
-          if [ -f "$PROJECT_DIR/gradlew" ]; then
 
-            chmod +x "$PROJECT_DIR/gradlew"
+          cd vaultone-android
 
-            "$PROJECT_DIR/gradlew" \
-              assembleDebug \
-              --stacktrace \
-              --no-daemon
+          chmod +x ./gradlew
 
-          else
+          ./gradlew \
+            assembleDebug \
+            --stacktrace \
+            --no-daemon
 
-            echo "Gradle Wrapper unavailable."
-            echo "Installing Gradle through setup-gradle..."
 
-            gradle assembleDebug \
-              --stacktrace \
-              --no-daemon
+      # ============================================================
+      # 15. LOCATE APK
+      # ============================================================
 
-          fi
-
-      # 11. Locate APK
       - name: Locate APK
         shell: bash
         run: |
+
           echo "Searching for APK..."
 
-          find "$PROJECT_DIR" \
+          find vaultone-android \
             -type f \
             -name "*.apk" \
             -print
 
-      # 12. Prepare APK
+
+      # ============================================================
+      # 16. PREPARE APK
+      # ============================================================
+
       - name: Prepare APK
         shell: bash
         run: |
+
           mkdir -p release
 
-          APK=$(find "$PROJECT_DIR" \
+          APK=$(find vaultone-android \
             -type f \
             -name "*.apk" \
             | head -n 1)
 
           if [ -z "$APK" ]; then
-            echo ""
-            echo "ERROR: APK was not generated."
-            exit 1
+              echo "ERROR: APK was not generated."
+              exit 1
           fi
 
-          echo "APK found:"
+          echo "APK:"
           echo "$APK"
 
-          cp "$APK" release/VaultOne-debug.apk
+          cp "$APK" release/VaultOne.apk
 
-          echo ""
-          echo "Final APK:"
-          ls -lh release/VaultOne-debug.apk
+          ls -lh release/VaultOne.apk
 
-      # 13. Upload APK
+
+      # ============================================================
+      # 17. UPLOAD APK
+      # ============================================================
+
       - name: Upload VaultOne APK
         uses: actions/upload-artifact@v4
         with:
           name: VaultOne-APK
-          path: release/VaultOne-debug.apk
+          path: release/VaultOne.apk
           if-no-files-found: error
 
-      # 14. Upload build reports
+
+      # ============================================================
+      # 18. BUILD REPORTS
+      # ============================================================
+
       - name: Upload build reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: VaultOne-Build-Reports
           path: |
-            **/build/reports/**
+            vaultone-android/app/build/reports/**
           if-no-files-found: ignore
