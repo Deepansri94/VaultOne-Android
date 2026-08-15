@@ -21,7 +21,7 @@ jobs:
       - name: Checkout VaultOne
         uses: actions/checkout@v4
 
-      # 2. Setup Java 17
+      # 2. Setup Java
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -32,19 +32,25 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 4. Install Android SDK
+      # 4. Install Android SDK components
       - name: Install Android SDK components
+        shell: bash
         run: |
           yes | sdkmanager --licenses || true
-
           sdkmanager "platform-tools"
-          sdkmanager "platforms;android-36"
-          sdkmanager "build-tools;36.0.0"
+          sdkmanager "platforms;android-35"
+          sdkmanager "build-tools;35.0.0"
 
-      # 5. Show repository structure
+      # 5. Inspect repository
       - name: Inspect repository
+        shell: bash
         run: |
-          echo "Repository root:"
+          echo "========================================"
+          echo "VAULTONE REPOSITORY INSPECTION"
+          echo "========================================"
+
+          echo ""
+          echo "Current directory:"
           pwd
 
           echo ""
@@ -52,73 +58,156 @@ jobs:
           ls -la
 
           echo ""
-          echo "VaultOne-Android contents:"
-          ls -la VaultOne-Android
+          echo "Directories:"
+          find . -maxdepth 3 -type d -print | sort
 
           echo ""
-          echo "Android project files:"
-          find VaultOne-Android -maxdepth 3 -type f \
-            \( -name "build.gradle" \
-            -o -name "settings.gradle" \
-            -o -name "gradle.properties" \
+          echo "Gradle files:"
+          find . -maxdepth 6 -type f \
+            \( -name "settings.gradle" \
+            -o -name "settings.gradle.kts" \
+            -o -name "build.gradle" \
+            -o -name "build.gradle.kts" \
+            -o -name "gradlew" \
+            -o -name "gradle-wrapper.properties" \) \
+            -print | sort
+
+          echo ""
+          echo "APK/project detection complete."
+
+      # 6. Detect Android project automatically
+      - name: Detect Android project
+        shell: bash
+        run: |
+          echo "Searching for Android Gradle project..."
+
+          SETTINGS_FILE=$(find . -maxdepth 6 -type f \
+            \( -name "settings.gradle" -o -name "settings.gradle.kts" \) \
+            | head -n 1)
+
+          if [ -z "$SETTINGS_FILE" ]; then
+            echo ""
+            echo "ERROR: No settings.gradle or settings.gradle.kts found."
+            echo ""
+            echo "This repository does not currently contain a recognizable"
+            echo "Android/Gradle project."
+            echo ""
+            echo "Repository contents:"
+            find . -maxdepth 4 -type f -print | sort
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$SETTINGS_FILE")
+
+          if [ "$PROJECT_DIR" = "." ]; then
+            PROJECT_DIR="."
+          fi
+
+          echo "Android project found at:"
+          echo "$PROJECT_DIR"
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      # 7. Show detected project
+      - name: Verify detected project
+        shell: bash
+        run: |
+          echo "========================================"
+          echo "DETECTED PROJECT"
+          echo "========================================"
+
+          echo "PROJECT_DIR=$PROJECT_DIR"
+
+          echo ""
+          echo "Project contents:"
+          ls -la "$PROJECT_DIR"
+
+          echo ""
+          echo "Gradle files:"
+          find "$PROJECT_DIR" -maxdepth 3 -type f \
+            \( -name "settings.gradle*" \
+            -o -name "build.gradle*" \
+            -o -name "gradlew" \
             -o -name "gradle-wrapper.properties" \) \
             -print
 
-      # 6. Setup Gradle 9.5
-      - name: Setup Gradle 9.5
+      # 8. Setup Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: '9.5.0'
 
-      # 7. Check Gradle
-      - name: Check Gradle
-        working-directory: VaultOne-Android
+      # 9. Check whether Gradle Wrapper exists
+      - name: Check Gradle Wrapper
+        shell: bash
         run: |
-          gradle --version
+          if [ -f "$PROJECT_DIR/gradlew" ]; then
+            echo "Gradle Wrapper found."
+            chmod +x "$PROJECT_DIR/gradlew"
+            "$PROJECT_DIR/gradlew" --version
+          else
+            echo ""
+            echo "WARNING: Gradle Wrapper not found."
+            echo "Using GitHub Actions Gradle installation."
+          fi
 
-      # 8. Validate Android project
-      - name: Validate Android project
-        working-directory: VaultOne-Android
+      # 10. Build Android project
+      - name: Build VaultOne APK
+        shell: bash
         run: |
-          gradle tasks --stacktrace
+          if [ -f "$PROJECT_DIR/gradlew" ]; then
 
-      # 9. Clean
-      - name: Clean project
-        working-directory: VaultOne-Android
-        run: |
-          gradle clean --stacktrace
+            chmod +x "$PROJECT_DIR/gradlew"
 
-      # 10. Build APK
-      - name: Build VaultOne Debug APK
-        working-directory: VaultOne-Android
-        run: |
-          gradle assembleDebug --stacktrace --no-daemon
+            "$PROJECT_DIR/gradlew" \
+              assembleDebug \
+              --stacktrace \
+              --no-daemon
 
-      # 11. Find APK
+          else
+
+            echo "Gradle Wrapper unavailable."
+            echo "Installing Gradle through setup-gradle..."
+
+            gradle assembleDebug \
+              --stacktrace \
+              --no-daemon
+
+          fi
+
+      # 11. Locate APK
       - name: Locate APK
+        shell: bash
         run: |
-          echo "Generated APK files:"
-          find VaultOne-Android -type f -name "*.apk" -print
+          echo "Searching for APK..."
+
+          find "$PROJECT_DIR" \
+            -type f \
+            -name "*.apk" \
+            -print
 
       # 12. Prepare APK
       - name: Prepare APK
+        shell: bash
         run: |
           mkdir -p release
 
-          APK=$(find VaultOne-Android/app/build/outputs/apk/debug \
+          APK=$(find "$PROJECT_DIR" \
             -type f \
             -name "*.apk" \
             | head -n 1)
 
           if [ -z "$APK" ]; then
+            echo ""
             echo "ERROR: APK was not generated."
             exit 1
           fi
 
+          echo "APK found:"
+          echo "$APK"
+
           cp "$APK" release/VaultOne-debug.apk
 
           echo ""
-          echo "APK successfully prepared:"
+          echo "Final APK:"
           ls -lh release/VaultOne-debug.apk
 
       # 13. Upload APK
@@ -135,5 +224,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: VaultOne-Build-Reports
-          path: VaultOne-Android/**/build/reports/**
+          path: |
+            **/build/reports/**
           if-no-files-found: ignore
+name: 
