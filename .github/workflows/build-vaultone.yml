@@ -66,17 +66,17 @@ jobs:
 
           HTML_FILE=""
 
-          if [ -f "VaultOne_document_details_fixed.html" ]; then
-            HTML_FILE="VaultOne_document_details_fixed.html"
+          if [ -f "VaultOne.html" ]; then
+            HTML_FILE="VaultOne.html"
           else
             HTML_FILE=$(find . -type f \
-              -iname "VaultOne_document_details_fixed.html" \
+              -iname "VaultOne.html" \
               | head -n 1)
           fi
 
           if [ -z "$HTML_FILE" ]; then
             echo ""
-            echo "ERROR: VaultOne_document_details_fixed.html was not found."
+            echo "ERROR: VaultOne.html was not found."
             echo ""
             echo "HTML files found:"
             find . -type f -iname "*.html" -print
