@@ -1,0 +1,1807 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<title>VaultOne</title>
+<style>
+:root{--bg:#060b16;--panel:#0d1728;--panel2:#111e33;--text:#f5f7fb;--muted:#91a0b7;--line:#263550;--purple:#8b5cf6;--cyan:#38bdf8;--green:#4ade80;--red:#fb7185;--gold:#f5c542;--shadow:0 18px 50px #0008}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0,#172554 0,#060b16 35%),var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.app{min-height:100vh;padding-bottom:82px}.top{position:sticky;top:0;z-index:20;padding:18px 18px 12px;background:#07111fee;backdrop-filter:blur(18px);border-bottom:1px solid #ffffff0d}.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand h1{margin:0;font-size:25px}.brand small{color:var(--muted)}.iconbtn,.btn{border:1px solid var(--line);background:#14233a;color:var(--text);border-radius:16px;padding:11px 15px}.iconbtn{width:44px;height:44px;padding:0}.btn.primary{background:linear-gradient(135deg,#7c3aed,#2563eb);border-color:#9b7aff}.btn.gold{background:#a87800;border-color:#e7bf40}.btn.danger{background:#4b1822;border-color:#7d2738}.btn.ghost{background:transparent}.content{max-width:1100px;margin:auto;padding:18px}.view{display:none}.view.active{display:block}.hero{padding:24px;border:1px solid #ffffff14;border-radius:28px;background:linear-gradient(135deg,#101d36dd,#16112bdd);box-shadow:var(--shadow);margin-bottom:16px}.hero h2{font-size:28px;margin:0 0 5px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{background:linear-gradient(145deg,#0e1a2c,#0a1322);border:1px solid #ffffff12;border-radius:24px;padding:18px;box-shadow:0 10px 30px #0004;margin-bottom:14px}.metric{font-size:29px;font-weight:800}.green{color:var(--green)}.red{color:var(--red)}.goldtext{color:var(--gold)}.cyan{color:var(--cyan)}label{display:block;color:#b7c2d4;font-weight:700}input,select,textarea{width:100%;margin-top:7px;background:#091322;border:1px solid #31425e;color:var(--text);border-radius:14px;padding:12px;outline:none}textarea{min-height:88px;resize:vertical}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat{padding:16px;border-radius:20px;background:#0b1728;border:1px solid #ffffff10}.stat b{font-size:22px;display:block;margin-top:5px}.list{display:grid;gap:10px}.item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:14px;border:1px solid #ffffff10;background:#0a1525;border-radius:18px}.item .title{font-weight:800}.item .sub{color:var(--muted);font-size:13px}.item>.actions{align-items:center;justify-content:flex-end;margin-top:0;flex:0 0 auto}.item>.actions .btn{white-space:nowrap;min-height:42px}.item>.actions>b{white-space:nowrap;align-self:center}.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#16243b;border:1px solid #ffffff10;font-size:12px}.empty{padding:25px;text-align:center;color:var(--muted);border:1px dashed #33435d;border-radius:18px}.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px}.tab{white-space:nowrap}.bottom{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#07111ff5;backdrop-filter:blur(18px);border-top:1px solid #ffffff10;display:flex;justify-content:center}.nav{max-width:900px;width:100%;display:grid;grid-template-columns:repeat(6,1fr)}.nav button{background:none;border:0;color:#8290a5;padding:11px 4px;font-size:12px}.nav button.active{color:#c4b5fd}.nav span{display:block;font-size:20px}.modal{position:fixed;inset:0;background:#000a;z-index:50;display:none;align-items:flex-end;justify-content:center}.modal.open{display:flex}.sheet{width:min(700px,100%);max-height:92vh;overflow:auto;background:#0b1627;border:1px solid #ffffff15;border-radius:26px 26px 0 0;padding:18px}.toast{position:fixed;right:16px;bottom:95px;z-index:100;background:#14233a;border:1px solid #334966;border-radius:14px;padding:12px 15px;box-shadow:var(--shadow);display:none}.toast.show{display:block}.search{margin-bottom:12px}.filebox{border:1px dashed #425574;border-radius:16px;padding:12px}.password-field{position:relative}.password-field input{padding-right:54px}.password-eye{position:absolute;right:7px;top:7px;width:42px;height:42px;border:0;border-radius:12px;background:#14233a;color:#d7e0ee;display:flex;align-items:center;justify-content:center;padding:0}.password-eye:active{transform:scale(.96)}.preview{width:100%;height:65vh;border:0;border-radius:16px;background:#fff}.thumb{max-width:100%;max-height:240px;border-radius:14px}.progress{height:9px;background:#1b2a40;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#8b5cf6,#38bdf8);border-radius:99px}.dangerbox{border:1px solid #7d2738;background:#2a1118;padding:14px;border-radius:16px}.success{color:var(--green)}
+@media(max-width:720px){.grid,.grid3{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.content{padding:14px}.hero h2{font-size:24px}.item{align-items:flex-start;flex-direction:column}.item>.actions{width:100%;justify-content:flex-start;align-items:center;margin-top:4px}.item>.actions .btn{min-width:88px}.nav{grid-template-columns:repeat(6,1fr)}}
+#lockBtn{display:none!important}.password-vault-active #lockBtn{display:inline-flex!important}
+</style>
+
+<style>
+.doc-number-mask{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em}
+.doc-number-value{display:inline-block;min-width:110px}
+.doc-eye{min-width:42px;padding:8px 10px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.detail-row{padding:12px;border-radius:12px;background:rgba(255,255,255,.05)}
+.detail-row small{display:block;color:#94a3b8;margin-bottom:4px}
+@media(max-width:600px){.detail-grid{grid-template-columns:1fr}}
+</style>
+
+<style>
+.member-card{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:15px;border:1px solid #ffffff10;background:#0a1525;border-radius:18px}
+.member-meta{color:var(--muted);font-size:13px;margin-top:4px}
+.member-age{color:var(--cyan);font-weight:800;margin-top:5px}
+.status-active{color:var(--green);font-weight:700}.status-inactive{color:#94a3b8;font-weight:700}
+@media(max-width:600px){.member-card{flex-direction:column}}
+</style>
+
+<style>
+.iv-chart{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.pie{width:170px;height:170px;border-radius:50%;background:conic-gradient(#8b5cf6 0 25%,#38bdf8 25% 50%,#4ade80 50% 75%,#f5c542 75% 100%);box-shadow:inset 0 0 0 1px #ffffff18}
+.legend{display:grid;gap:7px;min-width:180px}.legend-row{display:flex;align-items:center;gap:8px;font-size:13px}.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.budget-grid{display:grid;grid-template-columns:1fr 150px;gap:10px;align-items:center}.budget-grid label{font-size:13px}
+.comparison{width:100%;border-collapse:collapse;font-size:13px}.comparison th,.comparison td{padding:9px;border-bottom:1px solid #ffffff10;text-align:left}.comparison th{color:#aebbd0}
+.good{color:#4ade80}.warn{color:#f5c542}.bad{color:#fb7185}
+.suggestion{padding:12px;border-radius:14px;background:#0a1525;border:1px solid #ffffff10;margin-top:8px}
+@media(max-width:600px){.budget-grid{grid-template-columns:1fr 120px}.iv-chart{justify-content:center}}
+</style>
+
+<style>
+.vault-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.vault-mini{padding:13px;border:1px solid #ffffff10;border-radius:16px;background:#0a1525}
+@media(max-width:600px){.vault-edit-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top"><div class="brand"><div><h1>VaultOne 🔐</h1><small id="profileLine">Private • Offline-first</small></div><button class="iconbtn" id="lockBtn" title="Lock">🔒</button></div></header>
+<main class="content">
+<section class="view active" id="home"><div class="hero"><h2 id="welcome">Welcome to VaultOne</h2><div class="muted">Your private personal vault. Data stays on this device.</div><div class="actions"><button type="button" class="btn primary" data-go="ivault">Open iVault</button><button type="button" class="btn" data-go="family">FamilyVault</button><button type="button" class="btn" data-go="passwords">PasswordVault</button></div></div><div class="stats"><div class="stat">iVault<b id="hNet">₹0</b></div><div class="stat">Documents<b id="hDocs">0</b></div><div class="stat">Passwords<b id="hPass">0</b></div><div class="stat">Reminders<b id="hRem">0</b></div></div><div class="card"><h3>Recent Activity</h3><div id="activityList" class="list"></div></div><div class="card"><h3>Upcoming Reminders</h3><div id="homeReminders" class="list"></div></div></section>
+
+<section class="view" id="ivault"><div class="hero"><h2>iVault 💰</h2><div class="muted">Personal Finance & Wealth Management</div></div><div class="stats"><div class="stat">Net Worth<b id="netWorth">₹0</b></div><div class="stat">Income<b class="green" id="mIncome">₹0</b></div><div class="stat">Expenses<b class="red" id="mExpense">₹0</b></div><div class="stat">Savings<b class="cyan" id="mSavings">₹0</b></div></div><div class="grid" style="margin-top:14px"><div class="card"><h3>Monthly Budget</h3><div class="metric" id="budgetTotal">₹0</div><div class="progress"><i id="budgetBar" style="width:0%"></i></div><p class="muted" id="budgetInfo">No budget configured.</p></div><div class="card"><h3>GoldVault 🪙</h3><div class="metric goldtext" id="goldValue">₹0</div><p class="muted" id="goldRateInfo">No current rate.</p></div></div><div class="card"><div class="tabs"><button type="button" class="btn tab primary" data-sub="financeDashboard">Overview</button><button type="button" class="btn tab" data-sub="income">Income</button><button type="button" class="btn tab" data-sub="expenses">Expenses</button><button type="button" class="btn tab" data-sub="budget">Budget</button><button type="button" class="btn tab" data-sub="investments">Savings & Investments</button><button type="button" class="btn tab" data-sub="gold">GoldVault</button><button type="button" class="btn tab" data-sub="loans">Loans</button><button type="button" class="btn tab" data-sub="banks">Banks & Accounts</button><button type="button" class="btn tab" data-sub="transactions">Transactions</button></div></div>
+<div id="financeDashboard" class="financeSub"></div><div id="income" class="financeSub" style="display:none"></div><div id="expenses" class="financeSub" style="display:none"></div><div id="budget" class="financeSub" style="display:none"></div><div id="investments" class="financeSub" style="display:none">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
+      <div><h3 style="margin:0">Demat</h3><p class="muted" style="margin:4px 0 0">Equity, ETFs and Nifty 50 holdings</p></div>
+      <button class="btn primary" type="button" id="addDematBtn">+ Add Stock</button>
+    </div>
+    <div class="stats" style="margin-top:14px">
+      <div class="stat">Invested<b id="dematInvested">₹0</b></div>
+      <div class="stat">Current Value<b id="dematCurrent">₹0</b></div>
+      <div class="stat">Gain/Loss<b id="dematGain">₹0</b></div>
+      <div class="stat">Holdings<b id="dematCount">0</b></div>
+    </div>
+    <div id="dematList" class="list" style="margin-top:14px"></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+        <div><h3 style="margin:0">FD — Fixed Deposit</h3><p class="muted" style="margin:4px 0">One-time deposit with interest</p></div>
+        <button class="btn primary" type="button" id="addFdBtn">+ Add FD</button>
+      </div>
+      <div id="fdList" class="list" style="margin-top:14px"></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+        <div><h3 style="margin:0">RD — Recurring Deposit</h3><p class="muted" style="margin:4px 0">Monthly recurring deposit with interest</p></div>
+        <button class="btn primary" type="button" id="addRdBtn">+ Add RD</button>
+      </div>
+      <div id="rdList" class="list" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
+      <div><h3 style="margin:0">Other Savings</h3><p class="muted" style="margin:4px 0">PPF, NPS, SSA and other static savings</p></div>
+      <button class="btn" type="button" id="addOtherSavingBtn">+ Add Saving</button>
+    </div>
+    <div id="otherSavingList" class="list" style="margin-top:14px"></div>
+  </div>
+</div><div id="gold" class="financeSub" style="display:none"></div><div id="loans" class="financeSub" style="display:none"></div><div id="banks" class="financeSub" style="display:none"></div><div id="transactions" class="financeSub" style="display:none"></div></section>
+
+<section class="view" id="family"><div class="hero"><h2>FamilyVault 📁</h2><div class="muted">Personal & household documents stored locally.</div><div class="actions"><button class="btn primary" id="addPersonBtn">+ Person</button><button class="btn" id="addHouseBtn">+ Household</button><button class="btn gold" id="addDocBtn">+ Document</button></div></div><div class="stats"><div class="stat">People<b id="peopleCount">0</b></div><div class="stat">Households<b id="houseCount">0</b></div><div class="stat">Documents<b id="docCount">0</b></div><div class="stat">Expiring ≤30d<b id="docExpCount">0</b></div></div><div class="card"><input class="search" id="docSearch" placeholder="Search documents, people, households..."><div id="familyList" class="list"></div></div></section>
+
+<section class="view" id="passwords"><div class="hero"><h2>PasswordVault 🔑</h2><div class="muted">Encrypted local password manager. Unlock with your PIN.</div><div class="actions"><button class="btn primary" id="addPassBtn">+ Add Password</button><button class="btn" id="genPassBtn">Generate Password</button></div></div><div class="card"><input id="passSearch" placeholder="Search passwords..."><div id="passList" class="list" style="margin-top:12px"></div></div></section>
+
+<section class="view" id="reminders"><div class="hero"><h2>Reminders ⏰</h2><div class="muted">Simple local reminders.</div><button class="btn primary" id="addReminderBtn">+ Add Reminder</button><button class="btn" id="enableNotificationsBtn">🔔 Enable Notifications</button><span class="muted" id="notificationStatus"></span></div><div class="tabs"><button type="button" class="btn tab primary" data-remtab="upcoming">Upcoming</button><button type="button" class="btn tab" data-remtab="overdue">Overdue</button><button type="button" class="btn tab" data-remtab="done">Completed</button></div><div class="card"><div id="remList" class="list"></div></div></section>
+
+<section class="view" id="settings"><div class="hero"><h2>Settings ⚙️</h2><div class="muted">VaultOne configuration, backup and security.</div></div><div class="card"><h3>Profile</h3><form id="profileForm" class="grid"><label>Full Name<input id="profileName" required></label><label>Currency<select id="profileCurrency"><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option></select></label><div class="actions"><button class="btn primary">Save Profile</button></div></form></div><div class="card"><h3>Security</h3><div class="grid"><label>Vault PIN<div class="password-field"><input id="pinInput" type="password" inputmode="numeric" maxlength="12" autocomplete="new-password" placeholder="4-12 digits"><button type="button" class="password-eye" id="pinEye" aria-label="Show PIN" title="Show PIN">👁️</button></div></label><label>Auto-lock<select id="autoLock"><option value="0">Off</option><option value="1">1 minute</option><option value="5">5 minutes</option><option value="15">15 minutes</option></select></label></div><div class="actions"><button class="btn primary" id="saveSecurity">Save Security</button><button class="btn" id="biometricInfo">Biometric</button></div><p class="muted">Browser version uses a PIN-derived AES-GCM key for PasswordVault. Native Android should use Android Keystore/biometrics.</p></div><div class="card"><h3>Backup & Restore</h3><div class="actions"><button class="btn primary" id="exportBtn">Export VaultOne JSON</button><button class="btn" id="importBtn">Import JSON</button><input id="importFile" type="file" accept="application/json" hidden></div><p id="backupStatus" class="muted"></p></div><div class="card"><h3>JSON Device File</h3><p class="muted">Where supported, link a JSON file for direct save. Otherwise use Export/Import.</p><div class="actions"><button class="btn" id="linkJsonBtn">Link JSON File</button><button class="btn" id="saveJsonBtn">Save to Linked JSON</button></div><p id="jsonStatus" class="muted">Not linked.</p></div><div class="card"><h3>Diagnostics</h3><button class="btn" id="selfTestBtn">Run Self-Test</button><pre id="testResult" style="white-space:pre-wrap;color:#a9b7ca"></pre></div><div class="card dangerbox"><h3>Clear All VaultOne Data</h3><p>This permanently deletes VaultOne's database, documents and encrypted password records. It does not delete unrelated files on your phone.</p><button class="btn danger" id="clearBtn">Clear All Data</button></div><div class="card"><p class="muted">VaultOne • Offline-first • Schema v3</p></div></section>
+</main>
+<nav class="bottom"><div class="nav"><button type="button" class="active" data-go="home"><span>⌂</span>Home</button><button type="button" data-go="ivault"><span>₹</span>iVault</button><button type="button" data-go="family"><span>📁</span>Family</button><button type="button" data-go="passwords"><span>🔑</span>Passwords</button><button type="button" data-go="reminders"><span>⏰</span>Reminders</button><button type="button" data-go="settings"><span>⚙</span>Settings</button></div></nav>
+</div>
+<div id="modal" class="modal"><div class="sheet"><div style="display:flex;justify-content:space-between;align-items:center"><h3 id="modalTitle" style="margin:0">VaultOne</h3><button class="iconbtn" id="modalClose">✕</button></div><div id="modalBody"></div></div></div><div id="toast" class="toast"></div>
+<script>
+
+window.addEventListener('error',e=>{
+  console.error('VaultOne error:',e.error||e.message);
+});
+window.addEventListener('unhandledrejection',e=>{
+  console.error('VaultOne promise error:',e.reason);
+});
+'use strict';
+const DB='VaultOneDB', VER=2, STORES=['meta','income','expenses','budgets','investments','gold','goldRates','loans','banks','transactions','persons','households','documents','passwords','reminders','activity'];
+let db, linkedJsonHandle=null, currentReminderTab='upcoming', currentFinanceSub='financeDashboard', passwordUnlocked=false, passwordKey=null, autoLockTimer=null;
+const $=id=>document.getElementById(id);
+const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const money=(n,curr=null)=>{const c=curr||state.settings.currency||'INR';try{return new Intl.NumberFormat('en-IN',{style:'currency',currency:c,maximumFractionDigits:2}).format(Number(n)||0)}catch{return '₹'+(Number(n)||0).toFixed(2)}};
+const today=()=>new Date().toISOString().slice(0,10);
+const daysUntil=d=>d?Math.ceil((new Date(d+'T23:59:59')-new Date())/86400000):null;
+function toast(msg,err=false){const t=$('toast');t.textContent=msg;t.style.borderColor=err?'#7d2738':'#334966';t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
+function openModal(title,html,onSubmit){$('modalTitle').textContent=title;$('modalBody').innerHTML=html;$('modal').classList.add('open');const f=$('modalBody').querySelector('form');if(f&&onSubmit)f.onsubmit=e=>{e.preventDefault();onSubmit(new FormData(f))}}
+function closeModal(){$('modal').classList.remove('open');$('modalBody').innerHTML=''}$('modalClose').onclick=closeModal;
+function tx(store,mode='readonly'){return db.transaction(store,mode).objectStore(store)}
+function req(r){return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+let storageMode='indexeddb';
+const fallbackPrefix='VaultOneFallback_';
+const fallbackMemory=Object.create(null);
+function fallbackLoad(store){
+  try{const raw=localStorage.getItem(fallbackPrefix+store);const parsed=raw?JSON.parse(raw):[];return Array.isArray(parsed)?parsed:[]}
+  catch{if(Array.isArray(fallbackMemory[store]))return fallbackMemory[store];fallbackMemory[store]=[];return fallbackMemory[store]}
+}
+function fallbackSave(store,rows){
+  fallbackMemory[store]=rows;
+  try{localStorage.setItem(fallbackPrefix+store,JSON.stringify(rows));}
+  catch(e){try{if(store==='documents'){const slim=rows.map(r=>{const x={...r};if(x.fileBlob instanceof Blob){delete x.fileBlob}return x});localStorage.setItem(fallbackPrefix+store,JSON.stringify(slim));}}catch{}}
+}
+async function ensureDB(){
+  if(db) return true;
+  try{await openDB();return true}catch{return false}
+}
+async function getAll(store){
+  if(storageMode==='fallback') return fallbackLoad(store);
+  try{return await req(tx(store).getAll())}catch(e){if(await switchToFallback(e))return fallbackLoad(store);throw e}
+}
+async function get(store,id){
+  if(storageMode==='fallback') return fallbackLoad(store).find(x=>x.id===id);
+  try{return await req(tx(store).get(id))}catch(e){if(await switchToFallback(e))return fallbackLoad(store).find(x=>x.id===id);throw e}
+}
+async function put(store,obj){
+  if(storageMode==='fallback'){const rows=fallbackLoad(store);const i=rows.findIndex(x=>x.id===obj.id);if(i>=0)rows[i]=obj;else rows.push(obj);fallbackSave(store,rows);return obj}
+  try{return await req(tx(store,'readwrite').put(obj))}catch(e){if(await switchToFallback(e)){return put(store,obj)}throw e}
+}
+async function del(store,id){
+  if(storageMode==='fallback'){fallbackSave(store,fallbackLoad(store).filter(x=>x.id!==id));return}
+  try{return await req(tx(store,'readwrite').delete(id))}catch(e){if(await switchToFallback(e)){return del(store,id)}throw e}
+}
+async function clearStore(store){
+  if(storageMode==='fallback'){fallbackSave(store,[]);return}
+  try{return await req(tx(store,'readwrite').clear())}catch(e){if(await switchToFallback(e)){return clearStore(store)}throw e}
+}
+async function openDB(){return new Promise((resolve,reject)=>{
+  if(!window.indexedDB){reject(new Error('IndexedDB is unavailable in this browser context.'));return}
+  let settled=false;
+  let r;
+  try{r=indexedDB.open(DB,VER)}catch(e){reject(e);return}
+  r.onupgradeneeded=e=>{const d=e.target.result;STORES.forEach(s=>{if(!d.objectStoreNames.contains(s))d.createObjectStore(s,{keyPath:'id'})})};
+  r.onsuccess=()=>{db=r.result;db.onversionchange=()=>db.close();settled=true;resolve()};
+  r.onerror=()=>{if(!settled)reject(r.error||new Error('Unable to open IndexedDB.'))};
+  r.onblocked=()=>{if(!settled)reject(new Error('IndexedDB is blocked by the current browser context.'))};
+})}
+let reopenAttempted=false;
+async function switchToFallback(reason){
+  if(!reopenAttempted){
+    reopenAttempted=true;
+    try{db?.close();db=null;await openDB();storageMode='indexeddb';return false}catch{}
+  }
+  storageMode='fallback';
+  if(db){try{db.close()}catch{}}
+  db=null;
+  try{toast('IndexedDB is unavailable in this browser context. Using compatibility storage so VaultOne remains usable.',true)}catch{}
+  return true;
+}
+const defaults={settings:{id:'settings',currency:'INR',name:'',pinHash:'',autoLock:0},schema:{id:'schema',version:2}};
+let state={settings:{currency:'INR',name:'',pinHash:'',autoLock:0}};
+async function migrateFamilyStructure(){
+  // Generic migration: normalize existing member records without
+  // embedding any real person's name or relationship in the application.
+  const people=await getAll('persons');
+  for(const person of people){
+    let changed=false;
+    if(!person.relation){person.relation='Member';changed=true;}
+    if(!person.relationOrder){person.relationOrder=1;changed=true;}
+    if(!person.status){person.status='Active';changed=true;}
+    if(changed) await put('persons',person);
+  }
+}
+
+async function loadState(){const s=await get('meta','settings');const firstRun=!s;state.settings=s?{...defaults.settings,...s}:defaults.settings;const schema=await get('meta','schema');if(!schema)await put('meta',defaults.schema);
+  const allPersons=await getAll('persons'),allHouses=await getAll('households');for(const person of allPersons){if(person.householdId&&!person.householdName){const h=allHouses.find(x=>x.id===person.householdId);if(h){person.householdName=h.name;await put('persons',person)}}}if(firstRun){
+    // Fresh installation starts empty. Users create their own households and members.
+    await put('meta',state.settings);
+  }}
+async function log(type,text){await put('activity',{id:uid(),type,text,createdAt:new Date().toISOString()});}
+
+async function createTransaction(data={}){
+  const amount=Number(data.amount||0);
+  if(!Number.isFinite(amount)||amount<=0) throw new Error('Transaction amount must be greater than zero.');
+  const row={id:data.id||uid(),date:data.date||today(),type:data.type||'Transfer',amount,sourceAccountId:String(data.sourceAccountId||''),destinationAccountId:String(data.destinationAccountId||''),category:String(data.category||''),module:String(data.module||''),referenceId:String(data.referenceId||''),description:String(data.description||''),principal:Number(data.principal||0),interest:Number(data.interest||0),createdAt:data.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+  await put('transactions',row); return row;
+}
+function accountBalance(account,transactions){
+  let balance=Number(account?.initialBalance||0);
+  for(const t of transactions||[]){const a=Number(t.amount||0);if(String(t.sourceAccountId||'')===String(account.id))balance-=a;if(String(t.destinationAccountId||'')===String(account.id))balance+=a;}
+  return balance;
+}
+async function refresh(){await loadState();try{if(navigator.storage?.persist)await navigator.storage.persist()}catch{}renderHome();if(typeof window.renderFinance==='function'){try{await window.renderFinance();}catch(e){console.error('VaultOne renderFinance failed:',e);}}renderFamily();renderPasswords();renderReminders();renderSettings()}
+function go(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('active',b.dataset.go===id));document.body.classList.toggle('password-vault-active',id==='passwords');if(id==='passwords'&&!passwordUnlocked)renderPasswordsLocked()}
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=e=>{e.preventDefault();go(b.dataset.go)});
+// Reliable module tab navigation
+function selectFinanceTab(id){
+  currentFinanceSub=id;
+  document.querySelectorAll('.financeSub').forEach(el=>el.style.display=el.id===id?'block':'none');
+  document.querySelectorAll('[data-sub]').forEach(btn=>btn.classList.toggle('primary',btn.dataset.sub===id));
+}
+document.querySelectorAll('[data-sub]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();selectFinanceTab(btn.dataset.sub)}));
+function selectReminderTab(id){
+  currentReminderTab=id;
+  document.querySelectorAll('[data-remtab]').forEach(btn=>btn.classList.toggle('primary',btn.dataset.remtab===id));
+  renderReminders();
+}
+document.querySelectorAll('[data-remtab]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();selectReminderTab(btn.dataset.remtab)}));
+
+function renderHome(){
+  const name=(state.settings.name||'').trim();
+  $('welcome').textContent=name?'Good day, '+name:'Welcome to VaultOne';
+  $('profileLine').textContent=name?name+' • Offline-first':'Private • Offline-first';
+  Promise.all([getAll('documents'),getAll('passwords'),getAll('reminders'),getAll('activity')]).then(([docs,passes,rems,acts])=>{
+    $('hDocs').textContent=docs.length;
+    $('hPass').textContent=passes.length;
+    $('hRem').textContent=rems.filter(r=>!r.completed).length;
+    const recent=acts.slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,6);
+    $('activityList').innerHTML=recent.length?recent.map(a=>`<div class="item"><div><div class="title">${esc(a.text)}</div><div class="sub">${new Date(a.createdAt).toLocaleString()}</div></div><span class="pill">${esc(a.type)}</span></div>`).join(''):'<div class="empty">No activity yet.</div>';
+    const upcoming=rems.filter(r=>!r.completed).sort((a,b)=>((a.date||'')+(a.time||'')).localeCompare((b.date||'')+(b.time||''))).slice(0,4);
+    $('homeReminders').innerHTML=upcoming.length?upcoming.map(r=>`<div class="item"><div><div class="title">${esc(r.title)}</div><div class="sub">${esc(r.date)} ${esc(r.time||'')}</div></div><span class="pill">${esc(r.priority||'Normal')}</span></div>`).join(''):'<div class="empty">No upcoming reminders.</div>';
+  });
+  // hNet is updated by renderFinance via the centralised financial summary.
+}
+function calcNet(inc,inv,gold,rates,loans){const r=latestRates(rates);const gv=gold.reduce((s,g)=>s+(Number(g.weight)||0)*(Number(r[g.purity])||0),0);const invv=inv.reduce((s,x)=>s+(Number(x.currentValue??x.amount)||0),0);const cash=inc.reduce((s,x)=>s+(Number(x.amount)||0),0);const liab=loans.reduce((s,x)=>s+loanOutstanding(x),0);return cash+invv+gv-liab}
+function latestRates(rates){return rates.sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0]||{K18:0,K22:0,K24:0}}
+function chartData(rows,labelKey,valueKey){
+  const map={};
+  rows.forEach(x=>{const k=x[labelKey]||'Other';const v=Number(x[valueKey]??0);if(v>0)map[k]=(map[k]||0)+v});
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+}
+const chartColors=['#8b5cf6','#38bdf8','#4ade80','#f5c542','#fb7185','#60a5fa','#a78bfa','#94a3b8','#22c55e','#f97316'];
+function pieChart(entries,total){
+  if(!entries.length||total<=0)return '<div class="empty">No data available for the chart.</div>';
+  let cur=0,parts=[];
+  entries.forEach((e,i)=>{const p=e[1]/total*100;parts.push(`${chartColors[i%chartColors.length]} ${cur}% ${cur+p}%`);cur+=p});
+  const legend=entries.map((e,i)=>`<div class="legend-row"><i class="dot" style="background:${chartColors[i%chartColors.length]}"></i><span>${esc(e[0])}</span><span class="muted">${money(e[1])}</span></div>`).join('');
+  return `<div class="iv-chart"><div class="pie" style="background:conic-gradient(${parts.join(',')})"></div><div class="legend">${legend}</div></div>`;
+}
+function budgetRowsForMonth(bud,month){
+  const old=bud.filter(x=>x.month===month);
+  const cats=['Household','Transport','Food & Personal','Health & Emergency','Loans & Financial','Family / Religious / Social','Savings & Investments','Other'];
+  const result={};cats.forEach(c=>result[c]=0);
+  old.forEach(x=>{if(x.category&&x.category!=='Overall'&&result[x.category]!==undefined)result[x.category]+=Number(x.amount||0);});
+  const consolidated=old.find(x=>x.category==='All Categories' || x.category==='Consolidated');
+  if(consolidated?.categories)Object.assign(result,consolidated.categories);
+  return result;
+}
+function loanOutstanding(x){
+  const principal=Number(x.principal??x.outstanding??0);
+  const rate=Number(x.interest??0)/100/12;
+  const emi=Number(x.emi??0);
+  const paid=Math.max(0,Number(x.emisPaid??0));
+  if(principal<=0)return 0;
+  if(rate<=0)return Math.max(0,principal-emi*paid);
+  if(emi<=0)return principal;
+  const balance=principal*Math.pow(1+rate,paid)-emi*((Math.pow(1+rate,paid)-1)/rate);
+  return Math.max(0,balance);
+}
+function loanSchedule(x,extra=0){
+  let balance=Number(x.principal??x.outstanding??0);
+  const rate=Number(x.interest??0)/100/12;
+  const emi=Number(x.emi??0);
+  if(balance<=0||emi<=0)return {balance:Math.max(0,balance),months:0,interest:0};
+  let months=0,interest=0;
+  const payment=emi+Math.max(0,extra);
+  while(balance>0.01&&months<600){
+    const i=rate>0?balance*rate:0;
+    const p=Math.min(balance,Math.max(0,payment-i));
+    interest+=i;balance-=p;months++;
+    if(p<=0)break;
+  }
+  return {balance:Math.max(0,balance),months,interest};
+}
+// renderFinance is defined by the Finance Architecture Extension below.
+// renderFinanceSub replaced by consolidated renderFinance in Finance Architecture Extension.
+function renderLoanCards(loans){
+ const el=$('loanCards');if(!el)return;
+ el.innerHTML=loans.length?loans.map(x=>{
+   const normal=loanSchedule(x,0),extra=Number(x.previewExtra||0);
+   return `<div class="item"><div style="width:100%"><div class="title">${esc(x.name||'Loan')}</div><div class="sub">Principal ${money(x.principal??x.outstanding??0)} • EMI ${money(x.emi||0)} • Interest ${Number(x.interest||0)}%</div><div class="detail-grid"><div class="detail-row"><small>Estimated Outstanding</small><b>${money(loanOutstanding(x))}</b></div><div class="detail-row"><small>EMIs Paid</small><b>${Number(x.emisPaid||0)}</b></div><div class="detail-row"><small>Estimated Remaining Months</small><b>${normal.months}</b></div><div class="detail-row"><small>Next Due</small><b>${esc(x.dueDate||'Not set')}</b></div></div><div class="actions"><button class="btn" data-loanadvance="${x.id}">Advance Payment Calculator</button><button class="btn" data-edit="${'loans'}" data-id="${x.id}">Edit</button><button class="btn danger" data-del="loans" data-id="${x.id}">Delete</button></div></div></div>`;
+ }).join(''):'<div class="empty">No loans yet.</div>';
+ el.querySelectorAll('[data-loanadvance]').forEach(b=>b.onclick=async()=>{
+   const x=await get('loans',b.dataset.loanadvance);if(!x)return;
+   const base=loanSchedule(x,0);
+   openModal('Advance Payment Calculator',`<div class="card"><p class="muted">Current estimated outstanding: <b>${money(loanOutstanding(x))}</b></p><label>Advance Payment<input id="advanceAmount" type="number" min="0" step="0.01" value="0"></label><div id="advanceResult" class="suggestion" style="margin-top:12px">Enter an amount to calculate the potential reduction.</div></div>`,()=>{});
+   const input=$('advanceAmount'),res=$('advanceResult');
+   input.oninput=()=>{const extra=Number(input.value||0),cur=loanSchedule(x,0),after=loanSchedule(x,extra);const saved=Math.max(0,cur.interest-after.interest);res.innerHTML=`<b>Estimated impact</b><br>Interest saved: <span class="good">${money(saved)}</span><br>Remaining months with extra payment: <span class="cyan">${after.months}</span><br>Months potentially reduced: <span class="good">${Math.max(0,cur.months-after.months)}</span><br>Estimated balance after the extra payment: <span class="cyan">${money(Math.max(0,loanOutstanding(x)-extra))}</span><p class="muted">This is an estimate based on the entered rate and EMI. Actual lender calculations can differ.</p>`};
+ });
+ el.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this record?')){await del('loans',b.dataset.id);await log('Delete','loans record deleted');refresh()}});
+ el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=async()=>financeEdit(b.dataset.edit,b.dataset.id));
+}
+function financeForm(kind,title,fields,items,store){return `<div class="card"><h3>${title}</h3><form class="financeForm grid" data-store="${store}" data-kind="${kind}">${fields}<div class="actions"><button class="btn primary">Save ${title}</button></div></form></div><div class="card"><h3>History</h3><div id="list_${store}" class="list"></div></div>`}
+function renderLists(store,items){const el=$('list_'+store);if(!el)return;el.innerHTML=items.length?items.sort((a,b)=>(b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'')).map(x=>{let title=x.name||x.type||x.category||x.month||x.date||'Record';let val=x.amount??x.currentValue??x.outstanding??(x.weight?x.weight+'g':'');return `<div class="item"><div><div class="title">${esc(title)}</div><div class="sub">${esc(x.date||x.month||x.dueDate||'')} ${x.note?'• '+esc(x.note):''}</div></div><div><span class="pill">${typeof val==='number'?money(val):esc(val)}</span> <button class="btn" data-edit="${store}" data-id="${x.id}">Edit</button> <button class="btn danger" data-del="${store}" data-id="${x.id}">Delete</button></div></div>`}).join(''):'<div class="empty">No records yet.</div>';el.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this record?')){await del(b.dataset.del,b.dataset.id);await log('Delete',store+' record deleted');refresh()}});el.querySelectorAll('[data-edit]').forEach(b=>b.onclick=async()=>financeEdit(b.dataset.edit,b.dataset.id))}
+async function financeEdit(store,id){const x=await get(store,id);if(!x)return;const fields={income:`<label>Type<select name="type"><option>Salary</option><option>Shift Allowance</option><option>Other Income</option><option>Interest</option><option>Dividend</option></select></label><label>Amount<input name="amount" type="number" required value="${x.amount??0}"></label><label>Date<input name="date" type="date" required value="${x.date||today()}"></label><label>Note<input name="note" value="${esc(x.note||'')}"></label>`,expenses:`<label>Amount<input name="amount" type="number" required value="${x.amount??0}"></label><label>Main Category<select name="category"><option>Household</option><option>Loans & Financial</option><option>Transport</option><option>Food & Personal</option><option>Health & Emergency</option><option>Family / Religious / Social</option><option>Savings & Investments</option><option>Other</option></select></label><label>Subcategory<input name="subcategory" value="${esc(x.subcategory||'')}"></label><label>Date<input name="date" type="date" required value="${x.date||today()}"></label><label>Note<input name="note" value="${esc(x.note||'')}"></label>`,budgets:`<label>Month<input name="month" type="month" required value="${x.month||''}"></label><label>Category<input name="category" value="${esc(x.category||'All Categories')}"></label><label>Amount<input name="amount" type="number" required value="${x.amount??x.total??0}"></label>`,investments:`<label>Type<select name="type"><option>FD</option><option>RD</option><option>Gold ETF</option><option>Silver ETF</option><option>ETF</option><option>Equity</option><option>NPS</option><option>PPF</option><option>SSA</option><option>Nifty 50</option><option>Other</option></select></label><label>Contribution<input name="amount" type="number" required value="${x.amount??0}"></label><label>Current Value<input name="currentValue" type="number" value="${x.currentValue??0}"></label><label>Quantity<input name="quantity" type="number" value="${x.quantity??0}"></label><label>Current Price<input name="currentPrice" type="number" value="${x.currentPrice??0}"></label><label>Date<input name="date" type="date" required value="${x.date||today()}"></label>`,gold:`<label>Name<input name="name" required value="${esc(x.name||'')}"></label><label>Purity<select name="purity"><option ${x.purity==='18K'?'selected':''}>18K</option><option ${x.purity==='22K'?'selected':''}>22K</option><option ${x.purity==='24K'?'selected':''}>24K</option></select></label><label>Weight (g)<input name="weight" type="number" step="0.001" required value="${x.weight??0}"></label><label>Purchase Rate/g<input name="purchaseRate" type="number" required value="${x.purchaseRate??0}"></label><label>Purchase Date<input name="date" type="date" required value="${x.date||today()}"></label><label>Note<input name="note" value="${esc(x.note||'')}"></label>`,goldRates:`<label>Date<input name="date" type="date" required value="${x.date||today()}"></label><label>18K / g<input name="K18" type="number" value="${x.K18??0}"></label><label>22K / g<input name="K22" type="number" value="${x.K22??0}"></label><label>24K / g<input name="K24" type="number" value="${x.K24??0}"></label>`,loans:`<label>Name<input name="name" required value="${esc(x.name||'')}"></label><label>Original Principal<input name="principal" type="number" required value="${x.principal??x.outstanding??0}"></label><label>Annual Interest %<input name="interest" type="number" value="${x.interest??0}"></label><label>Tenure (months)<input name="tenure" type="number" value="${x.tenure??0}"></label><label>EMI / Month<input name="emi" type="number" value="${x.emi??0}"></label><label>EMIs Paid<input name="emisPaid" type="number" value="${x.emisPaid??0}"></label><label>Next Due Date<input name="dueDate" type="date" value="${x.dueDate||''}"></label>`}[store];if(!fields)return;openModal('Edit '+store,`<form class="grid">${fields}<div class="actions"><button class="btn primary">Save Changes</button></div></form>`,async fd=>{const o={...x,modifiedAt:new Date().toISOString()};fd.forEach((v,k)=>o[k]=v);['amount','currentValue','purchaseRate','weight','K18','K22','K24','outstanding','emi','interest','principal','tenure','emisPaid','quantity','currentPrice'].forEach(k=>{if(k in o)o[k]=Number(o[k]||0)});await put(store,o);await log('Finance',store+' record updated');closeModal();toast('Changes saved');refresh()})}
+function wireFinanceForms(){document.querySelectorAll('.financeForm').forEach(f=>{f.onsubmit=async e=>{e.preventDefault();const fd=new FormData(f),store=f.dataset.store,obj={id:uid(),createdAt:new Date().toISOString()};fd.forEach((v,k)=>obj[k]=v);['amount','currentValue','purchaseRate','weight','K18','K22','K24','outstanding','emi','interest','principal','tenure','emisPaid','quantity','currentPrice'].forEach(k=>{if(k in obj)obj[k]=Number(obj[k]||0)});if(store==='gold')obj.purity=obj.purity||'22K';await put(store,obj);await log('Finance',`${f.dataset.kind} saved`);f.reset();toast('Saved successfully');refresh()}})}
+function calculateAgeParts(dob, refDate=new Date()){
+  if(!dob) return null;
+  const birth=new Date(dob+'T00:00:00');
+  if(Number.isNaN(birth.getTime())) return null;
+  const now=new Date(refDate);
+  if(birth>now) return {years:0,months:0,days:0,future:true};
+  let years=now.getFullYear()-birth.getFullYear();
+  let months=now.getMonth()-birth.getMonth();
+  let days=now.getDate()-birth.getDate();
+  if(days<0){
+    months--;
+    const prevMonth=new Date(now.getFullYear(),now.getMonth(),0);
+    days+=prevMonth.getDate();
+  }
+  if(months<0){years--;months+=12;}
+  return {years,months,days,future:false};
+}
+function formatAge(dob){
+  const a=calculateAgeParts(dob);
+  if(!a) return 'DOB not set';
+  if(a.future) return 'DOB is in the future';
+  return `${a.years} Years, ${a.months} Months, ${a.days} Days`;
+}
+function nextBirthdayDate(dob, from=new Date()){
+  if(!dob) return null;
+  const birth=new Date(dob+'T00:00:00');
+  if(Number.isNaN(birth.getTime())) return null;
+  const now=new Date(from);
+  let year=now.getFullYear();
+  let month=birth.getMonth();
+  let day=birth.getDate();
+  let candidate=new Date(year,month,day);
+  if(candidate<new Date(year,now.getMonth(),now.getDate())) candidate=new Date(year+1,month,day);
+  // Handle Feb 29 birthdays in non-leap years.
+  if(month===1 && day===29 && candidate.getMonth()!==1) candidate=new Date(candidate.getFullYear(),1,28);
+  return candidate.toISOString().slice(0,10);
+}
+function birthdayReminderTitle(person){
+  return `🎂 ${person.name}'s Birthday`;
+}
+async function ensureBirthdayReminder(person){
+  if(!person?.id || !person?.dob || person.status==='Inactive') return;
+  const reminders=await getAll('reminders');
+  const existing=reminders.find(r=>r.source==='birthday' && r.personId===person.id);
+  const date=nextBirthdayDate(person.dob);
+  const reminder={
+    id:existing?.id||uid(),
+    title:birthdayReminderTitle(person),
+    date,
+    time:existing?.time||'09:00',
+    priority:existing?.priority||'Normal',
+    description:`Wish ${person.name} a Happy Birthday!`,
+    completed:false,
+    repeat:'yearly',
+    source:'birthday',
+    personId:person.id,
+    createdAt:existing?.createdAt||new Date().toISOString()
+  };
+  await put('reminders',reminder);
+}
+async function removeBirthdayReminder(personId){
+  const reminders=await getAll('reminders');
+  for(const r of reminders.filter(x=>x.source==='birthday'&&x.personId===personId)) await del('reminders',r.id);
+}
+
+function calcExpiry(d){const n=daysUntil(d);return n!==null&&n<=30}
+async function renderFamily(){const [persons,houses,docs]=await Promise.all([getAll('persons'),getAll('households'),getAll('documents')]);$('peopleCount').textContent=persons.length;$('houseCount').textContent=houses.length;$('docCount').textContent=docs.length;$('docExpCount').textContent=docs.filter(d=>calcExpiry(d.expiryDate)).length;const q=($('docSearch').value||'').toLowerCase();const filtered=docs.filter(d=>[d.title,d.type,d.category,d.personName,d.householdName].some(x=>String(x||'').toLowerCase().includes(q)));$('familyList').innerHTML=`<div class="actions"><button class="btn" id="managePeople">People (${persons.length})</button><button class="btn" id="manageHouses">Households (${houses.length})</button></div>`+(filtered.length?filtered.map(d=>`<div class="item"><div><div class="title">${esc(d.title)} ${d.favorite?'⭐':''}</div><div class="sub">${esc(d.ownerType)} • ${esc(d.personName||d.householdName||'')} • ${esc(d.category||'Other')} • ${esc(d.fileName||'No file')}</div><div class="sub">${d.expiryDate?'Expiry: '+esc(d.expiryDate):''}</div></div><div class="actions"><button class="btn" data-details="${d.id}">Details</button><button class="btn" data-preview="${d.id}">Preview</button><button class="btn" data-docedit="${d.id}">Edit</button><button class="btn" data-share="${d.id}">Share</button><button class="btn danger" data-docdel="${d.id}">Delete</button></div></div>`).join(''):'<div class="empty">No documents found.</div>');$('managePeople').onclick=()=>peopleModal(persons);$('manageHouses').onclick=()=>houseModal(houses);document.querySelectorAll('[data-details]').forEach(b=>b.onclick=()=>documentDetails(b.dataset.details));document.querySelectorAll('[data-preview]').forEach(b=>b.onclick=()=>previewDoc(b.dataset.preview));document.querySelectorAll('[data-docedit]').forEach(b=>b.onclick=()=>editDoc(b.dataset.docedit));document.querySelectorAll('[data-share]').forEach(b=>b.onclick=()=>shareDoc(b.dataset.share));document.querySelectorAll('[data-docdel]').forEach(b=>b.onclick=async()=>{if(confirm('Delete document and stored file?')){await del('documents',b.dataset.docdel);await log('Document','Document deleted');refresh()}})}
+$('docSearch').oninput=renderFamily;
+async function peopleModal(persons){
+  const houses=await getAll('households');
+  const renderMembers=()=>{
+    const list=persons.length?persons.map(p=>{
+      const h=houses.find(x=>x.id===p.householdId);
+      const rel=p.relation==='Child'?`Child ${Number(p.relationOrder)||1}`:p.relation==='Member'?`Member ${Number(p.relationOrder)||1}`:(p.relation||'Member');
+      const status=p.status||'Active';
+      return `<div class="member-card">
+        <div>
+          <div class="title">${esc(p.name||'Unnamed')}</div>
+          <div class="member-meta">${esc(rel)} • ${esc(p.householdName||h?.name||'No household')}</div>
+          <div class="member-meta">${p.dob?'DOB: '+esc(p.dob):'DOB: Not set'} • ${esc(p.gender||'Gender: Not set')}</div>
+          <div class="member-age">${p.dob?'🎂 '+esc(formatAge(p.dob)):'🎂 Age unavailable'}</div>
+          <div class="${status==='Active'?'status-active':'status-inactive'}">${status==='Active'?'🟢 Active':'⚪ Inactive'}</div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn" data-pedit="${p.id}">Edit</button>
+          <button type="button" class="btn danger" data-pdel="${p.id}">Delete</button>
+        </div>
+      </div>`;
+    }).join(''):'<div class="empty">No members yet. Add your first member.</div>';
+
+    return list;
+  };
+
+  const formHtml=`
+    <div class="actions" style="margin-top:0;margin-bottom:14px">
+      <button type="button" class="btn primary" id="showAddMemberForm">+ Add Member</button>
+    </div>
+
+    <div class="card" style="margin-top:0">
+      <h4 style="margin:0 0 10px">Members</h4>
+      <div id="memberList" class="list">${renderMembers()}</div>
+    </div>
+
+    <form id="personForm" class="grid" style="display:none;margin-top:14px">
+      <div class="card" style="grid-column:1/-1;margin:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <h4 style="margin:0">Add Member</h4>
+          <button type="button" class="btn ghost" id="cancelAddMember">Cancel</button>
+        </div>
+      </div>
+      <label>Full Name<input name="name" required placeholder="Full name"></label>
+      <label>Relationship<input name="relation" required placeholder="Member, Spouse, Child..."></label>
+      <label>Household<select name="householdId" required><option value="">Select household</option>${houses.map(h=>`<option value="${h.id}">${esc(h.name)}</option>`).join('')}</select></label>
+      <label>Date of Birth<input name="dob" type="date"></label>
+      <label>Gender<select name="gender"><option value="">Select gender</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></label>
+      <label>Status<select name="status"><option>Active</option><option>Inactive</option></select></label>
+      <div class="actions" style="grid-column:1/-1"><button class="btn primary">Add Member</button></div>
+    </form>`;
+
+  openModal('Members',formHtml,async fd=>{
+    const h=houses.find(x=>x.id===fd.get('householdId'));
+    const relation=fd.get('relation').trim()||'Member';
+    const sameRelation=persons.filter(p=>(p.relation||'Member')===relation);
+    const relationOrder=relation==='Child'
+      ? (Math.max(0,...sameRelation.map(p=>Number(p.relationOrder)||0))+1)
+      : relation==='Member'
+        ? (Math.max(0,...sameRelation.map(p=>Number(p.relationOrder)||0))+1)
+        : 1;
+    const person={
+      id:uid(),
+      name:fd.get('name').trim(),
+      relation,
+      relationOrder,
+      householdId:h?.id||'',
+      householdName:h?.name||'',
+      dob:fd.get('dob')||'',
+      gender:fd.get('gender')||'',
+      status:fd.get('status')||'Active',
+      createdAt:new Date().toISOString(),
+      modifiedAt:new Date().toISOString()
+    };
+    await put('persons',person);
+    if(person.dob && person.status==='Active') await ensureBirthdayReminder(person);
+    await log('Family','Member added: '+person.name);
+    toast(person.dob?'Member saved • Birthday reminder created':'Member saved');
+    closeModal();
+    refresh();
+  });
+
+  setTimeout(()=>{
+    const addBtn=document.getElementById('showAddMemberForm');
+    const personForm=document.getElementById('personForm');
+    const cancelBtn=document.getElementById('cancelAddMember');
+    const setFormVisible=visible=>{
+      if(!personForm||!addBtn)return;
+      personForm.style.display=visible?'grid':'none';
+      addBtn.style.display=visible?'none':'inline-flex';
+      if(visible) personForm.querySelector('input[name="name"]')?.focus();
+    };
+    addBtn?.addEventListener('click',()=>setFormVisible(true));
+    cancelBtn?.addEventListener('click',()=>setFormVisible(false));
+
+    document.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.pdel;
+      const p=await get('persons',id);
+      if(!confirm(`Delete ${p?.name||'this member'}?`)) return;
+      await removeBirthdayReminder(id);
+      await del('persons',id);
+      await log('Family','Member deleted');
+      closeModal();
+      refresh();
+    });
+
+    document.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=async()=>{
+      const p=await get('persons',b.dataset.pedit);
+      if(!p) return;
+      const h=houses.find(x=>x.id===p.householdId);
+      openModal('Edit Member',`
+        <form id="editPersonForm" class="grid">
+          <label>Full Name<input name="name" required value="${esc(p.name||'')}"></label>
+          <label>Relationship<input name="relation" required value="${esc(p.relation||'Member')}"></label>
+          <label>Household<select name="householdId" required><option value="">Select household</option>${houses.map(x=>`<option value="${x.id}" ${x.id===p.householdId?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
+          <label>Date of Birth<input name="dob" type="date" value="${esc(p.dob||'')}"></label>
+          <label>Gender<select name="gender"><option value="">Select gender</option><option ${p.gender==='Male'?'selected':''}>Male</option><option ${p.gender==='Female'?'selected':''}>Female</option><option ${p.gender==='Other'?'selected':''}>Other</option><option ${p.gender==='Prefer not to say'?'selected':''}>Prefer not to say</option></select></label>
+          <label>Status<select name="status"><option ${p.status!=='Inactive'?'selected':''}>Active</option><option ${p.status==='Inactive'?'selected':''}>Inactive</option></select></label>
+          <div class="actions"><button class="btn primary">Save Changes</button></div>
+        </form>`,async fd=>{
+          const nh=houses.find(x=>x.id===fd.get('householdId'));
+          p.name=fd.get('name').trim();
+          p.relation=fd.get('relation').trim()||'Member';
+          p.householdId=nh?.id||'';
+          p.householdName=nh?.name||'';
+          p.dob=fd.get('dob')||'';
+          p.gender=fd.get('gender')||'';
+          p.status=fd.get('status')||'Active';
+          p.modifiedAt=new Date().toISOString();
+          await put('persons',p);
+          if(p.dob && p.status==='Active') await ensureBirthdayReminder(p);
+          else await removeBirthdayReminder(p.id);
+          await log('Family','Member updated: '+p.name);
+          closeModal();
+          toast('Member updated');
+          refresh();
+        });
+    });
+  },0);
+}
+function houseModal(houses){
+  const renderAddress=h=>h.address?`<div class="sub">📍 ${esc(h.address).replace(/\n/g,'<br>')}</div>`:'<div class="sub">📍 No address added</div>';
+  const renderHouseholds=()=>houses.length?houses.map(h=>`<div class="item">
+    <div style="min-width:0">
+      <div class="title">${esc(h.name)}</div>
+      <div class="sub">${esc(h.description||'No description')}</div>
+      ${renderAddress(h)}
+      ${h.address ? `<div class="actions" style="margin-top:8px">
+        <button type="button" class="btn ghost" data-hcopy="${h.id}">📋 Copy Address</button>
+      </div>` : ''}
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" data-hedit="${h.id}">Edit</button>
+      <button type="button" class="btn danger" data-hdel="${h.id}">Delete</button>
+    </div>
+  </div>`).join(''):'<div class="empty">No households yet. Add your first household.</div>';
+
+  const html=`
+    <div class="actions" style="margin-top:0;margin-bottom:14px">
+      <button type="button" class="btn primary" id="showAddHouseForm">+ Add Household</button>
+    </div>
+
+    <div class="card" style="margin-top:0">
+      <h4 style="margin:0 0 10px">Households</h4>
+      <div id="householdList" class="list">${renderHouseholds()}</div>
+    </div>
+
+    <form id="householdForm" class="grid" style="display:none;margin-top:14px">
+      <div class="card" style="grid-column:1/-1;margin:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <h4 style="margin:0" id="houseFormTitle">Add Household</h4>
+          <button type="button" class="btn ghost" id="cancelAddHouse">Cancel</button>
+        </div>
+      </div>
+      <input type="hidden" name="id">
+      <label>Household Name<input name="name" required placeholder="e.g. My Parents Family"></label>
+      <label>Description<input name="description" placeholder="Optional description"></label>
+      <label style="grid-column:1/-1">Address
+        <textarea name="address" rows="3" placeholder="House / Flat, Street, Area, City, State, PIN Code"></textarea>
+      </label>
+      <div class="actions" style="grid-column:1/-1">
+        <button class="btn primary" id="saveHouseBtn">Add Household</button>
+      </div>
+    </form>`;
+
+  openModal('Households',html,async fd=>{
+    const id=fd.get('id').trim();
+    const name=fd.get('name').trim();
+    if(!name){toast('Enter a household name',true);return}
+
+    const existing=id?await get('households',id):null;
+    const record={
+      ...(existing||{}),
+      id:id||uid(),
+      name,
+      description:fd.get('description').trim(),
+      address:fd.get('address').trim(),
+      createdAt:existing?.createdAt||new Date().toISOString(),
+      modifiedAt:new Date().toISOString()
+    };
+
+    await put('households',record);
+    await log('Family',id?'Household updated: '+name:'Household added: '+name);
+    closeModal();
+    toast(id?'Household updated':'Household added');
+    refresh();
+  });
+
+  setTimeout(()=>{
+    const addBtn=document.getElementById('showAddHouseForm');
+    const form=document.getElementById('householdForm');
+    const cancelBtn=document.getElementById('cancelAddHouse');
+    const formTitle=document.getElementById('houseFormTitle');
+    const saveBtn=document.getElementById('saveHouseBtn');
+
+    const setFormVisible=visible=>{
+      if(!form||!addBtn)return;
+      form.style.display=visible?'grid':'none';
+      addBtn.style.display=visible?'none':'inline-flex';
+      if(!visible){
+        form.reset();
+        form.querySelector('input[name="id"]').value='';
+        formTitle.textContent='Add Household';
+        saveBtn.textContent='Add Household';
+      }else{
+        form.querySelector('input[name="name"]')?.focus();
+      }
+    };
+
+    addBtn?.addEventListener('click',()=>setFormVisible(true));
+    cancelBtn?.addEventListener('click',()=>setFormVisible(false));
+
+    document.querySelectorAll('[data-hedit]').forEach(b=>b.onclick=async()=>{
+      const h=await get('households',b.dataset.hedit);
+      if(!h)return;
+      setFormVisible(true);
+      form.querySelector('input[name="id"]').value=h.id;
+      form.querySelector('input[name="name"]').value=h.name||'';
+      form.querySelector('input[name="description"]').value=h.description||'';
+      form.querySelector('textarea[name="address"]').value=h.address||'';
+      formTitle.textContent='Edit Household';
+      saveBtn.textContent='Save Changes';
+      form.querySelector('input[name="name"]')?.focus();
+    });
+
+    document.querySelectorAll('[data-hcopy]').forEach(b=>b.onclick=async()=>{
+      const h=await get('households',b.dataset.hcopy);
+      if(!h?.address){
+        toast('No address available to copy',true);
+        return;
+      }
+      try{
+        await navigator.clipboard.writeText(h.address);
+        toast('Address copied to clipboard');
+      }catch{
+        const ta=document.createElement('textarea');
+        ta.value=h.address;
+        ta.style.position='fixed';
+        ta.style.opacity='0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try{
+          document.execCommand('copy');
+          toast('Address copied to clipboard');
+        }catch{
+          toast('Unable to copy address on this browser',true);
+        }
+        ta.remove();
+      }
+    });
+
+    document.querySelectorAll('[data-hdel]').forEach(b=>b.onclick=async()=>{
+      const id=b.dataset.hdel;
+      const h=await get('households',id);
+      const members=await getAll('persons');
+      const docs=await getAll('documents');
+      const memberCount=members.filter(x=>x.householdId===id).length;
+      const docCount=docs.filter(x=>x.householdId===id).length;
+      if(memberCount||docCount){
+        toast(`Cannot delete household: ${memberCount} member(s) and ${docCount} document(s) are linked to it.`,true);
+        return;
+      }
+      if(!confirm(`Delete ${h?.name||'this household'}?`))return;
+      await del('households',id);
+      await log('Family','Household deleted');
+      closeModal();
+      toast('Household deleted');
+      refresh();
+    });
+  },0);
+}
+$('addPersonBtn').onclick=async()=>peopleModal(await getAll('persons'));$('addHouseBtn').onclick=async()=>houseModal(await getAll('households'));
+$('addDocBtn').onclick=async()=>{const [ps,hs]=await Promise.all([getAll('persons'),getAll('households')]);openModal('Add Document',`<form id="docForm" class="grid"><label>Document Name<input name="title" required></label><label>Document Type<select name="type"><option>Aadhaar</option><option>PAN</option><option>Passport</option><option>Driving Licence</option><option>Ration Card</option><option>Insurance</option><option>Education</option><option>Employment</option><option>Property</option><option>Vehicle</option><option>Certificate</option><option>Other</option></select></label><label>Owner Type<select name="ownerType" id="ownerType"><option>Person</option><option>Household / Family</option></select></label><label>Person<select name="personId" id="personSel"><option value="">Select person</option>${ps.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></label><label>Household<select name="householdId" id="houseSel"><option value="">Select household</option>${hs.map(h=>`<option value="${h.id}">${esc(h.name)}</option>`).join('')}</select></label><label>Category<select name="category"><option>Identity</option><option>Government</option><option>Financial</option><option>Banking</option><option>Insurance</option><option>Medical</option><option>Education</option><option>Employment</option><option>Property</option><option>Vehicle</option><option>Family</option><option>Household</option><option>Legal</option><option>Certificates</option><option>Other</option></select></label><label>Document Number<input name="documentNumber"></label><label>Issue Date<input name="issueDate" type="date"></label><label>Expiry Date<input name="expiryDate" type="date"></label><label style="grid-column:1/-1">Notes<textarea name="notes"></textarea></label><div class="filebox" style="grid-column:1/-1"><label>Original File<input name="file" id="docFile" type="file" accept="image/*,.pdf,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx"></label><small class="muted">The selected file is stored locally. If this browser does not support persistent IndexedDB, the HTML version uses compatibility storage for files up to 3 MB. The Android APK will use native file storage.</small></div><div class="actions"><button class="btn primary">Save Document</button></div></form>`,async fd=>{try{const file=fd.get('file');if(!file||!file.size)throw new Error('Select a document file.');const p=ps.find(x=>x.id===fd.get('personId')),h=hs.find(x=>x.id===fd.get('householdId'));if(file.size>25*1024*1024)throw new Error('For the HTML version, please keep each document below 25 MB. The Android version will use native file storage.');const obj={id:uid(),title:fd.get('title'),type:fd.get('type'),ownerType:fd.get('ownerType'),personId:p?.id||'',personName:p?.name||'',householdId:h?.id||'',householdName:h?.name||'',category:fd.get('category'),documentNumber:fd.get('documentNumber'),issueDate:fd.get('issueDate'),expiryDate:fd.get('expiryDate'),notes:fd.get('notes'),fileName:file.name,mimeType:file.type||'application/octet-stream',fileSize:file.size,favorite:false,createdAt:new Date().toISOString(),modifiedAt:new Date().toISOString()};if(storageMode==='indexeddb'){obj.fileBlob=new Blob([await file.arrayBuffer()],{type:file.type||'application/octet-stream'})}else{if(file.size>3*1024*1024)throw new Error('This browser session does not provide persistent IndexedDB storage. For this HTML version, files up to 3 MB can be stored using compatibility storage; for larger files use the Android APK.');obj.fileBytes=bufToB64(await file.arrayBuffer());}await put('documents',obj);await log('Document','Document added: '+obj.title);closeModal();toast(storageMode==='indexeddb'?'Document saved':'Document saved using compatibility storage');refresh()}catch(e){toast('Document could not be saved: '+e.message,true)}});};
+function bufToB64(buf){let bin='';const bytes=new Uint8Array(buf);const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)bin+=String.fromCharCode(...bytes.subarray(i,i+chunk));return btoa(bin)}function b64ToBuf(s){const bin=atob(s);const a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a.buffer}
+function formatBytes(n){if(!n)return '0 B';const u=['B','KB','MB','GB'];let i=0,x=Number(n);while(x>=1024&&i<u.length-1){x/=1024;i++}return x.toFixed(i?1:0)+' '+u[i]}
+function maskDocumentNumber(value){
+  const v=String(value||'').trim();
+  if(!v) return 'Not provided';
+  if(v.length<=4) return '•'.repeat(v.length);
+  return '•'.repeat(Math.max(4,v.length-4))+v.slice(-4);
+}
+async function documentDetails(id){
+  try{
+    const d=await get('documents',id);
+    if(!d)return;
+    const raw=String(d.documentNumber||'').trim();
+    const masked=maskDocumentNumber(raw);
+    const owner=d.ownerType==='Person'?(d.personName||'Person not assigned'):(d.householdName||'Household not assigned');
+    const safeDate=v=>v?esc(v):'—';
+    openModal('Document Details',`
+      <div class="card">
+        <div class="title">${esc(d.title||'Untitled Document')}</div>
+        <div class="sub">${esc(d.type||'Other')} • ${esc(d.category||'Other')}</div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-row"><small>Owner</small><b>${esc(owner)}</b></div>
+        <div class="detail-row"><small>Owner Type</small><b>${esc(d.ownerType||'—')}</b></div>
+        <div class="detail-row"><small>Document Number</small>
+          <div class="actions" style="justify-content:flex-start;margin-top:4px">
+            <span id="docNumberDisplay" class="doc-number-mask doc-number-value">${esc(masked)}</span>
+            ${raw?'<button type="button" class="btn doc-eye" id="toggleDocNumber" aria-label="Show document number" title="Show / hide document number">👁️</button>':''}
+          </div>
+        </div>
+        <div class="detail-row"><small>Category</small><b>${esc(d.category||'Other')}</b></div>
+        <div class="detail-row"><small>Issue Date</small><b>${safeDate(d.issueDate)}</b></div>
+        <div class="detail-row"><small>Expiry Date</small><b>${safeDate(d.expiryDate)}</b></div>
+        <div class="detail-row"><small>File</small><b>${esc(d.fileName||'—')}</b></div>
+        <div class="detail-row"><small>File Size</small><b>${d.fileSize?esc(formatBytes(d.fileSize)):'—'}</b></div>
+      </div>
+      ${d.notes?`<div class="card" style="margin-top:12px"><small class="muted">Notes</small><div>${esc(d.notes)}</div></div>`:''}
+      <div class="actions"><button type="button" class="btn" id="detailCloseBtn">Close</button></div>
+    `);
+    if(raw){
+      let visible=false;
+      $('toggleDocNumber').onclick=()=>{
+        visible=!visible;
+        $('docNumberDisplay').textContent=visible?raw:maskDocumentNumber(raw);
+        $('toggleDocNumber').textContent=visible?'🙈':'👁️';
+        $('toggleDocNumber').setAttribute('aria-label',visible?'Hide document number':'Show document number');
+      };
+    }
+    $('detailCloseBtn').onclick=closeModal;
+  }catch(e){toast('Could not open document details: '+e.message,true)}
+}
+async function editDoc(id){const d=await get('documents',id);if(!d)return;const [ps,hs]=await Promise.all([getAll('persons'),getAll('households')]);openModal('Edit Document',`<form class="grid"><label>Document Name<input name="title" required value="${esc(d.title)}"></label><label>Document Type<input name="type" value="${esc(d.type||'Other')}"></label><label>Owner Type<select name="ownerType"><option ${d.ownerType==='Person'?'selected':''}>Person</option><option ${d.ownerType==='Household / Family'?'selected':''}>Household / Family</option></select></label><label>Person<select name="personId"><option value="">Select person</option>${ps.map(p=>`<option value="${p.id}" ${p.id===d.personId?'selected':''}>${esc(p.name)}</option>`).join('')}</select></label><label>Household<select name="householdId"><option value="">Select household</option>${hs.map(h=>`<option value="${h.id}" ${h.id===d.householdId?'selected':''}>${esc(h.name)}</option>`).join('')}</select></label><label>Category<input name="category" value="${esc(d.category||'Other')}"></label><label>Document Number<input name="documentNumber" value="${esc(d.documentNumber||'')}"></label><label>Issue Date<input name="issueDate" type="date" value="${esc(d.issueDate||'')}"></label><label>Expiry Date<input name="expiryDate" type="date" value="${esc(d.expiryDate||'')}"></label><label style="grid-column:1/-1">Notes<textarea name="notes">${esc(d.notes||'')}</textarea></label><div class="actions"><button class="btn primary">Save Changes</button></div></form>`,async fd=>{const p=ps.find(x=>x.id===fd.get('personId')),h=hs.find(x=>x.id===fd.get('householdId'));const o={...d,title:fd.get('title'),type:fd.get('type'),ownerType:fd.get('ownerType'),personId:p?.id||'',personName:p?.name||'',householdId:h?.id||'',householdName:h?.name||'',category:fd.get('category'),documentNumber:fd.get('documentNumber'),issueDate:fd.get('issueDate'),expiryDate:fd.get('expiryDate'),notes:fd.get('notes'),modifiedAt:new Date().toISOString()};await put('documents',o);await log('Document','Document updated: '+o.title);closeModal();toast('Document updated');refresh()})}
+async function getDocumentBlob(d){
+  if(d?.fileBlob instanceof Blob && d.fileBlob.size>0)return d.fileBlob;
+  if(d?.fileBytes)return new Blob([b64ToBuf(d.fileBytes)],{type:d.mimeType||'application/octet-stream'});
+  throw new Error('The stored file data is unavailable. Please re-select the original file to attach it again.');
+}
+function isPreviewableImage(d){
+  return String(d?.mimeType||'').toLowerCase().startsWith('image/') ||
+    /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(String(d?.fileName||''));
+}
+function isPdf(d){
+  return String(d?.mimeType||'').toLowerCase()==='application/pdf' ||
+    /\.pdf$/i.test(String(d?.fileName||''));
+}
+function openDocumentInNewTab(url){
+  const w=window.open(url,'_blank','noopener,noreferrer');
+  if(!w){
+    const a=document.createElement('a');
+    a.href=url;a.target='_blank';a.rel='noopener noreferrer';
+    document.body.appendChild(a);a.click();a.remove();
+  }
+}
+async function previewDoc(id){
+  let url=null;
+  try{
+    const d=await get('documents',id);
+    if(!d)return;
+    const blob=await getDocumentBlob(d);
+    url=URL.createObjectURL(blob);
+    const title=esc(d.title||d.fileName||'Document');
+    const fileName=esc(d.fileName||'Document');
+    const openBtn='<button type="button" class="btn primary" id="previewOpenNewBtn">Open in New Tab</button>';
+    const downloadBtn='<button type="button" class="btn" id="previewDownloadBtn">Download</button>';
+    let body='';
+
+    if(isPreviewableImage(d)){
+      body=`<div style="text-align:center"><img class="thumb" src="${url}" alt="${title}" style="max-width:100%;max-height:60vh;object-fit:contain"></div>
+        <p class="muted">${fileName}</p>
+        <div class="actions">${openBtn}${downloadBtn}<button type="button" class="btn" id="previewCloseBtn">Close</button></div>`;
+    }else if(isPdf(d)){
+      body=`<div style="background:#fff;border-radius:16px;overflow:hidden"><iframe class="preview" title="PDF preview" src="${url}" style="display:block;width:100%;height:65vh;border:0"></iframe></div>
+        <p class="muted">${fileName}</p>
+        <div class="actions">${openBtn}${downloadBtn}<button type="button" class="btn" id="previewCloseBtn">Close</button></div>`;
+    }else{
+      body=`<div class="card"><b>${fileName}</b><p class="muted">This file format does not have a built-in browser preview.</p><p class="muted">You can still open it in a new tab or download it to a compatible app.</p></div>
+        <div class="actions">${openBtn}${downloadBtn}<button type="button" class="btn" id="previewCloseBtn">Close</button></div>`;
+    }
+
+    openModal((isPdf(d)?'PDF Preview — ':'Preview — ')+(d.title||d.fileName||'Document'),body);
+
+    $('previewOpenNewBtn').onclick=()=>openDocumentInNewTab(url);
+    $('previewDownloadBtn').onclick=()=>{
+      const a=document.createElement('a');
+      a.href=url;a.download=d.fileName||'VaultOne-document';
+      document.body.appendChild(a);a.click();a.remove();
+    };
+    $('previewCloseBtn').onclick=()=>{
+      try{URL.revokeObjectURL(url)}catch{}
+      url=null;
+      closeModal();
+    };
+  }catch(e){
+    if(url){try{URL.revokeObjectURL(url)}catch{}}
+    toast('Preview failed: '+e.message,true);
+  }
+}
+async function shareDoc(id){try{const d=await get('documents',id);if(!d)return;const blob=await getDocumentBlob(d);const file=new File([blob],d.fileName,{type:d.mimeType});try{if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({title:d.title,text:'Shared from VaultOne',files:[file]});await log('Document','Document shared: '+d.title)}else{const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=d.fileName;a.click();toast('Native sharing is unavailable; a local file copy was prepared.')}}catch(e){if(e.name!=='AbortError')toast('Share failed: '+e.message,true)}}catch(e){toast('Share failed: '+e.message,true)}}
+function renderPasswordsLocked(){const el=$('passList');el.innerHTML=`<div class="empty">PasswordVault is locked.<div class="actions" style="justify-content:center"><button class="btn primary" id="unlockBtn">Unlock</button></div></div>`;$('unlockBtn').onclick=unlockPasswords}
+async function hashPin(pin){const data=new TextEncoder().encode(pin);const h=await crypto.subtle.digest('SHA-256',data);return bufToB64(h)}async function deriveKey(pin,salt){return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},await crypto.subtle.importKey('raw',new TextEncoder().encode(pin),'PBKDF2',false,['deriveKey']),{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function encryptPassword(obj,pin){const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await deriveKey(pin,salt);const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(obj)));return {salt:bufToB64(salt),iv:bufToB64(iv),cipher:bufToB64(ct)}}
+async function decryptPassword(r,pin){const key=await deriveKey(pin,b64ToBuf(r.salt));const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64ToBuf(r.iv)},key,b64ToBuf(r.cipher));return JSON.parse(new TextDecoder().decode(pt))}
+async function unlockPasswords(){
+  openModal('Unlock PasswordVault',`<form class="grid"><label>Vault PIN<input name="pin" type="password" inputmode="numeric" maxlength="12" autocomplete="current-password" placeholder="Enter 4-12 digit PIN" required></label><div class="actions"><button class="btn primary">Unlock</button></div></form>`,async fd=>{
+    const pin=String(fd.get('pin')||'');
+    if(!/^\d{4,12}$/.test(pin)){toast('PIN must be 4-12 digits',true);return}
+    const stored=state.settings.pinHash;
+    if(!stored){toast('Set your Vault PIN in Settings → Security before unlocking PasswordVault.',true);return}
+    if(await hashPin(pin)!==stored){toast('Invalid PIN',true);return}
+    passwordKey=pin;
+    passwordUnlocked=true;
+    closeModal();
+    renderPasswords();
+    scheduleAutoLock();
+  });
+}
+async function copyToClipboard(text){
+  text=String(text??'');
+  try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text);return true;}}catch(e){}
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=text;ta.setAttribute('readonly','');
+    ta.style.position='fixed';ta.style.opacity='0';ta.style.pointerEvents='none';
+    document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);
+    const ok=document.execCommand('copy');ta.remove();if(ok)return true;
+  }catch(e){}
+  return false;
+}
+async function renderPasswords(){if(!passwordUnlocked){renderPasswordsLocked();return}const rows=await getAll('passwords'),q=($('passSearch').value||'').toLowerCase();const out=[];for(const r of rows){try{const p=await decryptPassword(r,passwordKey);if(!q||[p.name,p.username,p.url,p.category].some(x=>String(x||'').toLowerCase().includes(q)))out.push({r,p})}catch{}}
+$('passList').innerHTML=out.length?out.map(({r,p})=>`<div class="item"><div><div class="title">${esc(p.name)} ${p.favorite?'⭐':''}</div><div class="sub">${esc(p.username||'')} • ${esc(p.url||'')}</div></div><div class="actions"><button type="button" class="btn" data-pcopy="${r.id}">Copy</button><button type="button" class="btn" data-pedit="${r.id}">Edit</button><button type="button" class="btn danger" data-pdel2="${r.id}">Delete</button></div></div>`).join(''):'<div class="empty">No passwords stored.</div>';
+document.querySelectorAll('[data-pcopy]').forEach(b=>b.onclick=async()=>{
+  try{
+    const r=await get('passwords',b.dataset.pcopy);
+    if(!r)throw new Error('Password record not found');
+    const p=await decryptPassword(r,passwordKey);
+    const ok=await copyToClipboard(p.password);
+    toast(ok?'Password copied to clipboard':'Copy is unavailable in this browser. Long-press the password field after opening Edit.',!ok);
+  }catch(e){toast('Could not copy password: '+e.message,true)}
+});document.querySelectorAll('[data-pdel2]').forEach(b=>b.onclick=async()=>{if(confirm('Delete password?')){await del('passwords',b.dataset.pdel2);await log('Password','Password deleted');renderPasswords()}});document.querySelectorAll('[data-pedit]').forEach(b=>b.onclick=async()=>editPassword(b.dataset.pedit));}
+$('passSearch').oninput=()=>renderPasswords();
+$('addPassBtn').onclick=()=>{if(!passwordUnlocked){unlockPasswords();return}passwordModal()};$('genPassBtn').onclick=async()=>{const p=generatePassword(20);const ok=await copyToClipboard(p);toast(ok?'Strong password generated and copied':'Strong password generated. Copy is unavailable in this browser.',!ok)};$('lockBtn').onclick=lockVault;
+function generatePassword(n=20){const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*_-+=';let out='';const a=new Uint32Array(n);crypto.getRandomValues(a);for(const x of a)out+=chars[x%chars.length];return out}
+function passwordModal(existing=null){openModal(existing?'Edit Password':'Add Password',`<form class="grid"><label>Service<input name="name" value="${esc(existing?.name||'')}" required></label><label>Username / Email<input name="username" value="${esc(existing?.username||'')}" required></label><label>Password<div class="password-field"><input name="password" type="password" autocomplete="new-password" value="${esc(existing?.password||'')}" required><button type="button" class="password-eye" id="togglePassVisibility" aria-label="Show password" title="Show password">👁️</button></div></label><label>URL<input name="url" value="${esc(existing?.url||'')}"></label><label>Category<input name="category" value="${esc(existing?.category||'')}" placeholder="Banking, Social..."></label><label>Favorite<select name="favorite"><option value="0">No</option><option value="1" ${existing?.favorite?'selected':''}>Yes</option></select></label><label style="grid-column:1/-1">Notes<textarea name="notes">${esc(existing?.notes||'')}</textarea></label><div class="actions"><button class="btn" type="button" id="genInside">Generate</button><button class="btn primary">Save Password</button></div></form>`,async fd=>{const plain={name:fd.get('name'),username:fd.get('username'),password:fd.get('password'),url:fd.get('url'),category:fd.get('category'),favorite:fd.get('favorite')==='1',notes:fd.get('notes'),modifiedAt:new Date().toISOString()};const enc=await encryptPassword(plain,passwordKey);await put('passwords',{id:existing?.id||uid(),...enc,createdAt:existing?.createdAt||new Date().toISOString()});await log('Password',existing?'Password updated':'Password added');closeModal();toast('Password saved');renderPasswords()});setTimeout(()=>{const x=$('modalBody').querySelector('[name=password]');const eye=$('togglePassVisibility');if(eye&&x){eye.onclick=()=>{const visible=x.type==='text';x.type=visible?'password':'text';eye.textContent=visible?'👁️':'🙈';eye.title=visible?'Show password':'Hide password';eye.setAttribute('aria-label',visible?'Show password':'Hide password')}}const gen=$('genInside');if(gen)gen.onclick=()=>{x.value=generatePassword(22)}},0)}
+async function editPassword(id){const r=await get('passwords',id);try{passwordModal({...await decryptPassword(r,passwordKey),id:r.id,createdAt:r.createdAt})}catch{toast('Could not decrypt record',true)}}
+function lockVault(){passwordUnlocked=false;passwordKey=null;renderPasswordsLocked();toast('PasswordVault locked')}
+const reminderTimers=new Map();
+function updateNotificationStatus(){const el=$('notificationStatus');if(!el)return;if(!('Notification' in window)){el.textContent='Browser notifications unavailable';return}el.textContent='Notifications: '+Notification.permission}
+async function enableReminderNotifications(){if(!('Notification' in window)){toast('Notifications are not supported in this browser.',true);return}try{const p=await Notification.requestPermission();updateNotificationStatus();toast(p==='granted'?'Reminder notifications enabled':'Notification permission not granted',p!=='granted')}catch(e){toast('Notification permission failed: '+e.message,true)}}
+function scheduleReminderNotifications(rows){
+  for(const t of reminderTimers.values()) clearTimeout(t);
+  reminderTimers.clear();
+  const now=Date.now();
+  for(const r0 of rows){
+    if(r0.completed && r0.repeat!=='yearly') continue;
+    let r={...r0};
+    if(r.repeat==='yearly' && r.source==='birthday'){
+      r.date=nextBirthdayDate(r0.date||r0.dob||'',new Date());
+      if(!r.date) continue;
+    }
+    const when=new Date((r.date||today())+'T'+(r.time||'09:00')).getTime();
+    const delay=when-now;
+    if(delay<=0||delay>2147483647) continue;
+    const t=setTimeout(async()=>{
+      const msg=r.description||'VaultOne reminder';
+      if('Notification' in window&&Notification.permission==='granted'){
+        new Notification(r.title||'VaultOne Reminder',{body:msg,tag:'vaultone-'+r.id});
+      }else{
+        try{alert('VaultOne Reminder\n\n'+(r.title||'Reminder')+'\n'+msg)}catch{}
+      }
+      if(r.repeat==='yearly'&&r.source==='birthday'){
+        const fresh=await get('reminders',r.id);
+        if(fresh){fresh.date=nextBirthdayDate(fresh.date||fresh.dob||'',new Date());fresh.completed=false;await put('reminders',fresh);}
+      }
+      reminderTimers.delete(r.id);
+    },delay);
+    reminderTimers.set(r.id,t);
+  }
+}
+async function migrateBirthdayReminders(){
+  const people=await getAll('persons');
+  for(const p of people){
+    if(p.dob && (p.status||'Active')==='Active') await ensureBirthdayReminder(p);
+  }
+}
+function renderReminders(){
+  getAll('reminders').then(rows=>{
+    scheduleReminderNotifications(rows);
+    updateNotificationStatus();
+    const now=new Date();
+    let f=rows.filter(r=>{
+      if(r.repeat==='yearly'&&r.source==='birthday'){
+        return currentReminderTab==='done'?false:currentReminderTab==='overdue'?false:true;
+      }
+      return currentReminderTab==='done'?r.completed:currentReminderTab==='overdue'?!r.completed&&daysUntil(r.date)<0:!r.completed&&daysUntil(r.date)>=0;
+    });
+    f.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+    $('remList').innerHTML=f.length?f.map(r=>`
+      <div class="item">
+        <div>
+          <div class="title">${esc(r.title)} ${r.source==='birthday'?'🎂':''}</div>
+          <div class="sub">${esc(r.date)} ${esc(r.time||'')} • ${esc(r.priority||'Normal')} ${r.repeat==='yearly'?'• Yearly':''}</div>
+          <div class="sub">${esc(r.description||'')}</div>
+        </div>
+        <div class="actions">
+          ${r.repeat==='yearly'&&r.source==='birthday'
+            ? `<button class="btn" data-rbirthday="${r.id}">Birthday Reminder</button>`
+            : !r.completed?`<button class="btn" data-rdone="${r.id}">Complete</button>`:''}
+          ${r.repeat!=='yearly'?`<button class="btn" data-redit="${r.id}">Edit</button>`:''}
+          <button class="btn danger" data-rdel="${r.id}">Delete</button>
+        </div>
+      </div>`).join(''):'<div class="empty">No reminders here.</div>';
+
+    document.querySelectorAll('[data-rdone]').forEach(b=>b.onclick=async()=>{
+      const r=await get('reminders',b.dataset.rdone);
+      if(!r)return;
+      r.completed=true;
+      await put('reminders',r);
+      await log('Reminder','Reminder completed');
+      refresh();
+    });
+    document.querySelectorAll('[data-rdel]').forEach(b=>b.onclick=async()=>{
+      await del('reminders',b.dataset.rdel);
+      await log('Reminder','Reminder deleted');
+      refresh();
+    });
+    document.querySelectorAll('[data-redit]').forEach(b=>b.onclick=async()=>{
+      const r=await get('reminders',b.dataset.redit);
+      if(r) reminderModal(r);
+    });
+  });
+}
+$('addReminderBtn').onclick=()=>reminderModal();$('enableNotificationsBtn').onclick=enableReminderNotifications;
+function reminderModal(existing=null){openModal(existing?'Edit Reminder':'Add Reminder',`<form class="grid"><label>Title<input name="title" required value="${esc(existing?.title||'')}"></label><label>Date<input name="date" type="date" required value="${esc(existing?.date||today())}"></label><label>Time<input name="time" type="time" value="${esc(existing?.time||'09:00')}"></label><label>Priority<select name="priority"><option>Normal</option><option>High</option><option>Low</option></select></label><label style="grid-column:1/-1">Description<textarea name="description">${esc(existing?.description||'')}</textarea></label><div class="actions"><button class="btn primary">Save Reminder</button></div></form>`,async fd=>{await put('reminders',{id:existing?.id||uid(),title:fd.get('title'),date:fd.get('date'),time:fd.get('time'),priority:fd.get('priority'),description:fd.get('description'),completed:existing?.completed||false,createdAt:existing?.createdAt||new Date().toISOString()});await log('Reminder',existing?'Reminder updated':'Reminder added');closeModal();toast('Reminder saved');refresh()})}
+function renderSettings(){const s=state.settings;$('profileName').value=s.name||'';$('profileCurrency').value=s.currency||'INR';$('pinInput').value='';$('autoLock').value=String(s.autoLock||0);updateNotificationStatus();getAll('documents').then(d=>$('backupStatus').textContent=d.length+' documents included in full JSON backup.');if(linkedJsonHandle)$('jsonStatus').textContent='Linked: '+linkedJsonHandle.name}
+$('profileForm').onsubmit=async e=>{e.preventDefault();state.settings.name=$('profileName').value.trim();state.settings.currency=$('profileCurrency').value;await put('meta',state.settings);await log('Settings','Profile updated');toast('Profile saved');refresh()};$('saveSecurity').onclick=async()=>{const p=$('pinInput').value;if(p&&!/^\d{4,12}$/.test(p)){toast('PIN must be 4-12 digits',true);return}if(p){if(state.settings.pinHash){const old=prompt('Enter your current Vault PIN to change it:');if(old===null)return;if(await hashPin(old)!==state.settings.pinHash){toast('Current PIN is incorrect',true);return}}state.settings.pinHash=await hashPin(p)}state.settings.autoLock=Number($('autoLock').value);await put('meta',state.settings);toast('Security saved');scheduleAutoLock()};$('biometricInfo').onclick=()=>toast('Biometric is an Android-native feature; enable it in the APK build.');
+$('pinEye').onclick=()=>{const x=$('pinInput'),b=$('pinEye');const v=x.type==='text';x.type=v?'password':'text';b.textContent=v?'👁️':'🙈';b.title=v?'Show PIN':'Hide PIN'};
+async function snapshot(){const out={app:'VaultOne',version:2,schemaVersion:2,exportedAt:new Date().toISOString(),settings:state.settings};for(const store of STORES.filter(x=>x!=='meta')){const rows=await getAll(store);if(store==='documents'){out[store]=[];for(const r of rows){const x={...r};if(x.fileBlob instanceof Blob){x.fileBytes=bufToB64(await x.fileBlob.arrayBuffer());delete x.fileBlob}out[store].push(x)}}else out[store]=rows}out.meta={settings:state.settings,schema:{id:'schema',version:2}};return out}
+function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+$('exportBtn').onclick=async()=>{try{const snap=await snapshot();const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});downloadBlob(blob,'VaultOne_Backup_'+today()+'.json');await log('Backup','JSON backup exported');toast('Backup exported')}catch(e){toast('Backup failed: '+e.message,true)}};
+$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(x.app!=='VaultOne'||![1,2].includes(Number(x.schemaVersion)))throw new Error('Unsupported or invalid VaultOne backup');if(!confirm('Restore this backup? Existing VaultOne data will be replaced.'))return;for(const s of STORES)await clearStore(s);await put('meta',{...defaults.settings,...(x.settings||{}),id:'settings'});await put('meta',{id:'schema',version:2});for(const store of STORES.filter(x=>x!=='meta'))for(const row0 of (x[store]||[])){const row={...row0};if(store==='documents'&&row.fileBytes){row.fileBlob=new Blob([b64ToBuf(row.fileBytes)],{type:row.mimeType||'application/octet-stream'});delete row.fileBytes}await put(store,row);}await log('Restore','VaultOne backup restored');toast('Restore completed');refresh()}catch(err){toast('Restore failed: '+err.message,true)}e.target.value=''};
+$('clearBtn').onclick=async()=>{if(!confirm('CLEAR ALL VAULTONE DATA? This cannot be undone.'))return;if(!confirm('Final confirmation: delete all VaultOne data and stored documents?'))return;for(const s of STORES)await clearStore(s);await put('meta',defaults.settings);await put('meta',defaults.schema);passwordUnlocked=false;passwordKey=null;toast('VaultOne reset complete');refresh()};
+$('linkJsonBtn').onclick=async()=>{try{if(!window.showSaveFilePicker){toast('Direct JSON linking is not supported here. Use Export JSON.',true);return}linkedJsonHandle=await showSaveFilePicker({suggestedName:'VaultOne_Data.json',types:[{description:'VaultOne JSON',accept:{'application/json':['.json']}}]});await saveLinkedJson();$('jsonStatus').textContent='Linked: '+linkedJsonHandle.name;toast('JSON file linked')}catch(e){if(e.name!=='AbortError')toast(e.message,true)}};
+async function saveLinkedJson(){if(!linkedJsonHandle)throw new Error('No JSON file linked');const w=await linkedJsonHandle.createWritable();await w.write(JSON.stringify(await snapshot(),null,2));await w.close()}$('saveJsonBtn').onclick=async()=>{try{await saveLinkedJson();toast('Saved to linked JSON')}catch(e){toast(e.message,true)}};
+$('selfTestBtn').onclick=async()=>{const results=[];const ok=async(name,fn)=>{try{await fn();results.push('PASS  '+name)}catch(e){results.push('FAIL  '+name+' — '+e.message)}};await ok('Storage available',async()=>{if(!indexedDB&&storageMode!=='fallback')throw Error('No supported local storage');if(storageMode==='fallback'){const id=uid();await put('meta',{id,value:'ok'});const r=await get('meta',id);if(!r||r.value!=='ok')throw Error('Compatibility storage unavailable');await del('meta',id)}});await ok('CRUD income',async()=>{const id=uid();await put('income',{id,amount:123,date:today(),type:'Test'});const r=await get('income',id);if(!r||r.amount!==123)throw Error('CRUD mismatch');await del('income',id)});await ok('Gold current valuation',async()=>{const g={id:uid(),weight:2,purity:'22K',purchaseRate:13000};const r={id:uid(),date:today(),K22:15000,K18:0,K24:0};if(g.weight*r.K22!==30000)throw Error('valuation mismatch')});await ok('Document binary round-trip',async()=>{const bytes=new Uint8Array([1,2,3,4]).buffer;const b=bufToB64(bytes);const out=new Uint8Array(b64ToBuf(b));if(out[2]!==3)throw Error('binary mismatch')});await ok('Password encryption round-trip',async()=>{const e=await encryptPassword({name:'test',password:'Secret123!'},'1234');const p=await decryptPassword(e,'1234');if(p.password!=='Secret123!')throw Error('decrypt mismatch')});await ok('Backup schema',async()=>{const s=await snapshot();if(s.app!=='VaultOne'||Number(s.schemaVersion)!==2)throw Error('schema mismatch')});$('testResult').textContent=results.join('\n');toast(results.every(x=>x.startsWith('PASS'))?'All self-tests passed':'Some tests failed',!results.every(x=>x.startsWith('PASS')))};
+function scheduleAutoLock(){clearTimeout(autoLockTimer);const m=Number(state.settings.autoLock||0);if(m>0)autoLockTimer=setTimeout(lockVault,m*60000)}document.addEventListener('visibilitychange',()=>{if(document.hidden&&Number(state.settings.autoLock||0)>0)scheduleAutoLock()});
+$('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+(async()=>{
+  try{
+    try{await openDB()}catch(e){storageMode='fallback';db=null}
+    await loadState();
+    try{await migrateFamilyStructure();}catch(e){console.warn('FamilyVault migration skipped:',e);}
+    try{await migrateBirthdayReminders();}catch(e){console.warn('Birthday reminder migration skipped:',e);}
+    scheduleAutoLock();
+    await refresh();
+    if(storageMode==='fallback') toast('Compatibility storage is active. Documents up to 3 MB can be stored in this HTML version; Android APK will use native file storage.',false);
+  }catch(e){
+    console.error('VaultOne startup error',e);
+    document.body.innerHTML='<div style="padding:30px;color:white;background:#060b16;min-height:100vh"><h2>VaultOne could not load</h2><p>'+esc(e.message||'Unknown error')+'</p><button class="btn primary" onclick="location.reload()">Retry</button></div>';
+  }
+})();
+
+/* ===== VaultOne Savings / Investments final repair module ===== */
+(function(){
+  const STORE='investments';
+  const n=v=>{const x=Number(v);return Number.isFinite(x)?x:0};
+  const s=v=>String(v??'').trim();
+  const rate=v=>Math.max(0,n(v));
+  const monthsSince=date=>{
+    if(!date)return 0;
+    const d=new Date(date+'T00:00:00'), now=new Date();
+    if(Number.isNaN(d.getTime())||d>now)return 0;
+    return Math.max(0,(now.getFullYear()-d.getFullYear())*12 + (now.getMonth()-d.getMonth()) + (now.getDate()>=d.getDate()?0:-1));
+  };
+  const addMonths=(date,months)=>{if(!date)return '';const d=new Date(date+'T00:00:00');if(Number.isNaN(d.getTime()))return '';d.setMonth(d.getMonth()+Math.floor(n(months)));return d.toISOString().slice(0,10)};
+  const indianFY=date=>{const d=new Date((date||today())+'T00:00:00');const y=d.getFullYear(),m=d.getMonth()+1;return m>=4?`FY ${y}-${String((y+1)%100).padStart(2,'0')}`:`FY ${y-1}-${String(y%100).padStart(2,'0')}`};
+  const isDateMatured=date=>{if(!date)return false;const d=new Date(date+'T23:59:59');return !Number.isNaN(d.getTime())&&d.getTime()<=Date.now()};
+  window.__vaultAddMonths=addMonths;
+  const annualSimple=(principal,interestRate,months)=>principal*(1+(rate(interestRate)/100)*(Math.max(0,months)/12));
+  function calcFD(x){
+    const principal=n(x.principal), months=Math.max(0,n(x.tenureMonths)), maturity=annualSimple(principal,x.interestRate,months);
+    return {principal,interest:Math.max(0,maturity-principal),maturity};
+  }
+  function calcRD(x){
+    const monthly=n(x.monthlyDeposit), months=Math.max(0,Math.floor(n(x.tenureMonths))), r=rate(x.interestRate)/100/12;
+    let maturity=0;
+    for(let m=1;m<=months;m++) maturity += r ? monthly*Math.pow(1+r,months-m+1) : monthly;
+    const principal=monthly*months;
+    return {principal,interest:Math.max(0,maturity-principal),maturity};
+  }
+  function calcRecurring(x){
+    const months=Math.max(0,monthsSince(x.startDate));
+    const contributed=n(x.monthlyContribution||x.monthlyDeposit)*months;
+    const entered=n(x.currentValue);
+    const principal=entered>0?Math.max(contributed,entered):contributed;
+    const r=rate(x.interestRate)/100/12;
+    let estimated=principal;
+    if(principal>0 && r>0 && months>0) estimated=contributed*((Math.pow(1+r,months)-1)/r);
+    return {months,contributed,estimated:entered>0?entered:estimated,interest:Math.max(0,(entered>0?entered:estimated)-contributed)};
+  }
+  function copyText(value){
+    const text=s(value); if(!text)return;
+    if(navigator.clipboard?.writeText){navigator.clipboard.writeText(text).then(()=>toast('Account number copied')).catch(()=>fallbackCopy(text));}
+    else fallbackCopy(text);
+  }
+  function fallbackCopy(text){
+    const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Account number copied')}catch{toast('Copy not available on this device',true)}ta.remove();
+  }
+  window.__vaultCopyAccount=copyText;
+  window.__vaultInvNum=n;
+
+  async function allInvestments(){
+    // Single source of truth for Savings & Investments.
+    // Keep this as a thin wrapper so existing IndexedDB/fallback storage logic is reused.
+    return await getAll(STORE);
+  }
+
+  function normalizeLegacy(rows){
+    let changed=false;
+    for(const x of rows){
+      const t=s(x.type).toLowerCase();
+      if(['equity','etf','gold etf','silver etf','nifty 50'].includes(t) && !x._dematFinal){
+        x.type='demat'; x.category='Demat'; x.stockName=x.stockName||x.securityName||x.name||'Holding'; x.securityName=x.stockName; x.name=x.stockName;
+        const legacyPrice=n(x.currentPrice||x.currentValue||x.amount); x.currentPrice=legacyPrice; x.currentValue=legacyPrice;
+        if(x.stockValue==null && x.purchasePrice!=null)x.stockValue=n(x.purchasePrice);
+        x._dematFinal=true; changed=true;
+      }
+      if(t==='othersaving' || t==='other saving'){
+        x.type='recurring'; x.category=x.category||'Other'; x._recurringFinal=true; changed=true;
+      }
+      if(['ppf','ssa','nps'].includes(t) && x.type!=='recurring'){
+        x.type='recurring'; x.category=t.toUpperCase(); x.monthlyContribution=n(x.monthlyContribution||x.monthlyDeposit); x._recurringFinal=true; changed=true;
+      }
+      if(x.accountNumber!=null)x.accountNumber=s(x.accountNumber);
+      if(x.dematAccountNumber!=null && !x.accountNumber)x.accountNumber=s(x.dematAccountNumber);
+    }
+    return changed;
+  }
+
+  function typeOptions(selected){
+    const types=[['fd','Fixed Deposit (FD)'],['rd','Recurring Deposit (RD)'],['ppf','PPF'],['ssa','SSA'],['nps','NPS'],['demat','Demat (Equity / ETF / Nifty 50)'],['other','Other Saving']];
+    return types.map(([v,l])=>`<option value="${v}" ${selected===v?'selected':''}>${l}</option>`).join('');
+  }
+  function field(name,label,type='text',value='',extra=''){
+    return `<label>${label}<input name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`;
+  }
+  function accountField(value){
+    return `<label>Account Number<input name="accountNumber" type="text" inputmode="numeric" autocomplete="off" value="${esc(value||'')}" placeholder="Enter account number"></label>`;
+  }
+
+  function paidFromField(value,label='Paid From'){
+    const html=window.__vaultAccountOptionsHtml||'<option value="">No account selected</option>';
+    return `<label>${label}<select name="paidFromAccountId"><option value="">Select account</option>${html}</select></label>`;
+  }
+
+  function investmentFields(type,x={}){
+    const commonStart=field('startDate','Start Date','date',x.startDate||today());
+    if(type==='fd') return [
+      field('bankName','Bank Name','text',x.bankName||'', 'required'),accountField(x.accountNumber),
+      field('name','FD Name','text',x.name||'FD'),field('principal','One-time Deposit','number',x.principal??'', 'step="0.01" min="0" required'),
+      field('interestRate','Interest Rate (% p.a.)','number',x.interestRate??'', 'step="0.01" min="0" inputmode="decimal" required'),
+      field('tenureMonths','Tenure (Months)','number',x.tenureMonths??'', 'step="1" min="1" required'),field('maturityDate','Maturity Date','date',x.maturityDate||''),paidFromField(x.paidFromAccountId),commonStart
+    ].join('');
+    if(type==='rd') return [
+      field('bankName','Bank Name','text',x.bankName||'', 'required'),accountField(x.accountNumber),
+      field('name','RD Name','text',x.name||'RD'),field('monthlyContribution','Monthly Contribution','number',x.monthlyContribution??x.monthlyDeposit??'', 'step="0.01" min="0" required'),
+      field('interestRate','Interest Rate (% p.a.)','number',x.interestRate??'', 'step="0.01" min="0" inputmode="decimal" required'),
+      field('tenureMonths','Tenure (Months)','number',x.tenureMonths??'', 'step="1" min="1" required'),field('maturityDate','Maturity Date','date',x.maturityDate||''),paidFromField(x.paidFromAccountId),commonStart
+    ].join('');
+    if(['ppf','ssa'].includes(type)) return [
+      field('bankName','Bank / Post Office Name','text',x.bankName||x.provider||'', 'required'),
+      accountField(x.accountNumber),
+      field('name','Name','text',x.name||type.toUpperCase()),
+      field('accountOpenedOn','Account Opened On','date',x.accountOpenedOn||x.startDate||today()),
+      field('maturityDate','Maturity Date','date',x.maturityDate||''),
+      field('asOfBalance','As of Balance','number',x.asOfBalance??x.currentValue??'', 'step="0.01" min="0"'),
+      field('interestRate','Interest Rate (% p.a.)','number',x.interestRate??'', 'step="0.01" min="0" inputmode="decimal"'),field('financialYear','Financial Year','text',x.financialYear||''),field('interestEarned','Interest Earned','number',x.interestEarned??'', 'step="0.01" min="0"')
+    ].join('');
+    if(type==='nps') return [
+      field('provider','Provider / Bank Name','text',x.provider||x.bankName||'', 'required'),
+      accountField(x.accountNumber||x.pran),
+      field('name','Name','text',x.name||'NPS'),
+      field('monthlyContribution','Monthly Contribution','number',x.monthlyContribution??x.monthlyDeposit??'', 'step="0.01" min="0" required'),
+      field('currentValue','Current Value','number',x.currentValue??'', 'step="0.01" min="0"'),
+      field('interestRate','Interest / Return (% p.a.)','number',x.interestRate??'', 'step="0.01" min="0" inputmode="decimal"'),commonStart
+    ].join('');
+    if(type==='demat'){
+      const existingStocks=window.__vaultDematStocks||[];
+      const stockOptions=existingStocks.length
+        ?'<option value="">-- New Stock --</option>'+existingStocks.map(s=>`<option value="${esc(s.stockName)}">${esc(s.stockName)}</option>`).join('')
+        :'';
+      const sectors=['Banking & Finance','IT & Technology','FMCG','Pharma & Healthcare','Auto & EV','Energy & Oil','Metals & Mining','Infrastructure','Telecom','Real Estate','Defence','Chemicals','Media & Entertainment','Other'];
+      const sectorOptions=sectors.map(sec=>`<option value="${esc(sec)}" ${(x.sector||'Other')===sec?'selected':''}>${esc(sec)}</option>`).join('');
+      const stockField=existingStocks.length
+        ?`<label>Stock<select name="stockNameSelect" id="stockNameSelect"><option value="">-- New Stock --</option>${existingStocks.map(s=>`<option value="${esc(s.stockName)}">${esc(s.stockName)}</option>`).join('')}</select></label><label id="stockNameNewWrap" style="display:none">New Stock Symbol / Name<input name="stockName" id="stockNameNew" placeholder="e.g. ITC, RELIANCE"></label>`
+        :`<label>Stock Symbol / Name<input name="stockName" required placeholder="e.g. ITC, RELIANCE"></label>`;
+      return [
+        stockField,
+        `<label>Sector<select name="sector" id="stockSector">${sectorOptions}</select></label>`,
+        field('lotQty','Quantity (this purchase)','number','', 'step="0.0001" min="0.0001" required'),
+        field('lotPurchasePrice','Purchase Price per Share','number','', 'step="0.01" min="0" required'),
+        field('lotDate','Purchase Date','date',today(),'required'),
+        field('currentPrice','Current Market Price','number',x.currentPrice??'', 'step="0.01" min="0" required'),
+        paidFromField(x.dematAccountId||x.paidFromAccountId,'Demat Account')
+      ].join('');
+    }
+    return [field('name','Name','text',x.name||'Saving'),field('provider','Bank / Provider','text',x.provider||x.bankName||''),accountField(x.accountNumber),field('currentValue','Current Value','number',x.currentValue??'', 'step="0.01" min="0"')].join('');
+  }
+
+  async function saveInvestment(form,id=null){
+    const fd=form instanceof FormData ? form : new FormData(form), type=s(fd.get('type')), now=new Date().toISOString(), old=id?await get(STORE,id):null;
+    if(!type){toast('Please select an investment type',true);return false;}
+    const o={...(old||{}),id:id||uid(),type,createdAt:old?.createdAt||now,updatedAt:now};
+    fd.forEach((v,k)=>o[k]=v);
+    o.accountNumber=s(o.accountNumber);
+    if(type==='fd'){
+      o.category='FD';o.bankName=s(o.bankName);o.name=s(o.name)||'FD';o.principal=n(o.principal);o.interestRate=rate(o.interestRate);o.tenureMonths=Math.floor(n(o.tenureMonths));o.startDate=s(o.startDate)||today();
+      if(!o.bankName||o.principal<=0||o.tenureMonths<=0){toast('Please enter valid FD details',true);return false;}
+      o.maturityDate=s(o.maturityDate)||addMonths(o.startDate,o.tenureMonths);o.paidFromAccountId=s(o.paidFromAccountId);o.currentValue=calcFD(o).maturity;
+    }else if(type==='rd'){
+      o.category='RD';o.bankName=s(o.bankName);o.name=s(o.name)||'RD';o.monthlyContribution=n(o.monthlyContribution);o.monthlyDeposit=o.monthlyContribution;o.interestRate=rate(o.interestRate);o.tenureMonths=Math.floor(n(o.tenureMonths));o.startDate=s(o.startDate)||today();
+      if(!o.bankName||o.monthlyContribution<=0||o.tenureMonths<=0){toast('Please enter valid RD details',true);return false;}
+      o.maturityDate=s(o.maturityDate)||addMonths(o.startDate,o.tenureMonths);o.paidFromAccountId=s(o.paidFromAccountId);o.currentValue=calcRD(o).maturity;
+    }else if(['ppf','ssa'].includes(type)){
+      o.type='recurring';o.category=type.toUpperCase();o.provider=s(o.bankName);o.bankName=o.provider;o.name=s(o.name)||type.toUpperCase();o.accountOpenedOn=s(o.accountOpenedOn)||s(o.startDate)||today();o.startDate=o.accountOpenedOn;o.maturityDate=s(o.maturityDate);o.asOfBalance=n(o.asOfBalance);o.currentValue=o.asOfBalance;o.interestRate=rate(o.interestRate);o.interestEarned=n(o.interestEarned);o.financialYear=s(o.financialYear)||indianFY(o.accountOpenedOn||today());o.monthlyContribution=0;
+      if(!o.provider){toast('Please enter Bank / Post Office Name',true);return false;}
+      if(!Array.isArray(o.contributions))o.contributions=[];
+    }else if(type==='nps'){
+      o.type='recurring';o.category='NPS';o.provider=s(o.provider||o.bankName);o.bankName=o.provider;o.name=s(o.name)||'NPS';o.monthlyContribution=n(o.monthlyContribution);o.interestRate=rate(o.interestRate);o.currentValue=n(o.currentValue);o.startDate=s(o.startDate)||today();
+      if(!o.provider||o.monthlyContribution<=0){toast('Please enter provider and monthly contribution',true);return false;}
+    }else if(type==='demat'){
+      const stockName=s(fd.get('stockNameSelect')||fd.get('stockName'));const dematAccountId=s(o.paidFromAccountId);
+const sector=s(fd.get('sector'))||'Other';
+      if(!stockName){toast('Please enter a stock name',true);return false;}
+      const lotQty=n(o.lotQty),lotPrice=n(o.lotPurchasePrice),currentPrice=n(o.currentPrice);
+      if(lotQty<=0){toast('Enter a valid quantity',true);return false;}
+      if(currentPrice<0){toast('Enter a valid current price',true);return false;}
+      // Find existing record for same stock+account to merge lots
+      const allRows=await getAll(STORE);
+      const existing2=!id?allRows.find(r=>r.type==='demat'&&s(r.stockName).toLowerCase()===stockName.toLowerCase()&&s(r.dematAccountId)===dematAccountId):null;
+      if(existing2){
+        // Append lot to existing stock record
+        existing2.lots=Array.isArray(existing2.lots)?existing2.lots:[];
+        existing2.lots.push({id:uid(),date:s(o.lotDate)||today(),qty:lotQty,purchasePrice:lotPrice});
+        existing2.quantity=existing2.lots.reduce((a,l)=>a+n(l.qty),0);
+        existing2.currentPrice=currentPrice;existing2.currentValue=existing2.quantity*currentPrice;existing2.sector=sector;
+        existing2.updatedAt=now;
+        const dematAcc=(await getAll('banks')).find(a=>a.id===dematAccountId);
+        existing2.accountNumber=dematAcc?.accountNumber||'';
+        await put(STORE,existing2);
+        try{await log('Finance','Stock lot added to '+stockName)}catch(e){}
+        return true;
+      }
+      o.category='Demat';o.type='demat';o.stockName=stockName;o.name=stockName;o.securityName=stockName;o.sector=sector;
+      o.lots=[{id:uid(),date:s(o.lotDate)||today(),qty:lotQty,purchasePrice:lotPrice}];
+      o.quantity=lotQty;o.currentPrice=currentPrice;o.currentValue=lotQty*currentPrice;
+      o.dematAccountId=dematAccountId;
+      const dematAcc=(await getAll('banks')).find(a=>a.id===dematAccountId);
+      o.accountNumber=dematAcc?.accountNumber||'';o.dematAccountNumber=o.accountNumber;
+    }else{
+      o.type='otherSaving';o.category='Other';o.name=s(o.name)||'Saving';o.provider=s(o.provider);o.currentValue=n(o.currentValue);
+    }
+    await put(STORE,o);
+    if(type==='fd'||type==='rd'){if(typeof window.ensureFinanceReminder==='function')await window.ensureFinanceReminder((o.name||type.toUpperCase())+' Maturity',o.maturityDate,'Investment maturity reminder',type+'Maturity',o.id);}
+    if(!id && (type==='fd'||type==='rd') && o.paidFromAccountId){
+      await createTransaction({date:o.startDate||today(),type:type==='fd'?'FD Investment':'RD Contribution',amount:type==='fd'?o.principal:o.monthlyContribution,sourceAccountId:o.paidFromAccountId,destinationAccountId:'',category:type.toUpperCase(),module:type.toUpperCase(),referenceId:o.id,description:type==='fd'?'FD initial investment':'RD initial contribution'});
+    }
+    try{await log('Finance',id?'Investment record updated':'Investment record saved')}catch(logErr){console.warn('Investment activity log failed:',logErr);}
+    return true;
+  }
+
+  function openInvestmentForm(type='fd',existing=null){
+    let selected=type;
+    const title=existing?'Edit Investment':'Add Investment';
+    openModal(title,`<form id="investmentDynamicForm"><div class="grid">
+      <label>Investment Type<select name="type" id="investmentType">${typeOptions(selected)}</select></label>
+      <div></div>
+      <div id="investmentFields" style="grid-column:1/-1" class="vault-edit-grid"></div>
+    </div><div id="investmentHint" class="muted" style="margin-top:12px"></div><div class="actions"><button class="btn primary">${existing?'Save Changes':'Save Investment'}</button></div></form>`,async fd=>{
+      if(await saveInvestment(fd,existing?.id)){closeModal();await renderInvestments();toast(existing?'Investment updated':'Investment saved');}
+    });
+    const f=$('investmentDynamicForm'), typeEl=$('investmentType'), fieldsEl=$('investmentFields'), hint=$('investmentHint');
+    const draw=()=>{
+      selected=typeEl.value;fieldsEl.innerHTML=investmentFields(selected,existing||{});
+      const hints={fd:'FD is a one-time payment. Interest and maturity are calculated automatically.',rd:'RD is a recurring monthly payment. Interest and maturity are calculated automatically.',ppf:'PPF is tracked as a recurring monthly contribution. Current value can be entered/updated.',ssa:'SSA is tracked as a recurring monthly contribution. Current value can be entered/updated.',nps:'NPS is tracked as a recurring monthly contribution. Return/interest is optional.',demat:'Each purchase is stored as a lot. Buying the same stock again adds a new lot and recalculates the average price and P&L automatically.',other:'Use this for another savings/investment record.'};hint.textContent=hints[selected]||'';
+      fieldsEl.querySelectorAll('input[name="accountNumber"]').forEach(inp=>{if(inp.value)inp.insertAdjacentHTML('afterend',`<button type="button" class="btn" style="margin-top:6px" onclick="window.__vaultCopyAccount(this.previousElementSibling.value)">Copy Account Number</button>`)});
+      if(selected==='demat'){
+        const sel=fieldsEl.querySelector('#stockNameSelect');
+        const newWrap=fieldsEl.querySelector('#stockNameNewWrap');
+        const newInput=fieldsEl.querySelector('#stockNameNew');
+        const priceInput=fieldsEl.querySelector('input[name="currentPrice"]');
+        if(sel){
+          const toggle=()=>{
+            const isNew=sel.value==='';
+            if(newWrap)newWrap.style.display=isNew?'block':'none';
+            if(newInput)newInput.required=isNew;
+            if(!isNew){
+              const stock=(window.__vaultDematStocks||[]).find(s=>s.stockName===sel.value);
+              if(stock){
+                if(priceInput)priceInput.value=n(stock.currentPrice)||'';
+                const sectorSel=fieldsEl.querySelector('#stockSector');
+                if(sectorSel&&stock.sector)sectorSel.value=stock.sector;
+              }
+            }
+          };
+          sel.addEventListener('change',toggle);
+          toggle();
+        }
+      }
+    };
+    typeEl.onchange=draw; draw();
+    f._vaultDraw=draw;
+  }
+
+  function editDemat(x){openInvestmentForm('demat',x)}
+  async function deleteInvestment(id){if(!confirm('Delete this investment record?'))return;await del(STORE,id);await renderInvestments();toast('Investment deleted')}
+
+  function renderRow(x){
+    const cat=x.type==='fd'?'FD':x.type==='rd'?'RD':x.type==='demat'?'Demat':(x.category||'Other');
+    let value=0,detail='';
+    if(x.type==='demat'){
+      const lots=Array.isArray(x.lots)&&x.lots.length?x.lots:[{qty:n(x.quantity),purchasePrice:n(x.purchasePrice||x.stockValue||0),date:''}];
+      const totalQty=lots.reduce((a,l)=>a+n(l.qty),0);
+      const totalInvested=lots.reduce((a,l)=>a+n(l.qty)*n(l.purchasePrice),0);
+      const avgPrice=totalQty>0?totalInvested/totalQty:0;
+      const currentPrice=n(x.currentPrice||x.currentValue);
+      const currentVal=totalQty*currentPrice;
+      const pl=currentVal-totalInvested;
+      const plPct=totalInvested>0?(pl/totalInvested*100):0;
+      const plClass=pl>=0?'green':'red';
+      const acctLabel=x.dematAccountId?(window.__vaultBankAccounts||[]).find(a=>a.id===x.dematAccountId):null;
+      const acctDisplay=acctLabel?`${acctLabel.name||'Account'} • ${acctLabel.accountNumber||''}`:'Demat account not linked';
+      const lotsHtml=lots.map((l,i)=>`<div class="sub" style="padding-left:8px;border-left:2px solid #263550">Lot ${i+1}: ${n(l.qty)} shares @ ${money(l.purchasePrice)} on ${esc(l.date||'—')} <button type="button" class="btn btn-sm" style="padding:2px 8px;font-size:11px" data-del-lot="${x.id}" data-lot-id="${esc(l.id||i)}">Remove</button></div>`).join('');
+      return `<div class="item" style="flex-direction:column;align-items:stretch"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap"><div><div class="title">${esc(x.stockName||x.name||'Stock')} <span class="pill">Demat</span></div><div class="sub">${esc(acctDisplay)}</div><div class="sub">Total Qty: <b>${totalQty}</b> • Avg Buy: <b>${money(avgPrice)}</b> • Current: <b>${money(currentPrice)}</b></div><div class="sub">Invested: ${money(totalInvested)} • Value: ${money(currentVal)} • P&amp;L: <b class="${plClass}">${pl>=0?'+':''}${money(pl)} (${plPct.toFixed(2)}%)</b></div></div><div class="actions" style="margin:0;flex-shrink:0"><button class="btn" type="button" data-update-price="${x.id}">Update Price</button><button class="btn" type="button" data-add-lot="${x.id}">+ Buy More</button><button class="btn danger" type="button" data-delete-investment="${x.id}">Delete</button></div></div>${lots.length>1?`<div style="margin-top:8px;display:grid;gap:4px">${lotsHtml}</div>`:''}</div>`;
+    }
+    if(x.type==='fd'){
+      const c=calcFD(x);value=c.maturity;const matured=isDateMatured(x.maturityDate);value=matured?c.maturity:c.principal;detail=`Deposit: ${money(c.principal)} • ${n(x.interestRate).toFixed(2)}% p.a. • ${n(x.tenureMonths)} months • Maturity: ${esc(x.maturityDate||'Not set')} • Interest: ${money(c.interest)} • ${matured?'Matured':'Maturity Pending'}`;
+    }else if(x.type==='rd'){
+      const c=calcRD(x);value=c.maturity;const matured=isDateMatured(x.maturityDate);value=matured?c.maturity:c.principal;detail=`Monthly: ${money(x.monthlyContribution||x.monthlyDeposit)} • ${n(x.interestRate).toFixed(2)}% p.a. • ${n(x.tenureMonths)} months • Maturity: ${esc(x.maturityDate||'Not set')} • Interest: ${money(c.interest)} • ${matured?'Matured':'Maturity Pending'}`;
+    }else if(x.type==='recurring' && (x.category==='PPF'||x.category==='SSA')){
+      value=n(x.asOfBalance??x.currentValue);const contrib=(x.contributions||[]).reduce((a,c)=>a+n(c.amount),0);detail=`As of Balance: ${money(value)} • Contributions: ${money(contrib)} • ${n(x.interestRate).toFixed(2)}% p.a.`;
+    }else if(x.type==='recurring'){
+      const c=calcRecurring(x);value=c.estimated;detail=`Monthly: ${money(x.monthlyContribution)} • ${n(x.interestRate).toFixed(2)}% p.a. • ${c.months} months tracked`;
+    }else{value=n(x.currentValue);detail=`Provider: ${esc(x.provider||'')}`;}
+    const extraButtons=(x.type==='recurring'&&(x.category==='PPF'||x.category==='SSA'))?`<button class="btn" type="button" data-add-contribution="${x.id}">+ Contribution</button>`:'';
+    return `<div class="item"><div><div class="title">${esc(x.name||cat)} <span class="pill">${esc(cat)}</span></div><div class="sub">${detail}</div><div class="sub">${x.accountNumber?`Account: ${esc(x.accountNumber)}`:''}${x.maturityDate?` • Maturity: ${esc(x.maturityDate)}`:''}</div></div><div class="actions" style="margin:0"><b>${money(value)}</b>${extraButtons}${x.accountNumber?`<button class="btn" type="button" data-copy-account="${esc(x.accountNumber)}">Copy A/C</button>`:''}<button class="btn" type="button" data-edit-investment="${x.id}">Edit</button><button class="btn danger" type="button" data-delete-investment="${x.id}">Delete</button></div></div>`;
+  }
+
+  async function renderInvestments(){
+    const accounts=await getAll('banks');
+    window.__vaultAccountOptionsHtml=accounts.map(a=>`<option value="${esc(a.id)}">${esc(a.name||'Account')} • ${esc(a.accountNumber||'')}</option>`).join('');
+    let rows=await allInvestments();
+    if(normalizeLegacy(rows)){for(const x of rows)await put(STORE,x);rows=await allInvestments();}
+    window.__vaultOneInvestments=rows;
+    window.__vaultDematStocks=rows.filter(x=>x.type==='demat'||x.category==='Demat');
+    const el=$('investments');if(!el)return;
+    const demat=rows.filter(x=>x.type==='demat'||x.category==='Demat');
+    const fd=rows.filter(x=>x.type==='fd');
+    const rd=rows.filter(x=>x.type==='rd');
+    const recurring=rows.filter(x=>x.type==='recurring');
+    const other=rows.filter(x=>x.type==='otherSaving' || (x.category==='Other'&&x.type!=='demat'));
+    const currentDemat=demat.reduce((a,x)=>{
+      const lots=Array.isArray(x.lots)&&x.lots.length?x.lots:[{qty:n(x.quantity),purchasePrice:0}];
+      return a+lots.reduce((s,l)=>s+n(l.qty),0)*n(x.currentPrice||x.currentValue);
+    },0);
+    const investedDemat=demat.reduce((a,x)=>{
+      const lots=Array.isArray(x.lots)&&x.lots.length?x.lots:[{qty:n(x.quantity),purchasePrice:n(x.purchasePrice||x.stockValue||0)}];
+      return a+lots.reduce((s,l)=>s+n(l.qty)*n(l.purchasePrice),0);
+    },0);
+    const dematPL=currentDemat-investedDemat;
+    const currentAll=[...fd,...rd,...recurring,...other].reduce((a,x)=>{
+      if(x.type==='fd')return a+(isDateMatured(x.maturityDate)?calcFD(x).maturity:calcFD(x).principal);
+      if(x.type==='rd')return a+(isDateMatured(x.maturityDate)?calcRD(x).maturity:calcRD(x).principal);
+      if(x.type==='recurring')return a+(x.category==='PPF'||x.category==='SSA'?n(x.asOfBalance??x.currentValue):calcRecurring(x).estimated);
+      return a+n(x.currentValue);
+    },currentDemat);
+    el.innerHTML=`
+      <div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">Savings & Investments</h3><p class="muted" style="margin:4px 0">Existing records are shown first. Add a record only when needed.</p></div><button class="btn primary" type="button" id="addInvestmentBtn">+ Add Investment</button></div>
+      <div class="stats" style="margin-top:14px"><div class="stat">Total Current Value<b>${money(currentAll)}</b></div><div class="stat">Demat Invested<b>${money(investedDemat)}</b></div><div class="stat">Demat Value<b>${money(currentDemat)}</b></div><div class="stat">Demat P&amp;L<b class="${dematPL>=0?'green':'red'}">${dematPL>=0?'+':''}${money(dematPL)}</b></div></div></div>
+      <div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">Demat</h3><p class="muted" style="margin:4px 0">Equity, ETFs and Nifty 50 • valuation uses Quantity × Current Price</p></div><button class="btn primary" type="button" data-add-investment-type="demat">+ Add Stock</button></div><div id="finalDematList" class="list">${demat.length?demat.map(renderRow).join(''):'<div class=\"empty\">No Demat holdings yet.</div>'}</div>${demat.length>=1?`<div class="card" style="margin-top:0"><h3>Holdings by Sector</h3>${(()=>{const sm={};demat.forEach(x=>{const sec=x.sector||'Other';const lots=Array.isArray(x.lots)&&x.lots.length?x.lots:[{qty:n(x.quantity),purchasePrice:0}];const val=lots.reduce((a,l)=>a+n(l.qty),0)*n(x.currentPrice||x.currentValue);sm[sec]=(sm[sec]||0)+val;});const entries=Object.entries(sm).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]);const total=entries.reduce((a,e)=>a+e[1],0);return pieChart(entries,total);})()}</div>`:''}
+      <div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">Fixed Deposits (FD)</h3><p class="muted" style="margin:4px 0">One-time contribution + interest</p></div><button class="btn primary" type="button" data-add-investment-type="fd">+ Add FD</button></div><div id="finalFDList" class="list">${fd.length?fd.map(renderRow).join(''):'<div class="empty">No FD records yet.</div>'}</div></div>
+      <div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">Recurring Deposits (RD)</h3><p class="muted" style="margin:4px 0">Monthly contribution + interest</p></div><button class="btn primary" type="button" data-add-investment-type="rd">+ Add RD</button></div><div id="finalRDList" class="list">${rd.length?rd.map(renderRow).join(''):'<div class="empty">No RD records yet.</div>'}</div></div>
+      <div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h3 style="margin:0">PPF • SSA • NPS</h3><p class="muted" style="margin:4px 0">Recurring contributions</p></div><button class="btn" type="button" data-add-investment-type="ppf">+ Add Saving</button></div><div id="finalRecurringList" class="list">${recurring.length?recurring.map(renderRow).join(''):'<div class="empty">No PPF, SSA or NPS records yet.</div>'}</div></div>
+      ${other.length?`<div class="card"><h3>Other Savings</h3><div class="list">${other.map(renderRow).join('')}</div></div>`:''}`;
+    // Stable event delegation: these controls survive every re-render of the Investments tab.
+    if(!el.dataset.investmentEventsBound){
+      el.dataset.investmentEventsBound='1';
+      el.addEventListener('click',async event=>{
+        const b=event.target.closest('button');
+        if(!b || !el.contains(b)) return;
+        try{
+          if(b.id==='addInvestmentBtn'){openInvestmentForm('fd');return;}
+          if(b.dataset.addInvestmentType){openInvestmentForm(b.dataset.addInvestmentType);return;}
+          if(b.dataset.editInvestment){
+            const x=await get(STORE,b.dataset.editInvestment);
+            if(x){const t=x.type==='recurring'?String(x.category||'PPF').toLowerCase():(x.type==='demat'?'demat':(x.type==='otherSaving'?'other':x.type));openInvestmentForm(t,x);}
+            return;
+          }
+          if(b.dataset.deleteInvestment){await deleteInvestment(b.dataset.deleteInvestment);return;}
+          if(b.dataset.copyAccount){copyText(b.dataset.copyAccount);return;}
+          if(b.dataset.updatePrice){
+            const x=await get(STORE,b.dataset.updatePrice);if(!x)return;
+            openModal('Update Current Price — '+esc(x.stockName),`<form class="grid"><label>Current Market Price<input name="price" type="number" step="0.01" min="0" required value="${n(x.currentPrice)}"></label><div class="actions"><button class="btn primary">Update</button></div></form>`,async fd=>{
+              const price=n(fd.get('price'));if(price<0){toast('Enter a valid price',true);return;}
+              x.currentPrice=price;x.currentValue=n(x.quantity)*price;x.updatedAt=new Date().toISOString();
+              await put(STORE,x);closeModal();toast('Price updated');await renderInvestments();
+            });return;
+          }
+          if(b.dataset.addLot){
+            const x=await get(STORE,b.dataset.addLot);if(!x)return;
+            openModal('Buy More — '+esc(x.stockName),`<form class="grid"><label>Quantity<input name="qty" type="number" step="0.0001" min="0.0001" required></label><label>Purchase Price per Share<input name="price" type="number" step="0.01" min="0" required></label><label>Purchase Date<input name="date" type="date" value="${today()}" required></label><label>New Current Market Price<input name="currentPrice" type="number" step="0.01" min="0" value="${n(x.currentPrice)}"></label><div class="actions"><button class="btn primary">Add Lot</button></div></form>`,async fd=>{
+              const qty=n(fd.get('qty')),price=n(fd.get('price'));if(qty<=0){toast('Enter a valid quantity',true);return;}
+              x.lots=Array.isArray(x.lots)?x.lots:[];
+              x.lots.push({id:uid(),date:s(fd.get('date'))||today(),qty,purchasePrice:price});
+              x.quantity=x.lots.reduce((a,l)=>a+n(l.qty),0);
+              const cp=n(fd.get('currentPrice'));if(cp>0)x.currentPrice=cp;
+              x.currentValue=x.quantity*x.currentPrice;x.updatedAt=new Date().toISOString();
+              await put(STORE,x);closeModal();toast('Lot added');await renderInvestments();
+            });return;
+          }
+          if(b.dataset.delLot){
+            const x=await get(STORE,b.dataset.delLot);if(!x)return;
+            const lotId=b.dataset.lotId;
+            if(!confirm('Remove this lot?'))return;
+            x.lots=(Array.isArray(x.lots)?x.lots:[]).filter(l=>String(l.id||'')!==lotId);
+            if(!x.lots.length){await del(STORE,x.id);toast('Stock removed');await renderInvestments();return;}
+            x.quantity=x.lots.reduce((a,l)=>a+n(l.qty),0);
+            x.currentValue=x.quantity*n(x.currentPrice);x.updatedAt=new Date().toISOString();
+            await put(STORE,x);toast('Lot removed');await renderInvestments();return;
+          }
+          if(b.dataset.addContribution){
+            const x=await get(STORE,b.dataset.addContribution);if(!x)return;
+            const accounts=await getAll('banks');
+            const options=accounts.map(a=>`<option value="${esc(a.id)}">${esc(a.name||'Account')} • ${esc(a.accountNumber||'')}</option>`).join('');
+            openModal('Add '+(x.category||'Investment')+' Contribution',`<form class="grid"><label>Date<input name="date" type="date" value="${today()}" required></label><label>Amount<input name="amount" type="number" min="0.01" step="0.01" required></label><label>Paid From<select name="paidFrom"><option value="">Select account</option>${options}</select></label><label style="grid-column:1/-1">Notes<textarea name="notes"></textarea></label><div class="actions"><button class="btn primary">Save Contribution</button></div></form>`,async fd=>{
+              const amount=n(fd.get('amount'));if(amount<=0){toast('Enter a valid contribution amount',true);return}
+              const paid=s(fd.get('paidFrom'));if(!paid){toast('Please select the account used for this contribution',true);return}
+              const c={id:uid(),date:s(fd.get('date'))||today(),amount,paidFromAccountId:paid,notes:s(fd.get('notes')),createdAt:new Date().toISOString()};
+              x.contributions=Array.isArray(x.contributions)?x.contributions:[];x.contributions.push(c);x.asOfBalance=n(x.asOfBalance??x.currentValue)+amount;x.currentValue=x.asOfBalance;x.updatedAt=new Date().toISOString();
+              await put(STORE,x);await createTransaction({date:c.date,type:x.category==='PPF'?'PPF Contribution':x.category==='SSA'?'SSA Contribution':'Investment',amount,sourceAccountId:paid,destinationAccountId:'',category:x.category,module:x.category,referenceId:x.id,description:x.category+' contribution'});
+              closeModal();toast('Contribution saved');await refresh();
+            });
+          }
+        }catch(err){console.error('Investment button action failed',err);toast('Savings & Investments action could not be completed: '+(err?.message||'Unknown error'),true);}
+      });
+    }
+  }
+  window.__renderVaultOneInvestments=renderInvestments;
+  window.__vaultOpenInvestmentForm=openInvestmentForm;
+  window.__vaultCalcFD=calcFD; window.__vaultCalcRD=calcRD; window.__vaultCalcRecurring=calcRecurring;
+})();
+
+/* ===== VaultOne finance / budget / gold / loan repair layer ===== */
+(function(){
+  // Local helpers for this repair layer. Keep them scoped so the existing
+  // application state/data layer remains untouched.
+  const n=v=>{const x=Number(v);return Number.isFinite(x)?x:0};
+  const s=v=>String(v??'').trim();
+  const pct=v=>Math.max(0,n(v));
+  const categories=['Household','Transport','Food & Personal','Health & Emergency','Loans & Financial','Family / Religious / Social','Savings & Investments','Other'];
+  const monthNow=()=>new Date().toISOString().slice(0,7);
+  function budgetRowsForMonthFinal(bud,month){
+    const result={};categories.forEach(c=>result[c]=0);
+    const records=bud.filter(x=>x.month===month);
+    const consolidated=records.find(x=>x.category==='All Categories'||x.category==='Consolidated');
+    if(consolidated?.categories){for(const c of categories)result[c]=n(consolidated.categories[c]);}
+    records.filter(x=>x.category&&categories.includes(x.category)).forEach(x=>result[x.category]+=n(x.amount));
+    return result;
+  }
+  function loanRemainingMonths(x){return Math.max(0,Math.floor(n(x.tenure))-Math.floor(n(x.emisPaid)))}
+  function loanOutstandingFinal(x){
+    if(x.manualOutstanding!==undefined && x.manualOutstanding!==null && x.manualOutstanding!=='')return Math.max(0,n(x.manualOutstanding));
+    const principal=n(x.principal), paid=Math.max(0,Math.floor(n(x.emisPaid))), emi=n(x.emi), monthlyRate=pct(x.interest)/100/12;
+    if(principal<=0)return 0;
+    if(paid<=0)return principal;
+    if(emi<=0)return principal;
+    if(monthlyRate<=0)return Math.max(0,principal-emi*paid);
+    const balance=principal*Math.pow(1+monthlyRate,paid)-emi*((Math.pow(1+monthlyRate,paid)-1)/monthlyRate);
+    return Math.max(0,balance);
+  }
+  function loanScheduleFinal(x,extra=0){
+    let balance=loanOutstandingFinal(x), months=0, interest=0, r=pct(x.interest)/100/12, payment=n(x.emi)+Math.max(0,n(extra));
+    if(balance<=0||payment<=0)return {balance,months,interest};
+    while(balance>0.01&&months<600){const i=r>0?balance*r:0;const principalPaid=Math.min(balance,Math.max(0,payment-i));if(principalPaid<=0)break;interest+=i;balance-=principalPaid;months++;}
+    return {balance:Math.max(0,balance),months,interest};
+  }
+  function goldRateKey(purity){
+    const p=s(purity).toUpperCase().replace(/\s+/g,'');
+    return p==='18K'?'K18':p==='24K'?'K24':'K22';
+  }
+  function goldRateFor(g,rates){
+    const key=goldRateKey(g?.purity);
+    const ordered=(rates||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    const matching=ordered.find(r=>n(r[key])>0);
+    return n(matching?.[key]);
+  }
+  function goldValues(g,rates){
+    const purchase=n(g.weight)*n(g.purchaseRate);
+    const currentRate=goldRateFor(g,rates);
+    const current=currentRate>0?n(g.weight)*currentRate:0;
+    return {purchase,current,currentRate,gain:current-purchase};
+  }
+  function copyTextFinal(value){window.__vaultCopyAccount?.(value)}
+
+  window.loanOutstanding=loanOutstandingFinal;
+  window.loanSchedule=loanScheduleFinal;
+  window.budgetRowsForMonth=budgetRowsForMonthFinal;
+  window.calcNet=function(inc,inv,gold,rates,loans){
+    const gv=gold.reduce((s,g)=>s+goldValues(g,rates).current,0);
+    const invv=inv.reduce((s,x)=>{
+      if(x.type==='demat'||x.category==='Demat')return s+n(x.quantity)*n(x.currentPrice||x.currentValue);
+      if(x.type==='fd'){const c=window.__vaultCalcFD?.(x);return s+(isDateMatured(x.maturityDate)?(c?.maturity||n(x.currentValue)):(c?.principal||n(x.currentValue)));}
+      if(x.type==='rd'){const c=window.__vaultCalcRD?.(x);return s+(isDateMatured(x.maturityDate)?(c?.maturity||n(x.currentValue)):(c?.principal||n(x.currentValue)));}
+      if(x.type==='recurring')return s+(x.category==='PPF'||x.category==='SSA'?n(x.asOfBalance??x.currentValue):(window.__vaultCalcRecurring?.(x).estimated||n(x.currentValue)));
+      return s+n(x.currentValue??x.amount);
+    },0);
+    const cash=inc.reduce((s,x)=>s+n(x.amount),0);
+    const liab=loans.reduce((s,x)=>s+loanOutstandingFinal(x),0);
+    return cash+invv+gv-liab;
+  };
+
+  async function bindSimpleFinanceForms(){
+    document.querySelectorAll('.vaultSimpleForm').forEach(form=>{
+      if(form.dataset.bound==='1')return;form.dataset.bound='1';
+      form.onsubmit=async e=>{e.preventDefault();try{const fd=new FormData(form),store=form.dataset.store,o={id:uid(),createdAt:new Date().toISOString()};fd.forEach((v,k)=>o[k]=v);for(const k of ['amount','currentValue','purchaseRate','weight','K18','K22','K24'])if(k in o)o[k]=n(o[k]);await put(store,o);await log('Finance',`${form.dataset.kind||store} saved`);toast('Saved successfully');await refresh();}catch(err){console.error('VaultOne save failed',err);toast('Unable to save this record. Check the highlighted fields and try again.',true)}};
+    });
+  }
+
+  function incomeExpenseForm(kind,items){
+    const store=kind==='income'?'income':'expenses';
+    const fields=kind==='income'?`<label>Type<select name="type"><option>Salary</option><option>Shift Allowance</option><option>Other Income</option><option>Interest</option><option>Dividend</option></select></label><label>Security / Investment Name<input name="securityName"></label><label>Bank Name<input name="bankName"></label><label>Amount<input name="amount" type="number" min="0" step="0.01" required></label><label>Date<input name="date" type="date" value="${today()}" required></label><label>Note<input name="note"></label>`:`<label>Amount<input name="amount" type="number" min="0" step="0.01" required></label><label>Main Category<select name="category">${categories.map(c=>`<option>${esc(c)}</option>`).join('')}</select></label><label>Subcategory<input name="subcategory"></label><label>Date<input name="date" type="date" value="${today()}" required></label><label>Note<input name="note"></label>`;
+    return `<div class="card"><h3>${kind==='income'?'Income':'Expenses'}</h3><form class="vaultSimpleForm grid" data-store="${store}" data-kind="${kind}">${fields}<div class="actions"><button class="btn primary">Save ${kind==='income'?'Income':'Expense'}</button></div></form></div><div class="card"><h3>Existing Records</h3><div id="final_${store}" class="list">${renderBasicList(items,store)}</div></div>`;
+  }
+  function renderBasicList(items,store){return items.length?items.slice().sort((a,b)=>(b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'')).map(x=>`<div class="item"><div><div class="title">${esc(x.type||x.category||'Record')}</div><div class="sub">${esc(x.date||'')} ${x.note?'• '+esc(x.note):''}</div></div><div class="actions"><b>${money(x.amount)}</b><button class="btn" type="button" data-simple-edit="${store}:${x.id}">Edit</button><button class="btn danger" type="button" data-simple-del="${store}:${x.id}">Delete</button></div></div>`).join(''):'<div class="empty">No records yet.</div>'}
+  function fieldFinal(name,label,type='text',value='',extra=''){return `<label>${label}<input name="${name}" type="${type}" value="${esc(value)}" ${extra}></label>`;}
+  function normalizeBudgetMonth(value){
+    const v=String(value??'').trim();
+    if(/^\d{4}-(0[1-9]|1[0-2])$/.test(v)) return v;
+    const m=v.match(/^(\d{4})-(\d{1,2})/);
+    if(m){const mm=Number(m[2]);if(mm>=1&&mm<=12)return m[1]+'-'+String(mm).padStart(2,'0');}
+    return monthNow();
+  }
+  function formatBudgetMonth(value){
+    const m=normalizeBudgetMonth(value);
+    const [y,mo]=m.split('-').map(Number);
+    return new Date(y,mo-1,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  }
+  // Expose budget renderer so the consolidated renderFinance can call it,
+  // and so Previous/Next always re-fetch fresh data from storage.
+  async function renderBudgetFresh(){
+    try{
+      const [freshBud,freshExp,freshInc]=await Promise.all([getAll('budgets'),getAll('expenses'),getAll('income')]);
+      renderBudgetWithData(freshBud,freshExp,freshInc);
+    }catch(err){console.error('Budget refresh failed:',err);toast('Budget could not be refreshed: '+(err?.message||'Unknown error'),true);}
+  }
+  function renderBudgetWithData(bud,exp,inc){
+    const month=normalizeBudgetMonth(window.__vaultBudgetMonth||monthNow());window.__vaultBudgetMonth=month;
+    const cats=budgetRowsForMonthFinal(bud,month);
+    const actual={};categories.forEach(c=>actual[c]=0);
+    exp.filter(x=>(x.date||'').startsWith(month)).forEach(x=>{if(actual[x.category]!==undefined)actual[x.category]+=n(x.amount)});
+    const total=Object.values(cats).reduce((a,b)=>a+b,0),actualTotal=Object.values(actual).reduce((a,b)=>a+b,0);
+    const incMonth=inc.filter(x=>(x.date||'').startsWith(month)).reduce((a,b)=>a+n(b.amount),0);
+    const need=categories.slice(0,5).reduce((a,c)=>a+n(cats[c]),0),want=n(cats['Family / Religious / Social'])+n(cats['Other']),save=n(cats['Savings & Investments']);
+    const suggestions=[];
+    if(incMonth){
+      if(save/incMonth<.2)suggestions.push('Try to allocate at least 20% of monthly income toward savings/investments.');
+      if(want/incMonth>.3)suggestions.push('Want spending is above 30% of income; consider reducing discretionary spending.');
+      if(need/incMonth>.6)suggestions.push('Needs are above 60% of income; review fixed expenses and loan commitments.');
+      if(!suggestions.length)suggestions.push('Your current Want / Need / Save allocation is within the suggested ranges.');
+    }else suggestions.push('Add monthly income to receive Want / Need / Save suggestions.');
+    const saved=bud.filter(x=>x.category==='All Categories'||x.category==='Consolidated').sort((a,b)=>(b.month||'').localeCompare(a.month||''));
+    const budEl=$('budget');if(!budEl)return;
+    budEl.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><h3>Monthly Budget</h3><p class="muted">Selected month: <b>${esc(formatBudgetMonth(month))}</b>. Each month is stored independently.</p></div><div class="actions"><button class="btn" type="button" id="budgetPrev">← Previous</button><button class="btn" type="button" id="budgetNext">Next →</button></div></div>
+    ${total===0?`<div class="empty" style="margin-top:12px">No budget configured for ${esc(formatBudgetMonth(month))}.</div>`:''}    <form id="budgetPlanner" class="grid" style="margin-top:12px"><label>Budget Month<input name="month" type="month" value="${month}" required><small class="muted">Budgets are stored as YYYY-MM. Each month is independent.</small></label><div></div><div class="budget-grid" style="grid-column:1/-1">${categories.map(c=>`<label>${esc(c)}</label><input name="cat_${esc(c)}" type="number" min="0" step="0.01" value="${n(cats[c])}">`).join('')}</div><div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Budget</button></div></form></div>
+    <div class="card"><h3>Budget Allocation</h3><div class="metric">${money(total)}</div>${pieChart(Object.entries(cats).filter(e=>e[1]>0),total)}</div>
+    <div class="card"><h3>Want • Need • Save</h3><div class="grid3"><div class="stat">Need<b>${money(need)}</b><span class="muted">${incMonth?Math.round(need/incMonth*100):0}% of income</span></div><div class="stat">Want<b>${money(want)}</b><span class="muted">${incMonth?Math.round(want/incMonth*100):0}% of income</span></div><div class="stat">Save<b class="cyan">${money(save)}</b><span class="muted">${incMonth?Math.round(save/incMonth*100):0}% of income</span></div></div><div class="suggestion">💡 Guidance: Needs 50–60% • Wants 20–30% • Savings 20%+. These are suggestions only.</div>${suggestions.map(sg=>`<div class="suggestion">💡 ${esc(sg)}</div>`).join('')}</div>
+    <div class="card"><h3>Budgeted vs Actual</h3><table class="comparison"><thead><tr><th>Category</th><th>Budgeted</th><th>Actual</th><th>Variance</th></tr></thead><tbody>${categories.map(c=>{const d=n(cats[c])-n(actual[c]);const over=n(actual[c])>n(cats[c])&&n(cats[c])>0;return `<tr><td>${esc(c)}${over?' <span class="bad">⚠</span>':''}</td><td>${money(cats[c])}</td><td>${money(actual[c])}</td><td class="${d>=0?'good':'bad'}">${money(d)}</td></tr>`}).join('')}</tbody></table><p class="muted">Budget ${money(total)} • Actual ${money(actualTotal)} • Remaining ${money(Math.max(0,total-actualTotal))}</p></div>
+    <div class="card"><h3>Budget History</h3><div class="list">${saved.length?saved.map(x=>`<div class="item"><div><div class="title">${esc(formatBudgetMonth(x.month||''))}</div><div class="sub">Total: ${money(x.total||Object.values(x.categories||{}).reduce((a,b)=>a+n(b),0))}</div></div><button class="btn" type="button" data-load-budget="${x.id}">Load / Edit</button></div>`).join(''):'<div class="empty">No saved monthly budgets yet.</div>'}</div></div>`;
+    $('budgetPlanner').onsubmit=async e=>{
+      e.preventDefault();
+      try{
+        const fd=new FormData(e.currentTarget),m=s(fd.get('month')),categoriesObj={};
+        if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)) throw new Error('Please select a valid budget month.');
+        categories.forEach(c=>categoriesObj[c]=Math.max(0,n(fd.get('cat_'+c))));
+        const freshBud=await getAll('budgets');
+        const existingRecord=freshBud.find(x=>x.month===m&&(x.category==='All Categories'||x.category==='Consolidated'));
+        const record={...(existingRecord||{}),id:existingRecord?.id||uid(),month:m,category:'All Categories',categories:categoriesObj,total:Object.values(categoriesObj).reduce((a,b)=>a+n(b),0),createdAt:existingRecord?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+        await put('budgets',record);
+        for(const x of freshBud.filter(r=>r.month===m&&(r.category==='All Categories'||r.category==='Consolidated')&&r.id!==record.id)) await del('budgets',x.id);
+        try{await log('Finance','Monthly budget saved for '+m);}catch(logErr){console.warn('Budget log failed:',logErr);}
+        window.__vaultBudgetMonth=m;
+        toast(existingRecord?'Budget updated':'Budget saved');
+        await refresh();
+      }catch(err){console.error('Budget save failed:',err);toast('Budget could not be saved: '+(err?.message||'Unknown error'),true);}
+    };
+    $('budgetPrev').onclick=()=>{
+      const d=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1);
+      d.setMonth(d.getMonth()-1);
+      window.__vaultBudgetMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      renderBudgetFresh();
+    };
+    $('budgetNext').onclick=()=>{
+      const d=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1);
+      d.setMonth(d.getMonth()+1);
+      window.__vaultBudgetMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      renderBudgetFresh();
+    };
+    budEl.querySelectorAll('[data-load-budget]').forEach(b=>b.onclick=()=>{
+      const x=bud.find(r=>r.id===b.dataset.loadBudget);
+      if(x){window.__vaultBudgetMonth=normalizeBudgetMonth(x.month);renderBudgetFresh();}
+    });
+  }
+  window.__renderBudgetInternal=renderBudgetWithData;
+  function renderGold(gold,rates){
+    const latest=(rates||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0]||{};
+    const total=gold.reduce((a,g)=>a+goldValues(g,rates).current,0),purchase=gold.reduce((a,g)=>a+goldValues(g,rates).purchase,0);
+    $('gold').innerHTML=`<div class="card"><h3>GoldVault 🪙</h3><div class="stats"><div class="stat">Purchase Value<b>${money(purchase)}</b></div><div class="stat">Current Value<b>${money(total)}</b></div><div class="stat">Gain/Loss<b class="${total-purchase>=0?'green':'red'}">${money(total-purchase)}</b></div><div class="stat">Holdings<b>${gold.length}</b></div></div></div><div class="card"><h3>Add Gold</h3><form id="goldAddForm" class="grid"><label>Name<input name="name" required></label><label>Purity<select name="purity"><option>18K</option><option selected>22K</option><option>24K</option></select></label><label>Quantity / Weight (g)<input name="weight" type="number" min="0" step="0.001" required></label><label>Purchase Rate / g<input name="purchaseRate" type="number" min="0" step="0.01" required></label><label>Purchase Date<input name="date" type="date" value="${today()}" required></label><label>Note<input name="note"></label><div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Gold</button></div></form></div><div class="card"><h3>Update Gold Market Price</h3><p class="muted">Purchase rate remains unchanged. Current valuation uses the latest market rate.</p><form id="goldRateForm" class="grid"><label>Date<input name="date" type="date" value="${today()}" required></label><label>18K / g<input name="K18" type="number" min="0" step="0.01" value="${n(latest.K18)}"></label><label>22K / g<input name="K22" type="number" min="0" step="0.01" value="${n(latest.K22)}"></label><label>24K / g<input name="K24" type="number" min="0" step="0.01" value="${n(latest.K24)}"></label><div class="actions" style="grid-column:1/-1"><button class="btn primary">Update Price</button></div></form></div><div class="card"><h3>Gold Holdings</h3><div class="list">${gold.length?gold.map(g=>{const v=goldValues(g,rates);return `<div class="item"><div><div class="title">${esc(g.name||'Gold')} • ${esc(g.purity||'22K')}</div><div class="sub">${n(g.weight)} g • Purchase ${money(g.purchaseRate)}/g • ${esc(g.date||'')}</div><div class="sub">Purchase Value ${money(v.purchase)} • Current Value ${v.currentRate>0?money(v.current):'Market rate not set'} • Gain/Loss ${v.currentRate>0?money(v.gain):'—'}</div></div><div class="actions"><button class="btn" type="button" data-edit-gold="${g.id}">Edit</button><button class="btn danger" type="button" data-delete-gold="${g.id}">Delete</button></div></div>`}).join(''):'<div class="empty">No gold holdings yet.</div>'}</div></div>`;
+    $('goldAddForm').onsubmit=async e=>{e.preventDefault();try{const fd=new FormData(e.currentTarget),o={id:uid(),name:s(fd.get('name')),purity:s(fd.get('purity'))||'22K',weight:n(fd.get('weight')),purchaseRate:n(fd.get('purchaseRate')),date:s(fd.get('date'))||today(),note:s(fd.get('note')),purchaseValue:n(fd.get('weight'))*n(fd.get('purchaseRate')),createdAt:new Date().toISOString()};if(!o.name||o.weight<=0||o.purchaseRate<0){toast('Please enter valid gold details',true);return}await put('gold',o);try{await log('Finance','Gold holding saved')}catch(logErr){console.warn('Gold activity log failed:',logErr)}toast('Gold saved successfully');await refresh();}catch(err){console.error('Gold save failed',err);toast('Gold could not be saved.',true)}};
+    $('goldRateForm').onsubmit=async e=>{
+      e.preventDefault();
+      try{
+        const fd=new FormData(e.currentTarget),date=s(fd.get('date'))||today();
+        const existingRates=await getAll('goldRates');
+        const sameDate=existingRates.find(r=>r.date===date);
+        const latestByKey={};
+        for(const r of existingRates.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))){
+          for(const key of ['K18','K22','K24']) if(latestByKey[key]===undefined && n(r[key])>0) latestByKey[key]=n(r[key]);
+        }
+        const value=(key)=>{
+          const raw=s(fd.get(key));
+          return raw!=='' ? n(raw) : n(latestByKey[key]);
+        };
+        const o={
+          ...(sameDate||{}),
+          id:sameDate?.id||uid(),
+          date,
+          K18:value('K18'),
+          K22:value('K22'),
+          K24:value('K24'),
+          updatedAt:new Date().toISOString(),
+          createdAt:sameDate?.createdAt||new Date().toISOString()
+        };
+        if(o.K18<=0 && o.K22<=0 && o.K24<=0){toast('Enter at least one valid gold market price.',true);return;}
+        await put('goldRates',o);
+        try{await log('Finance','Gold market price updated for '+date)}catch(logErr){console.warn('Gold price activity log failed:',logErr)}
+        toast('Gold price updated');
+        await refresh();
+      }catch(err){
+        console.error('Gold price update failed',err);
+        toast('Gold price could not be updated: '+(err?.message||'Unknown storage error'),true);
+      }
+    };
+    document.querySelectorAll('[data-delete-gold]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this gold holding?')){await del('gold',b.dataset.deleteGold);await refresh();toast('Gold holding deleted')}});
+    document.querySelectorAll('[data-edit-gold]').forEach(b=>b.onclick=async()=>{const x=await get('gold',b.dataset.editGold);if(!x)return;openModal('Edit Gold',`<form class="grid">${fieldFinal('name','Name','text',x.name||'Gold','required')}${fieldFinal('purity','Purity','text',x.purity||'22K')}${fieldFinal('weight','Weight (g)','number',x.weight,'step="0.001" min="0" required')}${fieldFinal('purchaseRate','Purchase Rate / g','number',x.purchaseRate,'step="0.01" min="0" required')}${fieldFinal('date','Purchase Date','date',x.date||today(),'required')}<div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Changes</button></div></form>`,async fd=>{const o={...x,name:s(fd.get('name')),purity:s(fd.get('purity'))||'22K',weight:n(fd.get('weight')),purchaseRate:n(fd.get('purchaseRate')),date:s(fd.get('date'))||today(),purchaseValue:n(fd.get('weight'))*n(fd.get('purchaseRate')),updatedAt:new Date().toISOString()};if(o.weight<=0||o.purchaseRate<0){toast('Invalid gold details',true);return}await put('gold',o);closeModal();await refresh();toast('Gold updated')})});
+  }
+
+  // renderLoans replaced by renderLoans2 in Finance Architecture Extension.
+
+  // renderFinanceFinal is now a no-op stub; the consolidated renderFinance
+  // in the Finance Architecture Extension handles all rendering.
+  // Gold rendering is exposed via window.__renderGoldInternal.
+  window.__renderGoldInternal=renderGold;
+  window.renderFinanceSub=()=>{};
+})();
+
+/* Final startup refresh remains the existing centralized refresh flow. */
+
+/* ===== VaultOne v1.0 Finance Architecture Extension ===== */
+(function(){
+  const N=v=>{const x=Number(v);return Number.isFinite(x)?x:0};
+  const S=v=>String(v??'').trim();
+  const esc2=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const monthNow2=()=>new Date().toISOString().slice(0,7);
+  const categories2=['Household','Transport','Food & Personal','Health & Emergency','Loans & Financial','Family / Religious / Social','Savings & Investments','Other'];
+  const typeLabel={Income:'Income',Expense:'Expense',Transfer:'Transfer',Investment:'Investment','Loan EMI':'Loan EMI','Loan Principal':'Loan Principal','Loan Interest':'Loan Interest','Loan Prepayment':'Loan Prepayment','Loan Settlement':'Loan Settlement','Gold Loan Payment':'Gold Loan Payment','Gold Loan Principal':'Gold Loan Principal','Gold Loan Interest':'Gold Loan Interest','Gold Loan Advance Payment':'Gold Loan Advance Payment','Balance Adjustment':'Balance Adjustment','PPF Contribution':'PPF Contribution','SSA Contribution':'SSA Contribution','RD Contribution':'RD Contribution','FD Investment':'FD Investment','Demat Investment':'Demat Investment'};
+
+  async function getAccounts(){return await getAll('banks');}
+  async function ensureFinanceReminder(title,date,description,source,referenceId){
+    if(!date||!referenceId)return;
+    const rows=await getAll('reminders');
+    const existing=rows.find(r=>r.source===source&&r.referenceId===referenceId);
+    await put('reminders',{id:existing?.id||uid(),title,date,time:existing?.time||'09:00',priority:existing?.priority||'Normal',description,completed:false,source,referenceId,createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
+  }
+  window.ensureFinanceReminder=ensureFinanceReminder;
+  function accountOptions(accounts,selected='',includeBlank=false){
+    return (includeBlank?'<option value="">Select account</option>':'')+accounts.map(a=>`<option value="${esc2(a.id)}" ${String(a.id)===String(selected)?'selected':''}>${esc2(a.name||'Account')} • ${esc2(a.accountNumber||'')}</option>`).join('');
+  }
+  function accountLabel(id,accounts){const a=(accounts||[]).find(x=>String(x.id)===String(id));return a?`${a.name||'Account'} • ${a.accountNumber||''}`:(id?'Unknown account':'');}
+
+  async function renderBanks(){
+    const el=$('banks');if(!el)return;
+    const [accounts,transactions]=await Promise.all([getAll('banks'),getAll('transactions')]);
+    el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h3 style="margin:0">Banks & Accounts</h3><p class="muted" style="margin:4px 0">Create accounts first. Other finance modules can reference these accounts.</p></div><button class="btn primary" type="button" id="addBankAccountBtn">+ Add Account</button></div><div class="list" style="margin-top:14px">${accounts.length?accounts.map(a=>{const bal=accountBalance(a,transactions);return `<div class="item"><div style="min-width:0"><div class="title">${esc2(a.name||'Account')} <span class="pill">${esc2(a.institutionType||'Bank')}</span></div><div class="sub">${esc2(a.accountType||'Account')} • ${esc2(a.accountHolder||'')}</div><div class="sub">A/C: ${esc2(a.accountNumber||'Not set')} • IFSC: ${esc2(a.ifsc||'Not set')}</div><div class="sub">Current Balance: <b>${money(bal)}</b> • ${esc2(a.status||'Active')}</div></div><div class="actions"><button class="btn" type="button" data-copy-bank-account="${esc2(a.id)}">Copy A/C</button><button class="btn" type="button" data-edit-bank-account="${esc2(a.id)}">Edit</button><button class="btn" type="button" data-reconcile-bank="${esc2(a.id)}">Reconcile</button></div></div>`}).join(''):'<div class="empty">No accounts added yet. Add a Bank or Post Office account.</div>'}</div></div>`;
+    $('addBankAccountBtn').onclick=()=>openBankAccountForm();
+    el.querySelectorAll('[data-copy-bank-account]').forEach(b=>b.onclick=async()=>{const a=await get('banks',b.dataset.copyBankAccount);if(a?.accountNumber){await copyToClipboard(a.accountNumber);toast('Account number copied')}else toast('Account number not available',true)});
+    el.querySelectorAll('[data-edit-bank-account]').forEach(b=>b.onclick=async()=>{const a=await get('banks',b.dataset.editBankAccount);if(a)openBankAccountForm(a)});
+    el.querySelectorAll('[data-reconcile-bank]').forEach(b=>b.onclick=async()=>{const a=await get('banks',b.dataset.reconcileBank);if(a)openReconcileForm(a,transactions)});
+  }
+  function openBankAccountForm(existing=null){
+    const html=`<form class="grid"><label>Institution Type<select name="institutionType"><option ${existing?.institutionType==='Bank'?'selected':''}>Bank</option><option ${existing?.institutionType==='Post Office'?'selected':''}>Post Office</option></select></label><label>Bank / Post Office Name<input name="name" required value="${esc2(existing?.name||'')}"></label><label>Account Holder<input name="accountHolder" value="${esc2(existing?.accountHolder||'')}"></label><label>Account Number<input name="accountNumber" type="text" inputmode="numeric" value="${esc2(existing?.accountNumber||'')}"></label><label>IFSC<input name="ifsc" value="${esc2(existing?.ifsc||'')}" placeholder="e.g. IPOS0000DOP"></label><label>Account Type<input name="accountType" value="${esc2(existing?.accountType||'Savings')}"></label><label>Account Opened On<input name="openedOn" type="date" value="${esc2(existing?.openedOn||today())}"></label><label>Initial Balance<input name="initialBalance" type="number" step="0.01" min="0" value="${N(existing?.initialBalance)}"></label><label>Status<select name="status"><option ${existing?.status!=='Inactive'&&existing?.status!=='Closed'?'selected':''}>Active</option><option ${existing?.status==='Inactive'?'selected':''}>Inactive</option><option ${existing?.status==='Closed'?'selected':''}>Closed</option></select></label><label style="grid-column:1/-1">Notes<textarea name="notes">${esc2(existing?.notes||'')}</textarea></label><div class="actions" style="grid-column:1/-1"><button class="btn primary">${existing?'Save Changes':'Save Account'}</button></div></form>`;
+    openModal(existing?'Edit Account':'Add Bank / Post Office Account',html,async fd=>{
+      const accountNumber=S(fd.get('accountNumber'));
+      const institutionType=S(fd.get('institutionType'))||'Bank';
+      const ifsc=S(fd.get('ifsc'))||(institutionType==='Post Office'?'IPOS0000DOP':'');
+      const row={...(existing||{}),id:existing?.id||uid(),institutionType,name:S(fd.get('name')),accountHolder:S(fd.get('accountHolder')),accountNumber,ifsc,accountType:S(fd.get('accountType')),openedOn:S(fd.get('openedOn')),initialBalance:N(fd.get('initialBalance')),status:S(fd.get('status'))||'Active',notes:S(fd.get('notes')),createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+      if(!row.name){toast('Enter bank / post office name',true);return;}
+      if(existing && existing.initialBalance!==row.initialBalance) {
+        const txs=await getAll('transactions'); const current=accountBalance(existing,txs); const oldInitial=N(existing.initialBalance); const delta=N(row.initialBalance)-oldInitial;
+        if(Math.abs(delta)>0.000001){toast('Use Reconcile Balance to change an existing balance without altering the original opening balance.',true);return;}
+      }
+      await put('banks',row);await log('Finance',existing?'Account updated':'Account added');closeModal();toast(existing?'Account updated':'Account saved');await refresh();
+    });
+  }
+  function openReconcileForm(account,transactions){
+    const current=accountBalance(account,transactions);
+    openModal('Reconcile Balance',`<form class="grid"><div class="card" style="grid-column:1/-1"><div class="muted">Calculated balance</div><div class="metric">${money(current)}</div></div><label>Target Balance<input name="target" type="number" step="0.01" value="${current.toFixed(2)}" required></label><label>Reason<input name="reason" required placeholder="Bank statement reconciliation"></label><div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Adjustment</button></div></form>`,async fd=>{
+      const target=N(fd.get('target')),delta=target-current;if(Math.abs(delta)<0.000001){toast('No adjustment required');closeModal();return;}
+      await createTransaction({date:today(),type:'Balance Adjustment',amount:Math.abs(delta),sourceAccountId:delta<0?account.id:'',destinationAccountId:delta>0?account.id:'',category:'Balance Adjustment',module:'Banks & Accounts',referenceId:account.id,description:S(fd.get('reason'))});
+      await log('Finance','Balance adjustment recorded for '+(account.name||'Account'));closeModal();toast('Balance adjustment saved');await refresh();
+    });
+  }
+
+  function transactionRows(rows,accounts){
+    return rows.slice().sort((a,b)=>(b.date||b.createdAt||'').localeCompare(a.date||a.createdAt||'')).map(t=>`<div class="item"><div style="min-width:0"><div class="title">${esc2(t.description||t.type||'Transaction')} <span class="pill">${esc2(t.type||'')}</span></div><div class="sub">${esc2(t.date||'')} • ${esc2(t.category||'')} • ${esc2(t.module||'')}</div><div class="sub">${accountLabel(t.sourceAccountId,accounts)?'From: '+esc2(accountLabel(t.sourceAccountId,accounts))+' • ':''}${accountLabel(t.destinationAccountId,accounts)?'To: '+esc2(accountLabel(t.destinationAccountId,accounts)):''}</div></div><div><b>${money(t.amount)}</b>${t.principal||t.interest?`<div class="sub">Principal ${money(t.principal)} • Interest ${money(t.interest)}</div>`:''}</div></div>`).join('');
+  }
+  async function renderTransactions(){
+    const el=$('transactions');if(!el)return;
+    const [rows,accounts]=await Promise.all([getAll('transactions'),getAll('banks')]);
+    el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h3 style="margin:0">Transactions</h3><p class="muted" style="margin:4px 0">Central financial activity ledger. Investments and transfers are not treated as expenses.</p></div><button class="btn" type="button" id="exportTransactionsBtn">Download CSV</button></div><div class="grid" style="margin-top:14px"><label>Search<input id="txSearch" placeholder="Search description, category, account..."></label><label>Type<select id="txType"><option value="">All</option>${Object.keys(typeLabel).map(k=>`<option>${esc2(k)}</option>`).join('')}</select></label><label>Account<select id="txAccount"><option value="">All accounts</option>${accounts.map(a=>`<option value="${esc2(a.id)}">${esc2(a.name||'Account')} • ${esc2(a.accountNumber||'')}</option>`).join('')}</select></label><label>Period<select id="txPeriod"><option value="all">All</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="week">Current Week</option><option value="lastweek">Last Week</option><option value="month">Current Month</option><option value="lastmonth">Last Month</option><option value="year">Current Year</option><option value="lastyear">Last Year</option><option value="custom">Custom Date Range</option></select></label><label id="txFromWrap" style="display:none">From<input id="txFrom" type="date"></label><label id="txToWrap" style="display:none">To<input id="txTo" type="date"></label></div></div><div class="card"><div id="txList" class="list"></div></div>`;
+    const apply=()=>{
+      const q=S($('txSearch').value).toLowerCase(),type=$('txType').value,aid=$('txAccount').value,period=$('txPeriod').value,from=$('txFrom').value,to=$('txTo').value;const now=new Date();
+      const d0=new Date(now.getFullYear(),now.getMonth(),now.getDate());const day=d0.getDay();const monday=new Date(d0);monday.setDate(d0.getDate()-(day===0?6:day-1));const prevMon=new Date(monday);prevMon.setDate(prevMon.getDate()-7);const prevSun=new Date(monday);prevSun.setDate(prevSun.getDate()-1);const monthStart=new Date(now.getFullYear(),now.getMonth(),1),monthEnd=new Date(now.getFullYear(),now.getMonth()+1,0);const lastMonthStart=new Date(now.getFullYear(),now.getMonth()-1,1),lastMonthEnd=new Date(now.getFullYear(),now.getMonth(),0);const yearStart=new Date(now.getFullYear(),0,1),yearEnd=new Date(now.getFullYear(),11,31),lastYearStart=new Date(now.getFullYear()-1,0,1),lastYearEnd=new Date(now.getFullYear()-1,11,31);
+      const inRange=(date)=>{if(period==='all')return true;const d=new Date((date||'')+'T12:00:00');if(Number.isNaN(d.getTime()))return false;if(period==='today')return d0.getTime()===new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();if(period==='yesterday'){const y=new Date(d0);y.setDate(y.getDate()-1);return d.getFullYear()===y.getFullYear()&&d.getMonth()===y.getMonth()&&d.getDate()===y.getDate();}if(period==='week')return d>=monday&&d<=d0; if(period==='lastweek')return d>=prevMon&&d<=prevSun; if(period==='month')return d>=monthStart&&d<=monthEnd; if(period==='lastmonth')return d>=lastMonthStart&&d<=lastMonthEnd; if(period==='year')return d>=yearStart&&d<=yearEnd; if(period==='lastyear')return d>=lastYearStart&&d<=lastYearEnd; if(period==='custom'){if(from&&d<new Date(from+'T00:00:00'))return false;if(to&&d>new Date(to+'T23:59:59'))return false;return true;}return true;};
+      const out=rows.filter(t=>{const hay=[t.description,t.category,t.module,accountLabel(t.sourceAccountId,accounts),accountLabel(t.destinationAccountId,accounts)].join(' ').toLowerCase();return (!q||hay.includes(q))&&(!type||t.type===type)&&(!aid||t.sourceAccountId===aid||t.destinationAccountId===aid)&&inRange(t.date)});$('txList').innerHTML=out.length?transactionRows(out,accounts):'<div class="empty">No transactions match the selected filters.</div>';return out;
+    };
+    const toggle=()=>{const custom=$('txPeriod').value==='custom';$('txFromWrap').style.display=custom?'block':'none';$('txToWrap').style.display=custom?'block':'none';apply()};
+    ['txSearch','txType','txAccount','txFrom','txTo'].forEach(id=>$(id).oninput=apply);$('txPeriod').onchange=toggle;apply();
+    $('exportTransactionsBtn').onclick=()=>{const out=apply();const csv=[['Date','Type','Description','Category','Source Account','Destination Account','Amount','Principal','Interest','Reference'],...out.map(t=>[t.date,t.type,t.description,t.category,accountLabel(t.sourceAccountId,accounts),accountLabel(t.destinationAccountId,accounts),t.amount,t.principal||'',t.interest||'',t.referenceId])].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),'VaultOne_Transactions_'+today()+'.csv');toast('Transactions CSV exported')};
+  }
+
+  function renderIncomeExpenseWithAccounts(inc,exp,accounts){
+    $('income').innerHTML=`<div class="card"><h3>Income</h3><form id="incomeFinalForm" class="grid"><label>Type<select name="type"><option>Salary</option><option>Shift Allowance</option><option>Other Income</option><option>Interest</option><option>Dividend</option></select></label><label>Amount<input name="amount" type="number" min="0" step="0.01" required></label><label>Date<input name="date" type="date" value="${today()}" required></label><label>Received In<select name="accountId"><option value="">Select account</option>${accountOptions(accounts)}</select></label><label style="grid-column:1/-1">Note<input name="note"></label><div class="actions"><button class="btn primary">Save Income</button></div></form></div><div class="card"><h3>Existing Income</h3><div class="list">${inc.length?inc.map(x=>`<div class="item"><div><div class="title">${esc2(x.type||'Income')}</div><div class="sub">${esc2(x.date||'')} • ${esc2(x.note||'')}</div></div><b>${money(x.amount)}</b></div>`).join(''):'<div class="empty">No income records yet.</div>'}</div></div>`;
+    $('expenses').innerHTML=`<div class="card"><h3>Expenses</h3><form id="expenseFinalForm" class="grid"><label>Amount<input name="amount" type="number" min="0" step="0.01" required></label><label>Main Category<select name="category">${categories2.map(c=>`<option>${esc2(c)}</option>`).join('')}</select></label><label>Subcategory<input name="subcategory"></label><label>Date<input name="date" type="date" value="${today()}" required></label><label>Paid From<select name="accountId"><option value="">Select account</option>${accountOptions(accounts)}</select></label><label style="grid-column:1/-1">Note<input name="note"></label><div class="actions"><button class="btn primary">Save Expense</button></div></form></div><div class="card"><h3>Existing Expenses</h3><div class="list">${exp.length?exp.map(x=>`<div class="item"><div><div class="title">${esc2(x.category||'Expense')}${x.subcategory?' • '+esc2(x.subcategory):''}</div><div class="sub">${esc2(x.date||'')} • ${esc2(x.note||'')}</div></div><b>${money(x.amount)}</b></div>`).join(''):'<div class="empty">No expense records yet.</div>'}</div></div>`;
+    $('incomeFinalForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget);try{const amount=N(fd.get('amount'));const row={id:uid(),type:S(fd.get('type')),amount,date:S(fd.get('date'))||today(),accountId:S(fd.get('accountId')),note:S(fd.get('note')),createdAt:new Date().toISOString()};if(amount<=0)throw new Error('Enter a valid amount.');await put('income',row);if(row.accountId)await createTransaction({date:row.date,type:'Income',amount,sourceAccountId:'',destinationAccountId:row.accountId,category:row.type,module:'Income',referenceId:row.id,description:row.type});await log('Finance','Income saved');toast('Income saved');await refresh()}catch(err){console.error(err);toast('Income could not be saved: '+err.message,true)}};
+    $('expenseFinalForm').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget);try{const amount=N(fd.get('amount'));const row={id:uid(),amount,category:S(fd.get('category')),subcategory:S(fd.get('subcategory')),date:S(fd.get('date'))||today(),accountId:S(fd.get('accountId')),note:S(fd.get('note')),createdAt:new Date().toISOString()};if(amount<=0)throw new Error('Enter a valid amount.');await put('expenses',row);if(row.accountId)await createTransaction({date:row.date,type:'Expense',amount,sourceAccountId:row.accountId,destinationAccountId:'',category:row.category,module:'Expenses',referenceId:row.id,description:row.subcategory||row.category});await log('Finance','Expense saved');toast('Expense saved');await refresh()}catch(err){console.error(err);toast('Expense could not be saved: '+err.message,true)}};
+  }
+
+  function loanRemaining2(x){return Math.max(0,Math.floor(N(x.tenure))-Math.floor(N(x.emisPaid)))}
+  function loanOutstanding2(x){if(x.status==='Settled')return 0;if(x.loanType==='Gold Loan')return Math.max(0,N(x.outstandingPrincipal??x.principal));if(x.manualOutstanding!==undefined&&x.manualOutstanding!=='')return Math.max(0,N(x.manualOutstanding));const p=N(x.principal),paid=Math.max(0,Math.floor(N(x.emisPaid))),emi=N(x.emi),r=N(x.interest)/100/12;if(p<=0)return 0;if(emi<=0)return p;if(r<=0)return Math.max(0,p-emi*paid);return Math.max(0,p*Math.pow(1+r,paid)-emi*((Math.pow(1+r,paid)-1)/r))}
+  function loanDueText(date){if(!date)return 'Not set';const d=new Date(date+'T23:59:59'),days=Math.ceil((d-Date.now())/86400000);return days<0?'Overdue by '+Math.abs(days)+' days':days===0?'Due today':'Due in '+days+' days'}
+  async function renderLoans2(){
+    const loans=await getAll('loans');const accounts=await getAccounts();const el=$('loans');if(!el)return;
+    el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h3 style="margin:0">Loans</h3><p class="muted" style="margin:4px 0">Existing loans are shown first. Add a loan only when needed.</p></div><button class="btn primary" type="button" id="addLoanV1Btn">+ Add Loan</button></div><div class="list" style="margin-top:14px">${loans.length?loans.map(x=>{const gold=x.loanType==='Gold Loan',out=loanOutstanding2(x),rem=loanRemaining2(x);return `<div class="item"><div style="width:100%"><div class="title">${esc2(x.name||'Loan')} <span class="pill">${esc2(x.loanType||'Personal Loan')}</span></div><div class="sub">Principal ${money(x.principal)} • Interest ${N(x.interest).toFixed(2)}%</div><div class="detail-grid">${gold?`<div class="detail-row"><small>Outstanding Principal</small><b>${money(out)}</b></div><div class="detail-row"><small>Accrued / Paid Interest</small><b>${money(N(x.interestPaid))}</b></div><div class="detail-row"><small>Next Due</small><b>${esc2(x.nextDueDate||x.dueDate||'Not set')}</b></div><div class="detail-row"><small>Status</small><b>${esc2(loanDueText(x.nextDueDate||x.dueDate))}</b></div>`:`<div class="detail-row"><small>Outstanding Balance</small><b>${money(out)}</b></div><div class="detail-row"><small>EMIs Paid</small><b>${Math.floor(N(x.emisPaid))} / ${Math.floor(N(x.tenure))}</b></div><div class="detail-row"><small>Remaining Tenure</small><b>${rem} months</b></div><div class="detail-row"><small>Next Due</small><b>${esc2(x.dueDate||'Not set')}</b></div>`}</div><div class="actions"><button class="btn" type="button" data-loan-v1-edit="${x.id}">Edit</button>${gold?`<button class="btn" type="button" data-goldloan-pay="${x.id}">Record Payment</button>`:`<button class="btn" type="button" data-loan-v1-pay="${x.id}">Make EMI Payment</button><button class="btn" type="button" data-loan-v1-advance="${x.id}">Advance / Prepay</button>`}<button class="btn danger" type="button" data-loan-v1-delete="${x.id}">Delete</button></div></div></div>`}).join(''):'<div class="empty">No loans added yet.</div>'}</div></div><div id="loanV1FormHost"></div>`;
+    $('addLoanV1Btn').onclick=()=>openLoanV1Form();
+    el.querySelectorAll('[data-loan-v1-edit]').forEach(b=>b.onclick=async()=>{const x=await get('loans',b.dataset.loanV1Edit);if(x)openLoanV1Form(x)});
+    el.querySelectorAll('[data-loan-v1-delete]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this loan?')){await del('loans',b.dataset.loanV1Delete);await refresh();toast('Loan deleted')}});
+    el.querySelectorAll('[data-loan-v1-pay]').forEach(b=>b.onclick=async()=>{const x=await get('loans',b.dataset.loanV1Pay);if(x)openEmiPayment(x,accounts)});
+    el.querySelectorAll('[data-goldloan-pay]').forEach(b=>b.onclick=async()=>{const x=await get('loans',b.dataset.goldloanPay);if(x)openGoldLoanPayment(x,accounts)});
+    el.querySelectorAll('[data-loan-v1-advance]').forEach(b=>b.onclick=async()=>{const x=await get('loans',b.dataset.loanV1Advance);if(x)openLoanPrepayment(x,accounts)});
+  }
+  function openLoanV1Form(existing=null){
+    const type=existing?.loanType||'Personal Loan';const accountsCache=window.__vaultBankAccounts||[];
+    const html=`<form id="loanV1Form" class="grid"><label>Loan Type<select name="loanType" id="loanV1Type">${['Personal Loan','Home Loan','Vehicle Loan','Gold Loan','Other'].map(v=>`<option ${type===v?'selected':''}>${v}</option>`).join('')}</select></label><label>Lender / Bank<input name="lender" value="${esc2(existing?.lender||'')}"></label><label>Loan Account Number<input name="loanAccountNumber" type="text" inputmode="numeric" value="${esc2(existing?.loanAccountNumber||'')}"></label><label>Principal<input name="principal" type="number" step="0.01" min="0" required value="${N(existing?.principal)}"></label><label>Interest Rate (%)<input name="interest" type="number" step="0.01" min="0" inputmode="decimal" required value="${N(existing?.interest)}"></label><div id="loanV1Dynamic" style="grid-column:1/-1"></div><label>Notes<textarea name="notes">${esc2(existing?.notes||'')}</textarea></label><div class="actions" style="grid-column:1/-1"><button class="btn primary">${existing?'Save Changes':'Save Loan'}</button><button class="btn" type="button" id="cancelLoanV1">Cancel</button></div></form>`;
+    openModal(existing?'Edit Loan':'Add Loan',html,async fd=>{
+      const lt=S(fd.get('loanType')),base={...(existing||{}),id:existing?.id||uid(),loanType:lt,lender:S(fd.get('lender')),loanAccountNumber:S(fd.get('loanAccountNumber')),principal:N(fd.get('principal')),interest:N(fd.get('interest')),notes:S(fd.get('notes')),createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+      if(base.principal<=0){toast('Enter a valid principal',true);return;}
+      if(lt==='Gold Loan'){Object.assign(base,{startDate:S(fd.get('startDate')),dueDate:S(fd.get('dueDate')),nextDueDate:S(fd.get('nextDueDate')||fd.get('dueDate')),interestFrequency:S(fd.get('interestFrequency')),outstandingPrincipal:N(fd.get('outstandingPrincipal')||base.principal),interestPaid:N(fd.get('interestPaid')),status:S(fd.get('status'))||'Active'});}else{Object.assign(base,{emi:N(fd.get('emi')),tenure:Math.floor(N(fd.get('tenure'))),emisPaid:Math.min(Math.floor(N(fd.get('emisPaid'))),Math.floor(N(fd.get('tenure')))),dueDate:S(fd.get('dueDate')),manualOutstanding:S(fd.get('manualOutstanding'))===''?undefined:N(fd.get('manualOutstanding')),status:S(fd.get('status'))||'Active'});if(base.tenure<=0){toast('Enter total tenure',true);return;}}
+      await put('loans',base);if(lt==='Gold Loan'){await ensureFinanceReminder((base.name||'Gold Loan')+' Due',base.nextDueDate||base.dueDate,'Gold Loan due reminder','goldLoan',base.id);}else if(base.dueDate){await ensureFinanceReminder((base.name||'Loan')+' EMI Due',base.dueDate,'Loan EMI due reminder','loan',base.id);}await log('Finance',existing?'Loan updated':'Loan saved');closeModal();toast(existing?'Loan updated':'Loan saved');await refresh();
+    });
+    const form=$('loanV1Form'),dyn=$('loanV1Dynamic');
+    const draw=()=>{const lt=$('loanV1Type').value;if(lt==='Gold Loan'){dyn.innerHTML=`<div class="grid"><label>Start Date<input name="startDate" type="date" value="${esc2(existing?.startDate||today())}"></label><label>Due / Maturity Date<input name="dueDate" type="date" value="${esc2(existing?.dueDate||'')}"></label><label>Interest Payment Frequency<select name="interestFrequency"><option ${existing?.interestFrequency==='Monthly'?'selected':''}>Monthly</option><option ${existing?.interestFrequency==='Quarterly'?'selected':''}>Quarterly</option><option ${existing?.interestFrequency==='On Due Date'?'selected':''}>On Due Date</option></select></label><label>Outstanding Principal<input name="outstandingPrincipal" type="number" step="0.01" min="0" value="${N(existing?.outstandingPrincipal??existing?.principal)}"></label><label>Interest Paid<input name="interestPaid" type="number" step="0.01" min="0" value="${N(existing?.interestPaid)}"></label><label>Next Due Date<input name="nextDueDate" type="date" value="${esc2(existing?.nextDueDate||existing?.dueDate||'')}"></label><label>Status<select name="status"><option ${existing?.status!=='Settled'?'selected':''}>Active</option><option ${existing?.status==='Settled'?'selected':''}>Settled</option></select></label></div>`;}else{dyn.innerHTML=`<div class="grid"><label>EMI / Month<input name="emi" type="number" step="0.01" min="0" required value="${N(existing?.emi)}"></label><label>Total Tenure (Months)<input name="tenure" type="number" step="1" min="1" required value="${N(existing?.tenure)}"></label><label>EMIs Paid<input name="emisPaid" type="number" step="1" min="0" required value="${N(existing?.emisPaid)}"></label><label>Next Due Date<input name="dueDate" type="date" value="${esc2(existing?.dueDate||'')}"></label><label>Actual Outstanding Balance (optional)<input name="manualOutstanding" type="number" step="0.01" min="0" value="${esc2(existing?.manualOutstanding??'')}"></label><label>Status<select name="status"><option ${existing?.status!=='Settled'?'selected':''}>Active</option><option ${existing?.status==='Settled'?'selected':''}>Settled</option></select></label></div>`;}};
+    $('loanV1Type').onchange=draw;draw();$('cancelLoanV1').onclick=closeModal;
+  }
+  function calculateEmiSplit(loan){
+    const outstanding=Math.max(0,loanOutstanding2(loan));
+    const emi=Math.min(Math.max(0,N(loan.emi)),outstanding||Math.max(0,N(loan.emi)));
+    const monthlyRate=Math.max(0,N(loan.interest))/100/12;
+    const interest=Math.min(emi,outstanding>0?outstanding*monthlyRate:0);
+    const principal=Math.max(0,Math.min(outstanding,emi-interest));
+    return {amount:emi,principal,interest,outstanding};
+  }
+  function openEmiPayment(loan,accounts){
+    const split=calculateEmiSplit(loan);
+    openModal('Make EMI Payment',`<form class="grid"><label>Payment Date<input name="date" type="date" value="${today()}" required></label><label>EMI Amount<input name="amount" type="number" step="0.01" min="0.01" value="${split.amount.toFixed(2)}" readonly></label><label>Principal Component<input name="principalDisplay" type="number" step="0.01" value="${split.principal.toFixed(2)}" readonly></label><label>Interest Component<input name="interestDisplay" type="number" step="0.01" value="${split.interest.toFixed(2)}" readonly></label><label>Paid From<select name="accountId"><option value="">Select account</option>${accountOptions(accounts)}</select></label><label>Notes<input name="notes"></label><p class="muted" style="grid-column:1/-1">Principal and interest are calculated automatically from the loan's outstanding balance and interest rate. You do not need to enter them manually.</p><div class="actions"><button class="btn primary">Save EMI Payment</button></div></form>`,async fd=>{
+      const amount=N(fd.get('amount')),principal=split.principal,interest=split.interest;
+      if(amount<=0){toast('The EMI amount is not valid for this loan.',true);return}
+      const accountId=S(fd.get('accountId'));if(!accountId){toast('Please select the account used for the EMI payment.',true);return}
+      const paymentDate=S(fd.get('date'))||today(),periodKey=paymentDate.slice(0,7),txs=await getAll('transactions');
+      if(txs.some(t=>t.referenceId===loan.id&&t.type==='Loan EMI'&&String(t.date||'').startsWith(periodKey))){toast('An EMI payment is already recorded for this month.',true);return}
+      await createTransaction({date:paymentDate,type:'Loan EMI',amount,sourceAccountId:accountId,category:'Loans & Financial',module:'Loan',referenceId:loan.id,description:loan.name||'Loan EMI',principal,interest});
+      loan.emisPaid=Math.min(Math.floor(N(loan.emisPaid))+1,Math.floor(N(loan.tenure)));
+      loan.manualOutstanding=Math.max(0,split.outstanding-principal);
+      loan.updatedAt=new Date().toISOString();
+      if(loan.manualOutstanding===0||loan.emisPaid>=loan.tenure)loan.status='Settled';
+      await put('loans',loan);await log('Finance','Loan EMI payment recorded');closeModal();toast('EMI payment recorded');await refresh();
+    });
+  }
+  function openLoanPrepayment(loan,accounts){
+    openModal('Advance / Prepayment',`<form class="grid"><label>Payment Date<input name="date" type="date" value="${today()}" required></label><label>Extra Principal Payment<input name="amount" type="number" step="0.01" min="0.01" required></label><label>Paid From<select name="accountId">${accountOptions(accounts)}</select></label><label>Notes<input name="notes"></label><div class="actions"><button class="btn primary">Save Prepayment</button></div></form>`,async fd=>{const amount=N(fd.get('amount'));if(amount<=0){toast('Enter a valid prepayment',true);return}await createTransaction({date:S(fd.get('date'))||today(),type:'Loan Prepayment',amount,sourceAccountId:S(fd.get('accountId')),category:'Loans & Financial',module:'Loan',referenceId:loan.id,description:loan.name||'Loan prepayment',principal:amount,interest:0});loan.manualOutstanding=Math.max(0,loanOutstanding2(loan)-amount);loan.updatedAt=new Date().toISOString();if(loan.manualOutstanding===0)loan.status='Settled';await put('loans',loan);closeModal();toast('Prepayment recorded');await refresh()});
+  }
+  function openGoldLoanPayment(loan,accounts){
+    openModal('Gold Loan Payment',`<form class="grid"><label>Payment Date<input name="date" type="date" value="${today()}" required></label><label>Payment Type<select name="type"><option>Gold Loan Interest</option><option>Gold Loan Principal</option><option>Gold Loan Advance Payment</option><option>Gold Loan Payment</option><option>Loan Settlement</option></select></label><label>Amount<input name="amount" type="number" step="0.01" min="0.01" required></label><label>Paid From<select name="accountId">${accountOptions(accounts)}</select></label><label>Notes<input name="notes"></label><div class="actions"><button class="btn primary">Save Payment</button></div></form>`,async fd=>{const amount=N(fd.get('amount')),type=S(fd.get('type'));if(amount<=0){toast('Enter a valid payment amount',true);return}const principalTypes=['Gold Loan Principal','Gold Loan Advance Payment','Gold Loan Payment','Loan Settlement'];const principalPart=principalTypes.includes(type)?amount:0;const interestPart=type==='Gold Loan Interest'?amount:0;await createTransaction({date:S(fd.get('date'))||today(),type,amount,sourceAccountId:S(fd.get('accountId')),category:'Loans & Financial',module:'Gold Loan',referenceId:loan.id,description:loan.name||'Gold Loan',principal:principalPart,interest:interestPart});loan.outstandingPrincipal=Math.max(0,N(loan.outstandingPrincipal??loan.principal)-principalPart);loan.interestPaid=N(loan.interestPaid)+interestPart;loan.updatedAt=new Date().toISOString();if(type==='Loan Settlement'||loan.outstandingPrincipal<=0)loan.status='Settled';await put('loans',loan);closeModal();toast('Gold Loan payment recorded');await refresh()});
+  }
+
+  window.renderFinance=async function(){
+    try{
+      // ── 1. Fetch all data in parallel ──────────────────────────────────────
+      const [inc,exp,bud,inv,gl,gr,ln,accounts,txs]=await Promise.all([
+        getAll('income'),getAll('expenses'),getAll('budgets'),getAll('investments'),
+        getAll('gold'),getAll('goldRates'),getAll('loans'),getAll('banks'),getAll('transactions')
+      ]);
+      window.__vaultBankAccounts=accounts;
+
+      // ── 2. Centralised financial summary (single source of truth) ──────────
+      const isMatured=date=>{if(!date)return false;const d=new Date(date+'T23:59:59');return !Number.isNaN(d.getTime())&&d.getTime()<=Date.now();};
+      const month=new Date().toISOString().slice(0,7);
+      const mi=inc.filter(x=>(x.date||'').startsWith(month)).reduce((a,b)=>a+N(b.amount),0);
+      const me=exp.filter(x=>(x.date||'').startsWith(month)).reduce((a,b)=>a+N(b.amount),0);
+      const latestRate=(gr||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0]||{};
+      const rateFor=g=>N(latestRate[g.purity==='18K'?'K18':g.purity==='24K'?'K24':'K22']);
+      const goldAssets=gl.reduce((s,g)=>s+N(g.weight)*rateFor(g),0);
+      const invAssets=inv.reduce((s,x)=>{
+        if(x.type==='demat'||x.category==='Demat')return s+N(x.quantity)*N(x.currentPrice||x.currentValue);
+        if(x.type==='fd'){const c=window.__vaultCalcFD?.(x);return s+(isMatured(x.maturityDate)?(c?.maturity||N(x.currentValue)):(c?.principal||N(x.principal)));}
+        if(x.type==='rd'){const c=window.__vaultCalcRD?.(x);return s+(isMatured(x.maturityDate)?(c?.maturity||N(x.currentValue)):(c?.principal||N(x.monthlyContribution)*N(x.tenureMonths)));}
+        if(x.type==='recurring')return s+(x.category==='PPF'||x.category==='SSA'?N(x.asOfBalance??x.currentValue):(window.__vaultCalcRecurring?.(x)?.estimated||N(x.currentValue)));
+        return s+N(x.currentValue??x.amount);
+      },0);
+      const bankAssets=accounts.reduce((s,a)=>s+accountBalance(a,txs),0);
+      const liabilities=ln.reduce((s,x)=>s+loanOutstanding2(x),0);
+      const totalAssets=bankAssets+invAssets+goldAssets;
+      const netWorthVal=totalAssets-liabilities;
+      const ms=inv.filter(x=>(x.createdAt||x.date||'').startsWith(month)).reduce((a,b)=>a+N(b.amount||b.monthlyContribution||b.monthlyDeposit),0);
+
+      // ── 3. Update iVault header stats ──────────────────────────────────────
+      $('netWorth').textContent=money(netWorthVal);
+      $('mIncome').textContent=money(mi);
+      $('mExpense').textContent=money(me);
+      $('mSavings').textContent=money(ms);
+      $('goldValue').textContent=money(goldAssets);
+      $('goldRateInfo').textContent=gr.length?'Latest rate: '+gr.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0].date:'No current rate.';
+      const cats=window.budgetRowsForMonth(bud,month),bt=Object.values(cats).reduce((a,b)=>a+b,0);
+      $('budgetTotal').textContent=money(bt);
+      $('budgetBar').style.width=(bt?Math.min(100,me/bt*100):0)+'%';
+      $('budgetInfo').textContent=bt?money(me)+' actual • '+money(Math.max(0,bt-me))+' remaining':'No budget configured.';
+
+      // ── 4. Update home dashboard ───────────────────────────────────────────
+      $('hNet').textContent=money(netWorthVal);
+
+      // ── 5. Render Overview tab ─────────────────────────────────────────────
+      $('financeDashboard').innerHTML=`<div class="card"><h3>Financial Overview</h3><div class="stats"><div class="stat">Total Assets<b>${money(totalAssets)}</b></div><div class="stat">Liabilities<b class="red">${money(liabilities)}</b></div><div class="stat">Net Worth<b class="${netWorthVal>=0?'green':'red'}">${money(netWorthVal)}</b></div><div class="stat">Transactions<b>${inc.length+exp.length}</b></div></div><div class="grid3" style="margin-top:14px"><div class="stat">Income (this month)<b class="green">${money(mi)}</b></div><div class="stat">Expenses (this month)<b class="red">${money(me)}</b></div><div class="stat">Savings (this month)<b class="cyan">${money(Math.max(0,mi-me))}</b></div></div></div>`;
+
+      // ── 6. Render Income / Expenses with account linkage ───────────────────
+      renderIncomeExpenseWithAccounts(inc,exp,accounts);
+
+      // ── 7. Render Budget (re-fetches fresh data on Prev/Next) ──────────────
+      window.__vaultBudgetRenderFn=async()=>{
+        const [freshBud,freshExp,freshInc]=await Promise.all([getAll('budgets'),getAll('expenses'),getAll('income')]);
+        if(typeof window.__renderBudgetInternal==='function') window.__renderBudgetInternal(freshBud,freshExp,freshInc);
+      };
+      if(typeof window.__renderBudgetInternal==='function') window.__renderBudgetInternal(bud,exp,inc);
+
+      // ── 8. Render Gold ─────────────────────────────────────────────────────
+      if(typeof window.__renderGoldInternal==='function') window.__renderGoldInternal(gl,gr);
+
+      // ── 9. Render Loans ────────────────────────────────────────────────────
+      await renderLoans2();
+
+      // ── 10. Render Banks & Accounts ────────────────────────────────────────
+      await renderBanks();
+
+      // ── 11. Render Transactions ────────────────────────────────────────────
+      await renderTransactions();
+
+      // ── 12. Render Savings & Investments ──────────────────────────────────
+      if(typeof window.__renderVaultOneInvestments==='function'){
+        try{await window.__renderVaultOneInvestments();}catch(invErr){console.error('VaultOne Investments render failed:',invErr);}
+      }
+
+      // ── 13. Restore active tab ─────────────────────────────────────────────
+      selectFinanceTab(currentFinanceSub||'financeDashboard');
+
+    }catch(e){
+      console.error('VaultOne iVault refresh failed:',e);
+      // Only show user-facing message for genuine unexpected failures.
+      // Individual sub-module errors are caught and logged above without
+      // surfacing this generic message.
+      toast('iVault could not be refreshed. Please try again.',true);
+    }
+  };
+  window.__vaultFinanceExtension={renderBanks,renderTransactions,renderLoans2};
+})();
+
+</script>
+<div style="text-align:center;color:#64748b;font-size:11px;padding:10px 14px 90px">© 2026 Deepan Chakkaravarthi. All Rights Reserved. VaultOne™</div>
+</body></html>
+
+
+
+
+
+
