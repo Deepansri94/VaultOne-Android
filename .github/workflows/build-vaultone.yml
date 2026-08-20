@@ -18,8 +18,7 @@ env:
   BUILD_TOOLS_VERSION: '35.0.0'
   APP_ID: 'com.vaultone.app'
   APP_NAME: 'VaultOne'
-  KEYSTORE_FILE: 'vaultone-release.jks'
-  KEY_ALIAS: 'vaultone'
+
 
 jobs:
 
@@ -765,35 +764,16 @@ jobs:
             --stacktrace
 
       # ==========================================================
-      # 22A. SETUP KEYSTORE
+      # 23. BUILD DEBUG APK
       # ==========================================================
-      - name: Setup release keystore
+      - name: Build VaultOne Debug APK
         shell: bash
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          set -e
-          echo "$KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_FILE"
-          echo "Keystore ready."
-
-      # ==========================================================
-      # 23. BUILD RELEASE APK
-      # ==========================================================
-      - name: Build VaultOne Release APK
-        shell: bash
-        env:
-          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           set -e
 
           ./gradlew \
             --no-daemon \
-            assembleRelease \
-            -Pandroid.injected.signing.store.file="$(pwd)/$KEYSTORE_FILE" \
-            -Pandroid.injected.signing.store.password="$STORE_PASSWORD" \
-            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
+            assembleDebug \
             --stacktrace
 
       # ==========================================================
@@ -827,19 +807,19 @@ jobs:
           echo ""
           echo "APK count: $APK_COUNT"
 
-          RELEASE_APK="./app/build/outputs/apk/release/app-release.apk"
+          DEBUG_APK="./app/build/outputs/apk/debug/app-debug.apk"
 
-          if [ ! -f "$RELEASE_APK" ]; then
+          if [ ! -f "$DEBUG_APK" ]; then
             echo ""
-            echo "ERROR: Expected release APK was not found:"
-            echo "$RELEASE_APK"
+            echo "ERROR: Expected debug APK was not found:"
+            echo "$DEBUG_APK"
             exit 1
           fi
 
           echo ""
           echo "SUCCESS: VaultOne APK generated."
 
-          ls -lh "$RELEASE_APK"
+          ls -lh "$DEBUG_APK"
 
       # ==========================================================
       # 25. PREPARE RELEASE ARTIFACT
@@ -852,11 +832,11 @@ jobs:
           mkdir -p release
 
           cp \
-            "./app/build/outputs/apk/release/app-release.apk" \
-            "./release/VaultOne-release.apk"
+            "./app/build/outputs/apk/debug/app-debug.apk" \
+            "./release/VaultOne-debug.apk"
 
           echo "Prepared APK:"
-          ls -lh "./release/VaultOne-release.apk"
+          ls -lh "./release/VaultOne-debug.apk"
 
       # ==========================================================
       # 26. UPLOAD APK
@@ -865,7 +845,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: VaultOne-APK
-          path: release/VaultOne-release.apk
+          path: release/VaultOne-debug.apk
           if-no-files-found: error
 
       # ==========================================================
