@@ -246,9 +246,38 @@ jobs:
             app/src/main/java/com/vaultone/app \
             app/src/main/assets \
             app/src/main/res/values \
+            app/src/main/res/mipmap-mdpi \
+            app/src/main/res/mipmap-hdpi \
+            app/src/main/res/mipmap-xhdpi \
+            app/src/main/res/mipmap-xxhdpi \
+            app/src/main/res/mipmap-xxxhdpi \
             gradle/wrapper
 
           echo "Android project directories created."
+
+      # ==========================================================
+      # 10A. COPY APP ICON
+      # ==========================================================
+      - name: Copy app icon
+        shell: bash
+        run: |
+          set -e
+
+          if [ ! -f "VaultOne.png" ]; then
+            echo "ERROR: VaultOne.png not found in repo root."
+            exit 1
+          fi
+
+          # Install imagemagick for resizing
+          sudo apt-get install -y imagemagick >/dev/null 2>&1
+
+          convert VaultOne.png -resize 48x48   app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert VaultOne.png -resize 72x72   app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert VaultOne.png -resize 96x96   app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert VaultOne.png -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert VaultOne.png -resize 192x192 app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+
+          echo "App icons generated."
 
       # ==========================================================
       # 10. COPY VAULTONE.HTML
@@ -424,6 +453,8 @@ jobs:
               <application
                   android:allowBackup="false"
                   android:label="VaultOne"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher"
                   android:resizeableActivity="true"
                   android:supportsRtl="true"
                   android:theme="@style/AppTheme">
