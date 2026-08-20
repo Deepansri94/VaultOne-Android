@@ -1,0 +1,830 @@
+name: Build VaultOne APK
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: '17'
+  GRADLE_VERSION: '8.7'
+  AGP_VERSION: '8.6.1'
+  ANDROID_API: '35'
+  BUILD_TOOLS_VERSION: '35.0.0'
+  APP_ID: 'com.vaultone.app'
+  APP_NAME: 'VaultOne'
+
+jobs:
+
+  build:
+    name: Build VaultOne APK
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ==========================================================
+      # 1. CHECKOUT
+      # ==========================================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ==========================================================
+      # 2. JAVA 17
+      # ==========================================================
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      # ==========================================================
+      # 3. SETUP GRADLE 8.7
+      # ==========================================================
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      # ==========================================================
+      # 4. ANDROID SDK
+      # ==========================================================
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        shell: bash
+        run: |
+          set -e
+
+          echo "Accepting Android SDK licenses..."
+
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+
+          echo "Installing Android SDK components..."
+
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-${ANDROID_API}" \
+            "build-tools;${BUILD_TOOLS_VERSION}"
+
+          echo "Android SDK installation completed."
+
+      # ==========================================================
+      # 5. BASIC ENVIRONMENT CHECK
+      # ==========================================================
+      - name: Check build environment
+        shell: bash
+        run: |
+          set -e
+
+          echo "=========================================="
+          echo "BUILD ENVIRONMENT"
+          echo "=========================================="
+
+          echo ""
+          echo "Working directory:"
+          pwd
+
+          echo ""
+          echo "Java:"
+          java -version
+
+          echo ""
+          echo "Gradle:"
+          gradle --version
+
+          echo ""
+          echo "Android SDK:"
+          echo "${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+
+          echo ""
+          echo "Git:"
+          git --version
+
+      # ==========================================================
+      # 6. FIND VAULTONE.HTML
+      #
+      # We deliberately do NOT assume it is in a particular
+      # nested directory.
+      # ==========================================================
+      - name: Find VaultOne HTML
+        shell: bash
+        run: |
+          set -e
+
+          echo "=========================================="
+          echo "SEARCHING FOR VAULTONE.HTML"
+          echo "=========================================="
+
+          HTML_FILE=""
+
+          # Preferred exact filename
+          if [ -f "./VaultOne.html" ]; then
+            HTML_FILE="./VaultOne.html"
+          else
+            HTML_FILE=$(find . \
+              -type f \
+              -name "VaultOne.html" \
+              -not -path "./.git/*" \
+              -not -path "./app/build/*" \
+              | head -n 1 || true)
+          fi
+
+          if [ -z "$HTML_FILE" ]; then
+            echo ""
+            echo "ERROR: VaultOne.html was not found."
+            echo ""
+            echo "HTML files currently present in repository:"
+
+            find . \
+              -type f \
+              \( -iname "*.html" -o -iname "*.htm" \) \
+              -not -path "./.git/*" \
+              -not -path "./app/build/*" \
+              -print || true
+
+            echo ""
+            echo "Please make sure the file is named exactly:"
+            echo "VaultOne.html"
+
+            exit 1
+          fi
+
+          HTML_FILE="${HTML_FILE#./}"
+
+          echo "SUCCESS"
+          echo "VaultOne HTML:"
+          echo "$HTML_FILE"
+
+          echo "$HTML_FILE" > vaultone-html-path.txt
+
+      # ==========================================================
+      # 7. CHECK HTML
+      # ==========================================================
+      - name: Validate VaultOne HTML
+        shell: bash
+        run: |
+          set -e
+
+          HTML_FILE=$(cat vaultone-html-path.txt)
+
+          echo "Checking:"
+          echo "$HTML_FILE"
+
+          if [ ! -f "$HTML_FILE" ]; then
+            echo "ERROR: HTML file disappeared."
+            exit 1
+          fi
+
+          FILE_SIZE=$(wc -c < "$HTML_FILE")
+
+          echo "HTML size: ${FILE_SIZE} bytes"
+
+          if [ "$FILE_SIZE" -lt 100 ]; then
+            echo "ERROR: VaultOne.html appears to be empty or invalid."
+            exit 1
+          fi
+
+          echo ""
+          echo "HTML first lines:"
+          head -n 10 "$HTML_FILE" || true
+
+      # ==========================================================
+      # 8. DETECT POSSIBLE EXTERNAL DEPENDENCIES
+      #
+      # This does NOT fail the build.
+      # It warns us if the supposedly offline application
+      # references CDN/network resources.
+      # ==========================================================
+      - name: Check VaultOne offline dependencies
+        shell: bash
+        run: |
+          set +e
+
+          HTML_FILE=$(cat vaultone-html-path.txt)
+
+          echo "=========================================="
+          echo "OFFLINE DEPENDENCY CHECK"
+          echo "=========================================="
+
+          EXTERNAL_COUNT=$(grep -Eoi \
+            'https?://[^"'"'"' )<>]+' \
+            "$HTML_FILE" \
+            | sort -u \
+            | wc -l)
+
+          if [ "$EXTERNAL_COUNT" -gt 0 ]; then
+            echo ""
+            echo "WARNING: External URLs were detected:"
+            grep -Eoi \
+              'https?://[^"'"'"' )<>]+' \
+              "$HTML_FILE" \
+              | sort -u \
+              | head -n 30
+
+            echo ""
+            echo "The APK may not work fully offline if these resources"
+            echo "are required by VaultOne.html."
+          else
+            echo "No obvious external URLs detected."
+          fi
+
+      # ==========================================================
+      # 9. CREATE ANDROID PROJECT
+      # ==========================================================
+      - name: Create Android project structure
+        shell: bash
+        run: |
+          set -e
+
+          mkdir -p \
+            app/src/main/java/com/vaultone/app \
+            app/src/main/assets \
+            app/src/main/res/values \
+            gradle/wrapper
+
+          echo "Android project directories created."
+
+      # ==========================================================
+      # 10. COPY VAULTONE.HTML
+      #
+      # If VaultOne.html is in a subdirectory, preserve files
+      # from that web-app directory so relative resources have
+      # a chance to continue working.
+      # ==========================================================
+      - name: Copy VaultOne web application
+        shell: bash
+        run: |
+          set -e
+
+          HTML_FILE=$(cat vaultone-html-path.txt)
+          HTML_DIR=$(dirname "$HTML_FILE")
+
+          echo "HTML file:"
+          echo "$HTML_FILE"
+
+          echo ""
+          echo "HTML directory:"
+          echo "$HTML_DIR"
+
+          if [ "$HTML_DIR" = "." ]; then
+
+            cp "./VaultOne.html" \
+              "app/src/main/assets/VaultOne.html"
+
+          else
+
+            cp "$HTML_FILE" \
+              "app/src/main/assets/VaultOne.html"
+
+            echo ""
+            echo "Checking for web resources beside VaultOne.html..."
+
+            find "$HTML_DIR" \
+              -maxdepth 2 \
+              -type f \
+              -not -name "VaultOne.html" \
+              -print \
+              | head -n 50 || true
+
+          fi
+
+          if [ ! -f "app/src/main/assets/VaultOne.html" ]; then
+            echo "ERROR: Failed to copy VaultOne.html."
+            exit 1
+          fi
+
+          echo ""
+          echo "APK asset:"
+          ls -lh app/src/main/assets/VaultOne.html
+
+      # ==========================================================
+      # 11. CREATE SETTINGS.GRADLE
+      # ==========================================================
+      - name: Create settings.gradle
+        shell: bash
+        run: |
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.name = "VaultOne"
+
+          include(":app")
+          EOF
+
+      # ==========================================================
+      # 12. CREATE ROOT BUILD.GRADLE
+      # ==========================================================
+      - name: Create root build.gradle
+        shell: bash
+        run: |
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.6.1' apply false
+          }
+          EOF
+
+      # ==========================================================
+      # 13. CREATE GRADLE.PROPERTIES
+      # ==========================================================
+      - name: Create gradle.properties
+        shell: bash
+        run: |
+          cat > gradle.properties <<'EOF'
+          android.useAndroidX=true
+          android.enableJetifier=true
+
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+
+          android.nonTransitiveRClass=true
+          android.defaults.buildfeatures.buildconfig=false
+          EOF
+
+      # ==========================================================
+      # 14. CREATE APP BUILD.GRADLE
+      # ==========================================================
+      - name: Create app build.gradle
+        shell: bash
+        run: |
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.vaultone.app'
+
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId 'com.vaultone.app'
+
+                  minSdk 24
+                  targetSdk 35
+
+                  versionCode 1
+                  versionName '1.0'
+              }
+
+              buildTypes {
+
+                  debug {
+                      minifyEnabled false
+                      shrinkResources false
+                  }
+
+                  release {
+                      minifyEnabled false
+                      shrinkResources false
+                  }
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+
+          dependencies {
+              implementation 'androidx.webkit:webkit:1.16.0'
+          }
+          EOF
+
+      # ==========================================================
+      # 15. CREATE MANIFEST
+      # ==========================================================
+      - name: Create AndroidManifest.xml
+        shell: bash
+        run: |
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <application
+                  android:allowBackup="false"
+                  android:label="VaultOne"
+                  android:resizeableActivity="true"
+                  android:supportsRtl="true"
+                  android:theme="@style/AppTheme">
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:screenOrientation="unspecified">
+
+                      <intent-filter>
+
+                          <action android:name="android.intent.action.MAIN" />
+
+                          <category
+                              android:name="android.intent.category.LAUNCHER" />
+
+                      </intent-filter>
+
+                  </activity>
+
+              </application>
+
+          </manifest>
+          EOF
+
+      # ==========================================================
+      # 16. CREATE THEME
+      # ==========================================================
+      - name: Create Android theme
+        shell: bash
+        run: |
+          cat > app/src/main/res/values/styles.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+
+          <resources>
+
+              <style
+                  name="AppTheme"
+                  parent="android:style/Theme.Material.Light.NoActionBar">
+
+                  <item name="android:fontFamily">sans</item>
+
+                  <item name="android:windowActionModeOverlay">
+                      true
+                  </item>
+
+                  <item name="android:colorAccent">
+                      #5B5FEF
+                  </item>
+
+                  <item name="android:navigationBarColor">
+                      #080D18
+                  </item>
+
+                  <item name="android:statusBarColor">
+                      #080D18
+                  </item>
+
+                  <item name="android:windowLightStatusBar">
+                      false
+                  </item>
+
+              </style>
+
+          </resources>
+          EOF
+
+      # ==========================================================
+      # 17. CREATE MAIN ACTIVITY
+      # ==========================================================
+      - name: Create MainActivity.java
+        shell: bash
+        run: |
+          cat > app/src/main/java/com/vaultone/app/MainActivity.java <<'EOF'
+          package com.vaultone.app;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.net.Uri;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebResourceResponse;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+
+          import androidx.webkit.WebViewAssetLoader;
+
+          public class MainActivity extends Activity {
+
+              private WebView webView;
+
+              private WebViewAssetLoader assetLoader;
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+
+                  super.onCreate(savedInstanceState);
+
+                  webView = new WebView(this);
+
+                  WebSettings settings = webView.getSettings();
+
+                  /*
+                   * VaultOne is an HTML/JavaScript application.
+                   */
+                  settings.setJavaScriptEnabled(true);
+
+                  /*
+                   * Required for localStorage / IndexedDB.
+                   */
+                  settings.setDomStorageEnabled(true);
+
+                  settings.setDatabaseEnabled(true);
+
+                  /*
+                   * Keep the application self-contained.
+                   */
+                  settings.setAllowFileAccess(false);
+                  settings.setAllowContentAccess(false);
+
+                  /*
+                   * Disable unnecessary zoom controls.
+                   */
+                  settings.setBuiltInZoomControls(false);
+                  settings.setDisplayZoomControls(false);
+
+                  /*
+                   * Load APK assets using WebViewAssetLoader.
+                   */
+                  assetLoader =
+                          new WebViewAssetLoader.Builder()
+                                  .addPathHandler(
+                                          "/assets/",
+                                          new WebViewAssetLoader.AssetsPathHandler(this)
+                                  )
+                                  .build();
+
+                  webView.setWebViewClient(
+                          new WebViewClient() {
+
+                              @Override
+                              public WebResourceResponse shouldInterceptRequest(
+                                      WebView view,
+                                      WebResourceRequest request) {
+
+                                  return assetLoader.shouldInterceptRequest(
+                                          request.getUrl()
+                                  );
+                              }
+
+                              @Override
+                              @SuppressWarnings("deprecation")
+                              public WebResourceResponse shouldInterceptRequest(
+                                      WebView view,
+                                      String url) {
+
+                                  return assetLoader.shouldInterceptRequest(
+                                          Uri.parse(url)
+                                  );
+                              }
+                          }
+                  );
+
+                  setContentView(webView);
+
+                  /*
+                   * VaultOne entry point.
+                   */
+                  webView.loadUrl(
+                          "https://appassets.androidplatform.net/assets/VaultOne.html"
+                  );
+              }
+
+              @Override
+              public void onBackPressed() {
+
+                  if (webView != null && webView.canGoBack()) {
+
+                      webView.goBack();
+
+                  } else {
+
+                      super.onBackPressed();
+                  }
+              }
+
+              @Override
+              protected void onDestroy() {
+
+                  if (webView != null) {
+
+                      webView.stopLoading();
+                      webView.loadUrl("about:blank");
+                      webView.destroy();
+
+                      webView = null;
+                  }
+
+                  super.onDestroy();
+              }
+          }
+          EOF
+
+      # ==========================================================
+      # 18. INSPECT GENERATED PROJECT
+      # ==========================================================
+      - name: Inspect generated Android project
+        shell: bash
+        run: |
+          set -e
+
+          echo "=========================================="
+          echo "GENERATED PROJECT"
+          echo "=========================================="
+
+          find . \
+            -maxdepth 6 \
+            -type f \
+            \( \
+              -name "*.gradle" \
+              -o -name "*.xml" \
+              -o -name "*.java" \
+              -o -name "VaultOne.html" \
+              -o -name "gradle.properties" \
+            \) \
+            -not -path "./.git/*" \
+            -print \
+            | sort
+
+      # ==========================================================
+      # 19. VALIDATE GRADLE PROJECT
+      # ==========================================================
+      - name: Validate Gradle project
+        shell: bash
+        run: |
+          set -e
+
+          echo "Checking Gradle project..."
+
+          gradle --no-daemon \
+            :app:tasks \
+            --stacktrace
+
+      # ==========================================================
+      # 20. GENERATE GRADLE WRAPPER
+      #
+      # This makes the generated project reproducible.
+      # ==========================================================
+      - name: Generate Gradle Wrapper
+        shell: bash
+        run: |
+          set -e
+
+          gradle \
+            --no-daemon \
+            wrapper \
+            --gradle-version "${GRADLE_VERSION}" \
+            --distribution-type bin
+
+          chmod +x ./gradlew
+
+          echo ""
+          echo "Gradle Wrapper generated."
+
+          ls -lh ./gradlew
+          ls -lh ./gradle/wrapper/
+
+      # ==========================================================
+      # 21. VERIFY WRAPPER
+      # ==========================================================
+      - name: Verify Gradle Wrapper
+        shell: bash
+        run: |
+          set -e
+
+          if [ ! -f "./gradlew" ]; then
+            echo "ERROR: gradlew was not generated."
+            exit 1
+          fi
+
+          if [ ! -f "./gradle/wrapper/gradle-wrapper.properties" ]; then
+            echo "ERROR: gradle-wrapper.properties was not generated."
+            exit 1
+          fi
+
+          chmod +x ./gradlew
+
+          echo "Wrapper configuration:"
+          cat ./gradle/wrapper/gradle-wrapper.properties
+
+          echo ""
+          echo "Wrapper Gradle version:"
+          ./gradlew --version
+
+      # ==========================================================
+      # 22. CLEAN
+      # ==========================================================
+      - name: Clean Android project
+        shell: bash
+        run: |
+          set -e
+
+          ./gradlew \
+            --no-daemon \
+            clean \
+            --stacktrace
+
+      # ==========================================================
+      # 23. BUILD DEBUG APK
+      # ==========================================================
+      - name: Build VaultOne Debug APK
+        shell: bash
+        run: |
+          set -e
+
+          ./gradlew \
+            --no-daemon \
+            assembleDebug \
+            --stacktrace
+
+      # ==========================================================
+      # 24. VERIFY APK
+      # ==========================================================
+      - name: Verify APK
+        shell: bash
+        run: |
+          set -e
+
+          echo "=========================================="
+          echo "SEARCHING FOR APK"
+          echo "=========================================="
+
+          APK_FILES=$(find . \
+            -type f \
+            -name "*.apk" \
+            -not -path "./.git/*" \
+            -print)
+
+          echo "$APK_FILES"
+
+          if [ -z "$APK_FILES" ]; then
+            echo ""
+            echo "ERROR: No APK was generated."
+            exit 1
+          fi
+
+          APK_COUNT=$(echo "$APK_FILES" | grep -c "\.apk$" || true)
+
+          echo ""
+          echo "APK count: $APK_COUNT"
+
+          DEBUG_APK="./app/build/outputs/apk/debug/app-debug.apk"
+
+          if [ ! -f "$DEBUG_APK" ]; then
+            echo ""
+            echo "ERROR: Expected debug APK was not found:"
+            echo "$DEBUG_APK"
+            exit 1
+          fi
+
+          echo ""
+          echo "SUCCESS: VaultOne APK generated."
+
+          ls -lh "$DEBUG_APK"
+
+      # ==========================================================
+      # 25. PREPARE RELEASE ARTIFACT
+      # ==========================================================
+      - name: Prepare VaultOne APK
+        shell: bash
+        run: |
+          set -e
+
+          mkdir -p release
+
+          cp \
+            "./app/build/outputs/apk/debug/app-debug.apk" \
+            "./release/VaultOne-debug.apk"
+
+          echo "Prepared APK:"
+          ls -lh "./release/VaultOne-debug.apk"
+
+      # ==========================================================
+      # 26. UPLOAD APK
+      # ==========================================================
+      - name: Upload VaultOne APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VaultOne-APK
+          path: release/VaultOne-debug.apk
+          if-no-files-found: error
+
+      # ==========================================================
+      # 27. UPLOAD BUILD REPORTS
+      # ==========================================================
+      - name: Upload build reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VaultOne-Build-Reports
+          path: |
+            app/build/reports/**
+            app/build/outputs/logs/**
+          if-no-files-found: ignore
