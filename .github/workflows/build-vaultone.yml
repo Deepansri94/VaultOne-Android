@@ -125,12 +125,12 @@ jobs:
           HTML_FILE=""
 
           # Preferred exact filename
-          if [ -f "./VaultOne_v1.1.html" ]; then
-            HTML_FILE="./VaultOne_v1.1.html"
+          if [ -f "./VaultOne.html" ]; then
+            HTML_FILE="./VaultOne.html"
           else
             HTML_FILE=$(find . \
               -type f \
-              -name "VaultOne_v1.1.html" \
+              -name "VaultOne.html" \
               -not -path "./.git/*" \
               -not -path "./app/build/*" \
               | head -n 1 || true)
@@ -138,7 +138,7 @@ jobs:
 
           if [ -z "$HTML_FILE" ]; then
             echo ""
-            echo "ERROR: VaultOne_v1.1.html was not found."
+            echo "ERROR: VaultOne.html was not found."
             echo ""
             echo "HTML files currently present in repository:"
 
@@ -151,7 +151,7 @@ jobs:
 
             echo ""
             echo "Please make sure the file is named exactly:"
-            echo "VaultOne_v1.1.html"
+            echo "VaultOne.html"
 
             exit 1
           fi
@@ -304,7 +304,7 @@ jobs:
 
           if [ "$HTML_DIR" = "." ]; then
 
-            cp "./VaultOne_v1.0.html" \
+            cp "./VaultOne.html" \
               "app/src/main/assets/VaultOne.html"
 
           else
