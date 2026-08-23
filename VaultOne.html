@@ -1063,7 +1063,11 @@ $('pinEye').onclick=()=>{const x=$('pinInput'),b=$('pinEye');const v=x.type==='t
 async function snapshot(){const out={app:'VaultOne',version:7,schemaVersion:SCHEMA_VERSION,exportedAt:new Date().toISOString(),settings:state.settings};for(const store of STORES.filter(x=>x!=='meta')){const rows=await getAll(store);if(store==='documents'){out[store]=[];for(const r of rows){const x={...r};if(x.fileBlob instanceof Blob){x.fileBytes=bufToB64(await x.fileBlob.arrayBuffer());delete x.fileBlob}out[store].push(x)}}else out[store]=rows}out.meta={settings:state.settings,schema:{id:'schema',version:SCHEMA_VERSION}};return out}    
 function downloadBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}    
 $('exportBtn').onclick=async()=>{try{const snap=await snapshot();const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});downloadBlob(blob,'VaultOne_Backup_'+today()+'.json');await log('Backup','JSON backup exported');toast('Backup exported')}catch(e){toast('Backup failed: '+e.message,true)}};    
-$('importBtn').onclick=()=>$('importFile').click();$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const x=JSON.parse(await f.text());if(x.app!=='VaultOne'||![1,2,3,4,5,6,7].includes(Number(x.schemaVersion)))throw new Error('Unsupported or invalid VaultOne backup');if(!confirm('Restore this backup? Existing VaultOne data will be replaced.'))return;for(const s of STORES)await clearStore(s);await put('meta',{...defaults.settings,...(x.settings||{}),id:'settings'});await put('meta',{id:'schema',version:SCHEMA_VERSION});for(const store of STORES.filter(x=>x!=='meta'))for(const row0 of (x[store]||[])){const row={...row0};if(store==='documents'&&row.fileBytes){row.fileBlob=new Blob([b64ToBuf(row.fileBytes)],{type:row.mimeType||'application/octet-stream'});delete row.fileBytes}await put(store,row);}await log('Restore','VaultOne backup restored');toast('Restore completed');refresh()}catch(err){toast('Restore failed: '+err.message,true)}e.target.value=''};    
+/* NOTE: importBtn.onclick and importFile.onchange below are superseded by the    
+   platform-aware handlers registered later in this file (which additionally    
+   support the Android native bridge and reliably work once the WebView    
+   provides a WebChromeClient for the file chooser). Left as inert legacy    
+   assignments; the final handlers registered later always win. */    
 $('clearBtn').onclick=async()=>{if(!confirm('CLEAR ALL VAULTONE DATA? This cannot be undone.'))return;if(!confirm('Final confirmation: delete all VaultOne data and stored documents?'))return;for(const s of STORES)await clearStore(s);try{const keys=Object.keys(localStorage).filter(k=>k.startsWith(fallbackPrefix)||k==='VaultOneFallback___seedImported');keys.forEach(k=>localStorage.removeItem(k));}catch{}await put('meta',defaults.settings);await put('meta',defaults.schema);passwordUnlocked=false;passwordKey=null;toast('VaultOne reset complete');refresh()};    
 $('linkJsonBtn').onclick=async()=>{try{if(!window.showSaveFilePicker){toast('Direct JSON linking is not supported here. Use Export JSON.',true);return}linkedJsonHandle=await showSaveFilePicker({suggestedName:'VaultOne_Data.json',types:[{description:'VaultOne JSON',accept:{'application/json':['.json']}}]});await saveLinkedJson();$('jsonStatus').textContent='Linked: '+linkedJsonHandle.name;toast('JSON file linked')}catch(e){if(e.name!=='AbortError')toast(e.message,true)}};    
 async function saveLinkedJson(){if(!linkedJsonHandle)throw new Error('No JSON file linked');const w=await linkedJsonHandle.createWritable();await w.write(JSON.stringify(await snapshot(),null,2));await w.close()}$('saveJsonBtn').onclick=async()=>{try{await saveLinkedJson();toast('Saved to linked JSON')}catch(e){toast(e.message,true)}};    
@@ -2260,7 +2264,15 @@ const sector=s(fd.get('sector'))||'Other';
   async function exportBackupPlatform(){    
     const snap=await snapshot();    
     const json=JSON.stringify(snap,null,2), name='VaultOne_Backup_'+today()+'.json';    
-    if(isAndroidApp()){    
+    /* Preferred path on Android: native VaultOneAndroid.saveExport(json,name) bridge    
+       (two plain string args — always safe across the JS↔Java bridge). Saves directly    
+       and synchronously to the device Downloads folder. */    
+    if(window.VaultOneAndroid && typeof window.VaultOneAndroid.saveExport==='function'){    
+      const ok=window.VaultOneAndroid.saveExport(json,name);    
+      if(ok) return 'Saved to Downloads folder';    
+      throw new Error('Unable to save the file. Please check the app has storage permission.');    
+    }    
+    if(isAndroidApp() && bridge() && ['saveFile','saveTextFile','exportJson'].some(n=>typeof bridge()[n]==='function')){    
       await bridgeCall(['saveFile','saveTextFile','exportJson'],{fileName:name,mimeType:'application/json',content:json});    
       return 'Android file saved';    
     }    
@@ -2271,7 +2283,10 @@ const sector=s(fd.get('sector'))||'Other';
     downloadBlob(new Blob([json],{type:'application/json'}),name);return 'Download started';    
   }    
   async function readJsonPlatform(){    
-    if(isAndroidApp()){    
+    /* Only use the native pick-file bridge path if the bridge actually implements it.    
+       Otherwise fall through to the standard <input type="file"> picker below, which    
+       works correctly once the native WebView provides a WebChromeClient. */    
+    if(isAndroidApp() && bridge() && ['pickFile','pickJsonFile','openFile'].some(n=>typeof bridge()[n]==='function')){    
       const result=await bridgeCall(['pickFile','pickJsonFile','openFile'],{accept:['application/json','.json']});    
       if(typeof result==='string')return JSON.parse(result);    
       if(result?.content)return JSON.parse(result.content);    
@@ -2305,19 +2320,36 @@ const sector=s(fd.get('sector'))||'Other';
   $('importBtn').onclick=async()=>{try{const x=await window.__vaultReadJsonPlatform();if(await window.__vaultRestoreBackup(x)){closeModal();await refresh();toast('Import completed successfully')}}catch(e){if(e.name!=='AbortError')toast('Import failed: '+(e.message||'Invalid JSON file.'),true)}};    
   $('linkJsonBtn').onclick=async()=>{    
     try{    
-      if(isAndroidApp()){    
+      if(isAndroidApp() && bridge() && ['pickFile','pickJsonFile','openFile'].some(n=>typeof bridge()[n]==='function')){    
         const result=await bridgeCall(['pickFile','pickJsonFile','openFile'],{accept:['application/json','.json'],persistPermission:true});    
         const uri=result?.uri||result?.contentUri||result?.path||'';if(!uri)throw new Error('Android picker did not return a file reference.');    
         linkedJsonHandle={androidUri:uri,name:result.name||'VaultOne_Data.json'};    
         $('jsonStatus').textContent='Linked: '+linkedJsonHandle.name;toast('JSON file linked successfully');return;    
       }    
-      if(!window.showOpenFilePicker)throw new Error('JSON file linking is not supported in this browser. Use Export JSON.');    
+      if(!window.showOpenFilePicker){toast('Direct file linking is not supported on this device. Please use Export JSON and Import JSON instead.',true);return;}    
       const [h]=await showOpenFilePicker({multiple:false,types:[{description:'VaultOne JSON',accept:{'application/json':['.json']}}]});    
       const f=await h.getFile();validateBackup(JSON.parse(await f.text()));linkedJsonHandle=h;$('jsonStatus').textContent='Linked: '+h.name;toast('JSON file linked successfully');    
     }catch(e){if(e.name!=='AbortError')toast('Link JSON failed: '+e.message,true)}    
   };    
   $('saveJsonBtn').onclick=async()=>{try{if(!linkedJsonHandle)throw new Error('No JSON file linked.');const snap=JSON.stringify(await snapshot(),null,2);if(linkedJsonHandle.androidUri){await bridgeCall(['writeFile','writeTextFile','saveLinkedJson'],{uri:linkedJsonHandle.androidUri,content:snap,mimeType:'application/json'});}else{const w=await linkedJsonHandle.createWritable();await w.write(snap);await w.close();}toast('Linked JSON saved successfully');}catch(e){toast('Save linked JSON failed: '+e.message,true)}};    
-  $('clearBtn').onclick=async()=>{try{if(!confirm('CLEAR ALL VAULTONE DATA? This cannot be undone.'))return;if(!confirm('Final confirmation: delete all VaultOne local data and stored documents?'))return;for(const st of STORES)await clearStore(st);try{const keys=Object.keys(localStorage).filter(k=>k.startsWith(fallbackPrefix)||k==='VaultOneFallback___seedImported');keys.forEach(k=>localStorage.removeItem(k));}catch{}await put('meta',defaults.settings);await put('meta',{id:'schema',version:SCHEMA_VERSION});passwordUnlocked=false;passwordKey=null;await refresh();toast('VaultOne data cleared successfully');}catch(e){toast('Clear All Data failed: '+e.message,true)}};    
+  $('clearBtn').onclick=()=>{    
+    /* In-app double confirmation instead of window.confirm(), so this works    
+       reliably even in WebViews that don't support native JS confirm dialogs. */    
+    openModal('Clear All VaultOne Data',`<div class="card dangerbox"><p><b>This will permanently delete all VaultOne data, documents, and passwords stored on this device.</b></p><p>This action cannot be undone.</p></div><form id="confirmClearForm"><label>Type <b>DELETE</b> to confirm<input name="confirmText" required placeholder="Type DELETE" autocomplete="off"></label><div class="actions"><button class="btn danger">Confirm &amp; Clear All Data</button><button type="button" class="btn" id="cancelClearBtn">Cancel</button></div></form>`,async fd=>{    
+      const val=String(fd.get('confirmText')||'').trim().toUpperCase();    
+      if(val!=='DELETE'){toast('Type DELETE exactly to confirm.',true);return;}    
+      try{    
+        for(const st of STORES)await clearStore(st);    
+        try{const keys=Object.keys(localStorage).filter(k=>k.startsWith(fallbackPrefix)||k==='VaultOneFallback___seedImported');keys.forEach(k=>localStorage.removeItem(k));}catch{}    
+        await put('meta',defaults.settings);await put('meta',{id:'schema',version:SCHEMA_VERSION});    
+        passwordUnlocked=false;passwordKey=null;    
+        closeModal();    
+        await refresh();    
+        toast('VaultOne data cleared successfully');    
+      }catch(e){toast('Clear All Data failed: '+(e?.message||'Unknown error'),true)}    
+    });    
+    setTimeout(()=>{document.getElementById('cancelClearBtn')?.addEventListener('click',closeModal);},0);    
+  };    
 })();    
 /* ===== VaultOne v1.7 Stable Event Architecture ===== */    
 /* v1.7 changes: Transfer form now excludes the selected account from the opposite dropdown; Insurance (Term/Health/Vehicle) moved from FamilyVault into Savings & Investments with Make Premium Payment support tracked as transactions. */    
