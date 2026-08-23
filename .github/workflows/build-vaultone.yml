@@ -281,11 +281,7 @@ jobs:
           echo "App icons generated."
 
       # ==========================================================
-      # 10. COPY VAULTONE.HTML
-      #
-      # If VaultOne.html is in a subdirectory, preserve files
-      # from that web-app directory so relative resources have
-      # a chance to continue working.
+      # 10. COPY VAULTONE.HTML AND SEED JSON
       # ==========================================================
       - name: Copy VaultOne web application
         shell: bash
@@ -329,9 +325,17 @@ jobs:
             exit 1
           fi
 
+          # Copy seed JSON if present
+          if [ -f "./vaultone_seed.json" ]; then
+            cp "./vaultone_seed.json" "app/src/main/assets/vaultone_seed.json"
+            echo "Seed JSON copied to assets."
+          else
+            echo "WARNING: vaultone_seed.json not found. Skipping seed data."
+          fi
+
           echo ""
-          echo "APK asset:"
-          ls -lh app/src/main/assets/VaultOne.html
+          echo "APK assets:"
+          ls -lh app/src/main/assets/
 
       # ==========================================================
       # 11. CREATE SETTINGS.GRADLE
@@ -624,9 +628,30 @@ jobs:
                   /*
                    * VaultOne entry point.
                    */
-                  webView.loadUrl(
+                          webView.loadUrl(
                           "https://appassets.androidplatform.net/assets/VaultOne.html"
                   );
+
+                  /*
+                   * Inject seed data for first-run import.
+                   */
+                  injectSeedData();
+              }
+
+              private void injectSeedData() {
+                  try {
+                      java.io.InputStream is = getAssets().open("vaultone_seed.json");
+                      byte[] buffer = new byte[is.available()];
+                      is.read(buffer);
+                      is.close();
+                      String json = new String(buffer, "UTF-8")
+                              .replace("\\", "\\\\")
+                              .replace("'", "\\'");
+                      String js = "window.__vaultSeedJSON = '" + json + "';";
+                      webView.evaluateJavascript(js, null);
+                  } catch (Exception e) {
+                      // No seed file — fresh install without seed data
+                  }
               }
 
               @Override

@@ -1,0 +1,173 @@
+{
+  "app": "VaultOne",
+  "version": 7,
+  "schemaVersion": 7,
+  "exportedAt": "2026-08-19T11:22:19.913Z",
+  "settings": {
+    "id": "settings",
+    "currency": "INR",
+    "name": "",
+    "pinHash": "G8MgGp8kov5I9jT5DUBqr2y/XjbikocOy6mNdLBl7hs=",
+    "autoLock": 5
+  },
+  "persons": [
+    {
+      "id": "d1af5ab1-2c21-4e42-a6d8-39a201e50a06",
+      "name": "Deepanchakkaravarthi G",
+      "relation": "Myself",
+      "relationOrder": 1,
+      "householdId": "94d1e79d-e445-44c4-889d-5176b604a26d",
+      "householdName": "My Family",
+      "dob": "1994-11-12",
+      "gender": "Male",
+      "status": "Active",
+      "createdAt": "2026-08-17T08:45:38.413Z",
+      "modifiedAt": "2026-08-17T08:45:38.413Z"
+    }
+  ],
+  "households": [
+    {
+      "id": "94d1e79d-e445-44c4-889d-5176b604a26d",
+      "name": "My Family",
+      "description": "Home Sweet Home",
+      "address": "4/847-2,\nAnna Nagar, \nManali Jedarpalayam, \nPeriyamanali (PO),\nNamakkal (Dt) -637216",
+      "createdAt": "2026-08-17T08:45:01.975Z",
+      "modifiedAt": "2026-08-17T08:45:01.979Z"
+    }
+  ],
+  "passwords": [
+    {
+      "id": "067f9686-9bbb-417d-a330-dd5fbfc16daa",
+      "salt": "ENjjh5Q/PRFyFk637sViQA==",
+      "iv": "FJNVkJG0ZfYosCSu",
+      "cipher": "b8kMIXTueZsqEe0bgQEEJ8jpB63y2rR24VeREv6BoEPbwrFSu9f9hDviJlLh43Cugqnvujmezhl0mkRNWXNZzeWlwW4pMIBHg74/ubGFWCIv99FUGDRLpgR/sbNwN0BtBnfz7ktQpA6o0gWkQabE6XiNYIG40nQkVReoknd8Qk7lIG1bFqoslsFTvxpNf+SbPVDG9c0qHhm8MOKtjR167/gY0vUe/Vt5v6yorpLPJSOa7BrZm7MZV0AsMqC9PhP2obVrLasc+k1UXweV68GP1YLJ3Kr4bp3Gfi1ADXo+aDg8OSkJ+i4KkXvefoWcUOFx",
+      "createdAt": "2026-08-18T05:38:01.803Z"
+    },
+    {
+      "id": "0e16d155-9a34-4e61-927e-de7c7f59c306",
+      "salt": "NO1bEQchgdoW+0fnzk1Kiw==",
+      "iv": "z8MaGLd6KxVgfx0c",
+      "cipher": "j8Pl+FmhoI7BgufbgSOfTqA/nO0xwgccPotoWwnFqmCzLs/EWmmtkIjd9hECTjOpwrMQme1ps5cI+dBmS+p8gMDeZXhKASD9wVRsgu5pHkNLAjXiLBusOzmSwSBEu+1JpYCIC9sHe2B9g7GgMUgoJQEFM5vB0EWCCyXjDDHbdo7BJK9fFgJq5urKMPTniAxwn2UCaG9HMwYkQOKGWaFIS3nzWbY2ZFSuzOaeQyCw/lT+OTpLdTQY4zaquf1gUjDcn9k8elnMkyZCkq3RyIEME7HxUG/15qY=",
+      "createdAt": "2026-08-18T05:51:21.987Z"
+    },
+    {
+      "id": "33d73a7b-cac3-42e5-aab5-39585e0fb439",
+      "salt": "iFxhvBUdwCv6uHz6d/fYyw==",
+      "iv": "C2RCbzSj99qY7v8Z",
+      "cipher": "gBadAZQY45VwQdz4lTD8F4VApMsy1FssuEOYq/FnfJioIe1cDmSI9Dvz8wB6wTTR+UdUb/AIeCmua48FZC/20bKXYQ5o/v7vg5a4NTQfiyj87ybbEzCu3p9I8pejYb8GokPF6Vbtd7VsJKyP0AMOi/IkVioYp4WV3CkI3F7BR6OUIeZhoEXVPfN3+RehOUEIkU7kzkY+ZYL7v2uBkVwSGC3Asgu72AENxEFrcA1pMHRePMchNMG7uh03oFwVTz9SpBvsbpPyeKgDS89JsMrZyy1wPNYMM4I=",
+      "createdAt": "2026-08-17T13:10:10.792Z"
+    },
+    {
+      "id": "53924e57-9212-407c-b0fc-726f5c634b96",
+      "salt": "D5pCukpnQQBgZ4HN/imVpw==",
+      "iv": "ax6WO7H9u1vspMMq",
+      "cipher": "sXX5kgQkRE//030qyIayFFfmMlg2eDnGaXtz7W1gSeVF2rUjCUmAz25c20nr6BMhbfg7ztLGRpbP4AgxzDOY/yYLMeWbmii+im5uOv7RS9MEx8o6k9JrEh31CVSkWMRl/+ujDqs1yBJTHyUkAaSNHS44EvRhSeueiddinCI3kk1tz+G5kltKfzn8I2FtAQTqlhea6w9FhrZF/VXl31OejiRcD7wmbiAuiByohF/aVqY1ebsuEqFxGIEghdHlW+aUjBCpUWvaeqJJfkCgFxSc3Xuy7XZ7n+yxSp/a77QZ+4iekB3o/a+WIfoKQxR0FeckDcYS8v7Chs4WrStL",
+      "createdAt": "2026-08-18T05:45:20.348Z"
+    },
+    {
+      "id": "58beef8d-50da-4612-b94b-f959f62ceb64",
+      "salt": "XYt5J3KpYDxNaGSZBND5pA==",
+      "iv": "Jb0TZE8gaOMQLN2w",
+      "cipher": "C9Ih4eIo8ceaOKJ7xWQflZ3KMxoKePUyHOJ2toUXEfA9WvaAU5WPMNDkRzt+7eUY4c30l+M4mWnns/wGTTO0acy/xsSrt6cFRL4WVuVa9ek+DVrCvOr74B/a6eFDPqs3aLUFZ9geYrO4D7/LhDhHhrpEk0B3ZOTyNAMaz1LgCTyQEycxJEHhrIV4l16/TjxSYLxHGi8zGTnvrjaTzwOAD0h+th18P0ashD19cdcS8D+SAtHrnDIKjTHBN89SECHjInFXw/e0jHE+WLrRsJLCDLZ8K2tTtTls0g==",
+      "createdAt": "2026-08-17T13:14:01.939Z"
+    },
+    {
+      "id": "67c71dbe-a63c-4b07-8478-97fdaed815b4",
+      "salt": "wHQeae2+LbyVydRAk2zmuQ==",
+      "iv": "QfKjmXgGGjGG7alw",
+      "cipher": "C9VYSPgtLwQOwwGh67Fo7T7vs1D1t9jJdFFAArOjfbN38TuGleRxI0sfQ1IgKGlpy7Vn+m1+3rLCOutDpYAxIr4SfNwrXP84ZCu5hzLdsfR+BGuj1D7BCrhSypTCy0l1rBvD0vrCo0xOWe1/Q7gtQnFNYxjtsTEcgdq+y478xXozlQRXGjzpPqh/zfKvOs08TRzbRJZyph9xnTFEhPXRhdbxmexkdtdwzE9U0VtT6v2MW6gyI5C4tQ8sIWo0jf2myz9iYHDb8IsyBZ2tyHYkP/jMJN4eWanqcu3O+aUMaIg6aWsYawCh6cXFjBUZ",
+      "createdAt": "2026-08-18T05:41:25.005Z"
+    },
+    {
+      "id": "80544456-8663-4ecb-8210-269716648f65",
+      "salt": "XEb21YfTHRrLwKSqQx0G6Q==",
+      "iv": "jwQjwRtgbHJd6pbh",
+      "cipher": "ouCzySJn+Qn7XYo8D5P+0KUfCefD6i/nE6bdn/szhL/rzgL5enaIkhn7tigRfSWRGBs9NK8pNoUgcwejptdstFTFOBz2ZABRjr8Jw8kCLIF4isjryz37DJrBfr+Zf40gZyHF7VHKITpHATtfNH8h3jxFtxXHh3AlCK0OS7l1uCpaICRm+Ff727p3NwP2CnGwBoUxpJEsoDwSLW+7v5Euppd7tCiozWTXakiUuFfwpYmlbsXd/fjKqrGlqVfn6sZPGETEobJLORU7",
+      "createdAt": "2026-08-17T13:20:59.836Z"
+    },
+    {
+      "id": "90e1739a-5d02-4a5b-be55-f04b4135e229",
+      "salt": "J48sKFCqEf63x1atzkahfA==",
+      "iv": "655tML3Li3zBUoaM",
+      "cipher": "l05X7ys91ufv1c8gB77GalgBg5uCdhloARSXuJhC7C2lA7BGE26B2XWTACv9z2koWj2Oq3+MZPNH5KIATY8x7VdcYf8pxP0n1Y0bIl5hX20+Qo2XPWuGu5IZAcFcfDTthBH5JQ2W8kxvYrpg9eOel8z5Cl5xqTNr6iksROWYgbeBtGGyC5X8ITT1Wi/gfaXTwt6H2zkYghNWkwKG74mY3XddhciH/AwsqX0PFT5m",
+      "createdAt": "2026-08-18T05:53:38.789Z"
+    },
+    {
+      "id": "9220e608-46fc-4db0-83d7-abda41960544",
+      "salt": "jOSEdSdcW+M2/p2+D95xfQ==",
+      "iv": "kw0KYY42zeMtnJX8",
+      "cipher": "c9G48XI0cKh6PwE8hmTeyKpNivPLbSQK4Ffu0FFjtgukt+4iZh6HJBdpnnv23J6QZxYWojHe4HUCYpFC4ftJHDEIVloCNy+YcKpOOGR7Y4hUPx2U1Upl1euNzMtsdi/7F/rPhfo+ZvpEg/1cKtFh6gRNo426ar+AhwKk4PwUxZZ91MR82IWM+9/m5KYOQiayABc+ap6GCF9HU4hqnL1yEl6N6mU78K9v3w9sd6rx4B4j01VmOGK2pl7CUKVpnDKIU/m5Kt21PPJYwTlCAn3S4vNJR3KN6wJlLuVyV02SPZ5zVZF5aUoMbN4fKP6MLKXOvpKaA2/Q/RlitOoZ7vR+TS4zBRy0elsibUjihA==",
+      "createdAt": "2026-08-17T13:17:12.084Z"
+    },
+    {
+      "id": "d8fd4fbb-7ad1-402b-97a6-27a01caa7158",
+      "salt": "QBgjVAyy9e4Qtwh5+psqKg==",
+      "iv": "Iu7Kp/YsvVasDQsl",
+      "cipher": "Vy0rBSfKi7vC9x435M0//lHuvK5zHIsQcdz5zzvohheBmiFj5ove4BbV9gz6651iRyMN9e67JX7SzqrjV3+KmEpR9xsgbm/7CF41QfT9DITYB53PrrrlpanzF+2DMX5Gy5mGNpS4N6gAzxGtT0Yxh246e7Agxe2iYux5hsCIk/gTB1hWHM7LEVDmnbx4i1b7t7zF0YLp/wMwoMQyF4WUj6l5zosRe8SdJqLOEPEuk7ApxF1kjjPVZRh4bI++OJN0j4WqQLM9wlzk4H3BctrnarqaR+yScgDSZHqDGbvJgGjLYULFL4I=",
+      "createdAt": "2026-08-17T13:19:46.995Z"
+    },
+    {
+      "id": "df8a878d-0924-431c-9656-b750c52061f2",
+      "salt": "eFoCHXmFsSlZPkjgaVukuQ==",
+      "iv": "HFsZ5v8sXLabzR7r",
+      "cipher": "kx1WjThiYHIQXTmJ0DilbtfdOsYdm8NYaf8sqwPSv7nKhT7ufBrUXB+HRUjeJ8pFnELof4g8W5GVxB20G1ikvxjNx0iY9snaNGOGlVrbxyEowgWAz33a8e/YZZBqz6C7RiFNP37tsEij1DBU3/hUZde/rPXJGe40/hrMNBv67PubpS+iUE/fxllI9LUo7SHqJ343BlHB2TI9COCynUnu3Nq1rlahTeVI16faXWVsWPMmR/ZMi1HZzJJ+rl6d5NKbw2s9lOgQpEf8O63ojZ6cLg5GdOu2JN6pKbHGvWaXcejk9+ROTQw5Y/TvgOFyaJZAvpokDlOQPW4fAYDWKjYMigRHT5E94EP5eik7CzCIpgK4+NLdZVh78y3a+gMjxawQa8naNMvVH5QuAqC1igtIpYdrSORjaNvBogMoMsZqdESLe3gPV2jao0ie30eKNYsvoKpJOhgqUJ4a30KBx+avg2MaHrCy+5xBZIqsRnvWii8HoIPGM/MlFRIDatHKldmqdUsm4es92azmR8PskTO61uuz1nhiFzdmbQ3YdTM=",
+      "createdAt": "2026-08-17T13:25:48.501Z"
+    },
+    {
+      "id": "e6783d86-ac0b-4c4e-916e-f32792aaaff9",
+      "salt": "Gf9yWnrfO0qm6TX3zNPZNg==",
+      "iv": "MjroFKu8x9GNjVed",
+      "cipher": "OQSVq3CkjGOte5vrmVK+N63hfpITxT0roDTUAX3sHQonX7DM+phgvbv6KUAudtC3ylgPEgvipqdUvOoyuFRJxH4P+R932k1KvZmw5gXFbr/bAYV0ZVngZss3ko+woJhTSjOayNk0Tnec1xo2SoEpEc0OJnm5FlZJWzGVDmRlJTret0J0g/LG7rsaqKneoTyv8Drkp02QqS0Nn6Qb7NXbw8xYCVhJKd4dlaWYazpGHioU/pQx1UecZ0Vt9yQeYBWTw2KEiu+e9jZHNd5ZIVR/vrolFGw7ZMOmigmC8oBs6FD5fWv5r0WQCzPL0YmGTZZTbjwv",
+      "createdAt": "2026-08-18T05:33:13.312Z"
+    },
+    {
+      "id": "f8d8c702-be9c-4bde-9229-d623dcf1b365",
+      "salt": "ow0ZF251THnQEG+g7ilJ+Q==",
+      "iv": "RfeWQR/6Nj3HkdRe",
+      "cipher": "lzBfgRCYxk9CeXe3LM9MeXgnRIhQqgLjNEf2bU39f/bTTc34kuFHAq1JlLGSP9z8m3zBM0QobwqCLS9sXp5XWr1y5j6OidnQ9oOx1UnRyzJNOO53MbvEyDNYSVK/tRZ/7qsWHdjUFzJisXMN49nHZC8MFbO+B02ki1ZYMkLgUmTNDPI5xFmFKCcFSfH6kFquWpbLa1SS2ccVgumD+tLA8zCcyh4Uac+4cFd6Dw==",
+      "createdAt": "2026-08-18T05:54:11.955Z"
+    }
+  ],
+  "reminders": [
+    {
+      "id": "fa3c7309-9c74-4ddb-9e4c-4614786ea1a3",
+      "title": "🎂 Deepanchakkaravarthi G's Birthday",
+      "date": "2026-11-11",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Wish Deepanchakkaravarthi G a Happy Birthday!",
+      "completed": false,
+      "repeat": "yearly",
+      "source": "birthday",
+      "personId": "d1af5ab1-2c21-4e42-a6d8-39a201e50a06",
+      "createdAt": "2026-08-17T08:45:38.432Z"
+    }
+  ],
+  "income": [],
+  "expenses": [],
+  "budgets": [],
+  "investments": [],
+  "gold": [],
+  "goldRates": [],
+  "loans": [],
+  "banks": [],
+  "transactions": [],
+  "documents": [],
+  "activity": [],
+  "institutions": [],
+  "vehicles": [],
+  "insurances": [],
+  "meta": {
+    "settings": {
+      "id": "settings",
+      "currency": "INR",
+      "name": "",
+      "pinHash": "G8MgGp8kov5I9jT5DUBqr2y/XjbikocOy6mNdLBl7hs=",
+      "autoLock": 5
+    },
+    "schema": {
+      "id": "schema",
+      "version": 7
+    }
+  }
+}
