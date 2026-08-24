@@ -7,8 +7,8 @@
 <title>VaultOne</title>
 <style>
 :root{--bg:#060b16;--panel:#0d1728;--panel2:#111e33;--text:#f5f7fb;--muted:#91a0b7;--line:#263550;--purple:#8b5cf6;--cyan:#38bdf8;--green:#4ade80;--red:#fb7185;--gold:#f5c542;--shadow:0 18px 50px #0008}
-*{box-sizing:border-box}html{overflow-x:hidden;width:100%}body{margin:0;overflow-x:hidden;width:100%;max-width:100vw;background:radial-gradient(circle at 20% 0,#172554 0,#060b16 35%),var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.app{min-height:100vh;padding-bottom:82px}.top{position:sticky;top:0;z-index:20;padding:18px 18px 12px;background:#07111fee;backdrop-filter:blur(18px);border-bottom:1px solid #ffffff0d}.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand h1{margin:0;font-size:25px}.brand small{color:var(--muted)}.iconbtn,.btn{border:1px solid var(--line);background:#14233a;color:var(--text);border-radius:16px;padding:11px 15px}.iconbtn{width:44px;height:44px;padding:0}.btn.primary{background:linear-gradient(135deg,#7c3aed,#2563eb);border-color:#9b7aff}.btn.gold{background:#a87800;border-color:#e7bf40}.btn.danger{background:#4b1822;border-color:#7d2738}.btn.ghost{background:transparent}.content{max-width:1100px;margin:auto;padding:18px}.view{display:none}.view.active{display:block}.hero{padding:24px;border:1px solid #ffffff14;border-radius:28px;background:linear-gradient(135deg,#101d36dd,#16112bdd);box-shadow:var(--shadow);margin-bottom:16px}.hero h2{font-size:28px;margin:0 0 5px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{background:linear-gradient(145deg,#0e1a2c,#0a1322);border:1px solid #ffffff12;border-radius:24px;padding:18px;box-shadow:0 10px 30px #0004;margin-bottom:14px}.metric{font-size:29px;font-weight:800}.green{color:var(--green)}.red{color:var(--red)}.goldtext{color:var(--gold)}.cyan{color:var(--cyan)}label{display:block;color:#b7c2d4;font-weight:700}input,select,textarea{width:100%;margin-top:7px;background:#091322;border:1px solid #31425e;color:var(--text);border-radius:14px;padding:12px;outline:none;font-size:16px}textarea{min-height:88px;resize:vertical}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat{padding:16px;border-radius:20px;background:#0b1728;border:1px solid #ffffff10}.stat b{font-size:22px;display:block;margin-top:5px}.list{display:grid;gap:10px}.item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:14px;border:1px solid #ffffff10;background:#0a1525;border-radius:18px}.item .title{font-weight:800}.item .sub{color:var(--muted);font-size:13px}.item>.actions{align-items:center;justify-content:flex-end;margin-top:0;flex:0 0 auto}.item>.actions .btn{white-space:nowrap;min-height:42px}.item>.actions>b{white-space:nowrap;align-self:center}.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#16243b;border:1px solid #ffffff10;font-size:12px}.empty{padding:25px;text-align:center;color:var(--muted);border:1px dashed #33435d;border-radius:18px}.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px}.tab{white-space:nowrap}.bottom{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#07111ff5;backdrop-filter:blur(18px);border-top:1px solid #ffffff10;display:flex;justify-content:center}.nav{max-width:900px;width:100%;display:grid;grid-template-columns:repeat(6,1fr)}.nav button{background:none;border:0;color:#8290a5;padding:11px 4px;font-size:12px}.nav button.active{color:#c4b5fd}.nav span{display:block;font-size:20px}.modal{position:fixed;inset:0;background:#000a;z-index:50;display:none;align-items:flex-end;justify-content:center}.modal.open{display:flex}.sheet{width:min(700px,100%);max-height:92vh;overflow:auto;background:#0b1627;border:1px solid #ffffff15;border-radius:26px 26px 0 0;padding:18px}.toast{position:fixed;right:16px;bottom:95px;z-index:100;background:#14233a;border:1px solid #334966;border-radius:14px;padding:12px 15px;box-shadow:var(--shadow);display:none}.toast.show{display:block}.search{margin-bottom:12px}.filebox{border:1px dashed #425574;border-radius:16px;padding:12px}.password-field{position:relative}.password-field input{padding-right:54px}.password-eye{position:absolute;right:7px;top:7px;width:42px;height:42px;border:0;border-radius:12px;background:#14233a;color:#d7e0ee;display:flex;align-items:center;justify-content:center;padding:0}.password-eye:active{transform:scale(.96)}.preview{width:100%;height:65vh;border:0;border-radius:16px;background:#fff}.thumb{max-width:100%;max-height:240px;border-radius:14px}.progress{height:9px;background:#1b2a40;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#8b5cf6,#38bdf8);border-radius:99px}.dangerbox{border:1px solid #7d2738;background:#2a1118;padding:14px;border-radius:16px}.success{color:var(--green)}
-@media(max-width:720px){.grid,.grid3{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.content{padding:14px}.hero h2{font-size:24px}.item{align-items:flex-start;flex-direction:column}.item>.actions{width:100%;justify-content:flex-start;align-items:center;margin-top:4px}.item>.actions .btn{min-width:88px}.nav{grid-template-columns:repeat(6,1fr)}}
+*{box-sizing:border-box}html{overflow-x:hidden;width:100%}body{margin:0;overflow-x:hidden;width:100%;max-width:100vw;background:radial-gradient(circle at 20% 0,#172554 0,#060b16 35%),var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}.app{min-height:100vh;padding-bottom:82px}.top{position:sticky;top:0;z-index:20;padding:18px 18px 12px;background:#07111fee;backdrop-filter:blur(18px);border-bottom:1px solid #ffffff0d}.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand h1{margin:0;font-size:25px}.brand small{color:var(--muted)}.iconbtn,.btn{border:1px solid var(--line);background:#14233a;color:var(--text);border-radius:16px;padding:11px 15px}.iconbtn{width:44px;height:44px;padding:0}.btn.primary{background:linear-gradient(135deg,#7c3aed,#2563eb);border-color:#9b7aff}.btn.gold{background:#a87800;border-color:#e7bf40}.btn.danger{background:#4b1822;border-color:#7d2738}.btn.ghost{background:transparent}.content{max-width:1100px;margin:auto;padding:18px}.view{display:none}.view.active{display:block}.hero{padding:24px;border:1px solid #ffffff14;border-radius:28px;background:linear-gradient(135deg,#101d36dd,#16112bdd);box-shadow:var(--shadow);margin-bottom:16px}.hero h2{font-size:28px;margin:0 0 5px}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{background:linear-gradient(145deg,#0e1a2c,#0a1322);border:1px solid #ffffff12;border-radius:24px;padding:18px;box-shadow:0 10px 30px #0004;margin-bottom:14px}.metric{font-size:29px;font-weight:800}.green{color:var(--green)}.red{color:var(--red)}.goldtext{color:var(--gold)}.cyan{color:var(--cyan)}label{display:block;color:#b7c2d4;font-weight:700}input,select,textarea{width:100%;margin-top:7px;background:#091322;border:1px solid #31425e;color:var(--text);border-radius:14px;padding:12px;outline:none;font-size:16px}textarea{min-height:88px;resize:vertical}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:12px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat{padding:16px;border-radius:20px;background:#0b1728;border:1px solid #ffffff10}.stat b{font-size:22px;display:block;margin-top:5px}.list{display:grid;gap:10px}.item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:14px;border:1px solid #ffffff10;background:#0a1525;border-radius:18px}.item .title{font-weight:800}.item .sub{color:var(--muted);font-size:13px}.item>.actions{align-items:center;justify-content:flex-end;margin-top:0;flex:0 0 auto}.item>.actions .btn{white-space:nowrap;min-height:42px}.item>.actions>b{white-space:nowrap;align-self:center}.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#16243b;border:1px solid #ffffff10;font-size:12px}.empty{padding:25px;text-align:center;color:var(--muted);border:1px dashed #33435d;border-radius:18px}.tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px}.tab{white-space:nowrap}.bottom{position:fixed;bottom:0;left:0;right:0;z-index:30;background:#07111ff5;backdrop-filter:blur(18px);border-top:1px solid #ffffff10;display:flex;justify-content:center}.nav{max-width:900px;width:100%;display:grid;grid-template-columns:repeat(5,1fr)}.nav button{background:none;border:0;color:#8290a5;padding:11px 4px;font-size:12px}.nav button.active{color:#c4b5fd}.nav span{display:block;font-size:20px}.modal{position:fixed;inset:0;background:#000a;z-index:50;display:none;align-items:flex-end;justify-content:center}.modal.open{display:flex}.sheet{width:min(700px,100%);max-height:92vh;overflow:auto;background:#0b1627;border:1px solid #ffffff15;border-radius:26px 26px 0 0;padding:18px}.toast{position:fixed;right:16px;bottom:95px;z-index:100;background:#14233a;border:1px solid #334966;border-radius:14px;padding:12px 15px;box-shadow:var(--shadow);display:none}.toast.show{display:block}.search{margin-bottom:12px}.filebox{border:1px dashed #425574;border-radius:16px;padding:12px}.password-field{position:relative}.password-field input{padding-right:54px}.password-eye{position:absolute;right:7px;top:7px;width:42px;height:42px;border:0;border-radius:12px;background:#14233a;color:#d7e0ee;display:flex;align-items:center;justify-content:center;padding:0}.password-eye:active{transform:scale(.96)}.preview{width:100%;height:65vh;border:0;border-radius:16px;background:#fff}.thumb{max-width:100%;max-height:240px;border-radius:14px}.progress{height:9px;background:#1b2a40;border-radius:99px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#8b5cf6,#38bdf8);border-radius:99px}.dangerbox{border:1px solid #7d2738;background:#2a1118;padding:14px;border-radius:16px}.success{color:var(--green)}
+@media(max-width:720px){.grid,.grid3{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.content{padding:14px}.hero h2{font-size:24px}.item{align-items:flex-start;flex-direction:column}.item>.actions{width:100%;justify-content:flex-start;align-items:center;margin-top:4px}.item>.actions .btn{min-width:88px}.nav{grid-template-columns:repeat(5,1fr)}}
 #lockBtn{display:none!important}.password-vault-active #lockBtn{display:inline-flex!important}
 </style>
 <style>
@@ -49,8 +49,33 @@ table.tx-table{width:100%;border-collapse:collapse;font-size:13px;min-width:680p
 table.tx-table th,table.tx-table td{padding:10px 8px;border-bottom:1px solid #ffffff10;text-align:left;white-space:nowrap}
 table.tx-table th{color:#aebbd0;position:sticky;top:0;background:#0e1a2c}
 table.tx-table tr:hover td{background:#ffffff06}
-.pagination{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
-.pagination select{width:auto;display:inline-block}
+/* Pagination controls: two explicit rows -- row 1 holds "Rows per page" and the
+   summary text (wraps together cleanly if needed), row 2 holds Prev/Next as an even,
+   side-by-side button pair that always stays on one line and never isolates either
+   button. On narrow/mobile screens this footer is further compacted: the "Rows per
+   page" label text and the full "Showing page X of Y • Z total" sentence are hidden
+   (replaced by a short "X/Y" indicator) and Prev/Next collapse from full-width text
+   buttons down to small arrow-only icon buttons -- freeing up vertical space so more
+   of the actual list content (e.g. reminders) is visible on screen without scrolling
+   through pagination chrome first. Desktop/browser view is unaffected. */
+.pagination{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.pagination-info{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.pagination-info select{width:auto;display:inline-block}
+.pagination-summary-compact{display:none}
+.pagination-nav{display:flex;gap:8px}
+.pagination-nav .btn{flex:1;text-align:center;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+@media(max-width:600px){
+  .pagination{gap:6px}
+  .pagination-size-text{display:none}
+  .pagination-summary{display:none}
+  .pagination-summary-compact{display:inline}
+  .pagination-info{gap:6px}
+  .pagination-info label{gap:4px}
+  .pagination-info select{padding:8px;min-width:52px}
+  .pagination-nav{justify-content:flex-end}
+  .pagination-nav .btn{flex:0 0 auto;width:40px;height:40px;padding:0;font-size:16px}
+  .pagination-nav-text{display:none}
+}
 </style>
 <style>
 table.data-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
@@ -61,29 +86,13 @@ table.data-table th .sort-arrow{display:inline-block;margin-left:4px;opacity:.6;
 table.data-table th.sorted .sort-arrow{opacity:1;color:#8b5cf6}
 table.data-table tr:hover td{background:#ffffff06}
 table.data-table td.col-actions{white-space:normal}
-/* Align the "Actions" column header to the right so it lines up directly above the
-   action icon buttons (which are right-aligned within the cell via .table-actions), instead
-   of the header sitting at the far left while the icons float to the far right. */
 table.data-table th.col-actions-head{text-align:right;cursor:default}
 table.data-table tr.detail-row{display:none}
 table.data-table tr.detail-row.row-expanded{display:table-row}
 .table-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-items:center;max-width:280px}
 .table-actions .btn{white-space:nowrap;padding:8px 10px;font-size:12px;min-height:36px}
-/* Compact icon-only action buttons: used across Savings & Investments / Insurance row
-   actions (Update Price, Buy More, Add Contribution, Copy A/C, Edit, Delete, Make Premium
-   Payment, Details toggle) so each row takes minimal horizontal/vertical space. The action
-   label is still available via the title attribute (tooltip) and aria-label (screen readers). */
 .btn-icon{width:38px;height:38px;min-height:38px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:15px;line-height:1;flex:0 0 auto}
-/* Override wider min-width/min-height rules meant for text buttons inside .item>.actions
-   (e.g. Banks & Accounts row actions) so icon buttons there stay compact too, on both
-   desktop and the ≤720px item layout. */
 .item>.actions .btn-icon{min-width:38px;min-height:38px}
-/* iVault section navigation -- a home-screen-style "quick menu" tile grid (icon tile +
-   label per section: Overview / Income / Expenses / Budget / Savings & Investments /
-   GoldVault / Loans / Banks & Accounts / Transactions). Tiles wrap responsively so nothing
-   needs left-right scrolling. The header's ▴/▾ toggle hides/shows the whole grid to reclaim
-   vertical space, and choosing any tile also auto-hides the grid on narrow screens so the
-   selected section's content is immediately visible without extra scrolling. */
 .finance-menu-card{padding:14px 16px}
 .finance-menu-head{display:flex;justify-content:space-between;align-items:center}
 .finance-menu-label{font-weight:800;color:#a78bfa;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
@@ -107,25 +116,14 @@ table.data-table tr.detail-row.row-expanded{display:table-row}
   .finance-tile-icon{width:46px;height:46px;font-size:19px}
   .finance-tile-label{font-size:11px}
 }
-/* Placeholder shown in place of Overview/Income/Expenses/etc. content until the user taps
-   a Quick Menu tile -- so no section's data is previewed by default. */
 .finance-empty-state{margin-top:14px}
-/* Sub-heading used inside the merged "FD • RD • PPF • SSA • NPS" card in Savings &
-   Investments, to separate the three tables (Fixed Deposits / Recurring Deposits /
-   PPF-SSA-NPS) that now live together under one card instead of three separate cards. */
 .savings-subhead{margin:18px 0 8px;font-size:13px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;padding-top:14px;border-top:1px solid #ffffff10}
 .savings-subhead:first-of-type{margin-top:14px;padding-top:0;border-top:0}
-/* Brief loading spinner shown while a Quick Menu section (Overview / Income / Expenses /
-   etc.) is switching in, giving clear feedback that content is being prepared. */
 .finance-loading{margin-top:24px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:30px 0;color:var(--muted);font-size:13px}
 .spinner{width:30px;height:30px;border-radius:50%;border:3px solid #263550;border-top-color:#8b5cf6;animation:vault-spin .7s linear infinite}
 @keyframes vault-spin{to{transform:rotate(360deg)}}
 .data-table-wrap{overflow-x:auto;border-radius:16px;-webkit-overflow-scrolling:touch}
 td .cell-inner{display:inline}
-/* Compact mobile layout: below 720px the wide multi-column data table (Demat / FD / RD /
-   PPF-SSA-NPS / Other / Insurance) is converted from a horizontally-scrolling table into a
-   stack of compact label:value cards -- one card per record, no left-right scrolling needed.
-   Each cell's column header is shown as a small label (via data-label) in front of its value. */
 @media(max-width:720px){
   .data-table-wrap{overflow-x:visible;border-radius:0}
   table.data-table{min-width:0;width:100%;display:block}
@@ -148,10 +146,6 @@ td .cell-inner{display:inline}
 }
 </style>
 <style>
-/* Row-level "Details" expand/collapse panel: keeps only the important columns visible
-   in the main table row, and reveals the rest (secondary fields) inline below when the
-   user taps "Details". Used across Demat / FD / RD / PPF-SSA-NPS / Other / Insurance
-   tables, and the equivalent pattern is reused for Bank Account cards. */
 tr.detail-row td{background:#0a1525;border-bottom:1px solid #ffffff10;padding:10px 8px}
 .row-detail-panel{display:flex;flex-wrap:wrap;gap:8px}
 .detail-chip{background:#0d1a2c;border:1px solid #ffffff10;border-radius:12px;padding:7px 11px;min-width:110px}
@@ -159,29 +153,71 @@ tr.detail-row td{background:#0a1525;border-bottom:1px solid #ffffff10;padding:10
 .detail-chip small{display:block;color:#94a3b8;font-size:11px;margin-bottom:3px;white-space:nowrap}
 .detail-chip b{font-size:13px;font-weight:700}
 .btn.details-toggle{white-space:nowrap}
-/* Demat lot sub-lines: indent to the right under the stock name so multiple purchase
-   lots (from "+ Buy More") read as a clear visual sub-list rather than blending into
-   the stock title line. */
 .lot-line{margin-top:6px;margin-left:16px;padding-left:10px;border-left:2px solid #263550;font-size:11px;color:var(--muted);font-weight:400}
 .lot-line+.lot-line{margin-top:4px}
-/* Bank & account "Details" panel -- same show/hide behavior as the table rows above,
-   applied to the FamilyVault-style .item card used by Banks & Accounts. */
 .account-detail-panel{margin-top:8px;padding-top:8px;border-top:1px dashed #263550;display:grid;gap:4px}
+</style>
+<style>
+#bellReminderBtn{position:relative}
+.bell-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#2a0a10;font-size:10px;font-weight:800;border-radius:999px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 4px;display:none;box-shadow:0 0 0 2px #07111f}
+.reminder-floating{position:fixed;top:66px;right:14px;width:min(380px,calc(100vw - 28px));max-width:calc(100vw - 28px);box-sizing:border-box;max-height:75vh;overflow-y:auto;overflow-x:hidden;background:#0b1627;border:1px solid #ffffff18;border-radius:22px;box-shadow:var(--shadow);padding:16px;z-index:40;display:none}
+.reminder-floating.open{display:block}
+.reminder-floating-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px}
+.reminder-floating-head h3{margin:0;font-size:18px}
+@media(max-width:480px){.reminder-floating{top:60px;right:8px;left:8px;width:auto}}
+</style>
+<style>
+/* Each reminder row is two stacked lines (never a single forced-width row), so it is
+   impossible for a long reminder name to push the row -- and therefore the whole
+   floating panel/page -- wider than the screen:
+     Line 1: date & time (left, compact/fixed) .......... action icons (right, fixed)
+     Line 2: priority icon + reminder name (wraps onto as many lines as needed)
+   Long titles simply wrap word-by-word onto additional lines within the row instead
+   of being clipped or causing horizontal scroll -- "no scrolling left/right, always
+   fits the screen" is enforced by min-width:0 + overflow-wrap on every text element
+   plus overflow-x:hidden on the row and its parent panel. */
+.reminder-row{display:flex;flex-direction:column;gap:6px;padding:10px 8px;border-left:3px solid transparent;border-bottom:1px solid #ffffff0d;min-width:0;max-width:100%}
+.reminder-row:last-child{border-bottom:0}
+.reminder-row.is-unread{border-left-color:var(--purple)}
+.reminder-row.is-overdue{border-left-color:var(--red);background:#2a111814}
+.reminder-row.is-read{opacity:.55}
+.reminder-row.is-birthday{border-left-color:var(--gold)}
+.reminder-row-top{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.reminder-datetime{flex:1;min-width:0;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.reminder-row.is-overdue .reminder-datetime{color:var(--red);font-weight:800}
+.reminder-actions{flex:0 0 auto;display:flex;gap:6px}
+.reminder-title-line{display:flex;align-items:flex-start;gap:6px;font-size:14px;font-weight:700;min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:break-word;white-space:normal;cursor:pointer}
+.reminder-row.is-read .reminder-title-line{font-weight:500;color:var(--muted);text-decoration:line-through;text-decoration-color:#ffffff30}
+.reminder-priority-icon{flex:0 0 auto;font-size:13px;line-height:1.4}
+.reminder-title-text{min-width:0;overflow-wrap:anywhere;word-break:break-word}
+@media(max-width:480px){.reminder-datetime{font-size:10px}.reminder-title-line{font-size:13px}}
 </style>
 </head>
 <body>
 <div class="app">
-<header class="top"><div class="brand"><div><h1>VaultOne 🔐</h1><small id="profileLine">Private • Offline-first</small></div><div class="actions"><button class="iconbtn" id="globalSearchBtn" title="Search VaultOne">🔎</button><button class="iconbtn" id="lockBtn" title="Lock">🔒</button></div></div></header>
+<header class="top"><div class="brand"><div><h1>VaultOne 🔐</h1><small id="profileLine">Private • Offline-first</small></div><div class="actions"><button class="iconbtn" id="globalSearchBtn" title="Search VaultOne">🔎</button><button class="iconbtn" id="bellReminderBtn" title="Reminders" aria-label="Reminders">🔔<span id="bellReminderBadge" class="bell-badge">0</span></button><button class="iconbtn" id="lockBtn" title="Lock">🔒</button></div></div></header>
+<div id="reminderFloatingPanel" class="reminder-floating">
+  <div class="reminder-floating-head"><h3>Reminders ⏰</h3><button type="button" class="iconbtn" id="reminderFloatingClose" aria-label="Close">✕</button></div>
+  <div class="actions" style="margin-top:0"><button class="btn primary" id="floatingAddReminderBtn">+ Add Reminder</button></div>
+  <form id="bellReminderForm" class="grid" style="display:none;margin-top:12px;grid-template-columns:1fr">
+    <label>Title<input name="title" required placeholder="Reminder title"></label>
+    <label>Date<input name="date" type="date" required></label>
+    <label>Time<input name="time" type="time" value="09:00"></label>
+    <label>Priority<select name="priority"><option>Normal</option><option>Medium</option><option>High</option></select></label>
+    <label>Description<textarea name="description" placeholder="Optional details"></textarea></label>
+    <div class="actions" style="margin-top:0"><button type="submit" class="btn primary">Save Reminder</button><button type="button" class="btn ghost" id="bellReminderCancel">Cancel</button></div>
+  </form>
+  <div id="bellRemList" class="list" style="margin-top:12px"></div>
+</div>
 <main class="content">
 <section class="view active" id="home"><div class="hero"><h2 id="welcome">Welcome to VaultOne</h2><div class="muted">Your private personal vault. Data stays on this device.</div><div class="actions"><button type="button" class="btn primary" data-go="ivault">Open iVault</button><button type="button" class="btn" data-go="family">FamilyVault</button><button type="button" class="btn" data-go="passwords">PasswordVault</button></div></div><div class="stats"><div class="stat">iVault<b id="hNet">₹0</b></div><div class="stat">Documents<b id="hDocs">0</b></div><div class="stat">Passwords<b id="hPass">0</b></div><div class="stat">Reminders<b id="hRem">0</b></div></div><div class="card"><h3>Recent Activity</h3><div id="activityList" class="list"></div></div><div class="card"><h3>Upcoming Reminders</h3><div id="homeReminders" class="list"></div></div></section>
 <section class="view" id="ivault"><div class="hero"><h2>iVault 💰</h2><div class="muted">Personal Finance & Wealth Management</div></div><div class="stats"><div class="stat">Net Worth<b id="netWorth">₹0</b></div><div class="stat">Income<b class="green" id="mIncome">₹0</b></div><div class="stat">Expenses<b class="red" id="mExpense">₹0</b></div><div class="stat">Savings<b class="cyan" id="mSavings">₹0</b></div></div><div class="grid" style="margin-top:14px"><div class="card"><h3>Monthly Budget</h3><div class="metric" id="budgetTotal">₹0</div><div class="progress"><i id="budgetBar" style="width:0%"></i></div><p class="muted" id="budgetInfo">No budget configured.</p></div><div class="card"><h3>GoldVault 🪙</h3><div class="metric goldtext" id="goldValue">₹0</div><p class="muted" id="goldRateInfo">No current rate.</p></div></div><div class="card finance-menu-card"><div class="finance-menu-head"><span class="finance-menu-label">Quick Menu</span><button type="button" class="finance-menu-toggle" id="financeSidebarHideBtn" title="Hide menu" aria-label="Hide menu">▴</button></div><div class="finance-tile-grid" id="financeMenu"><button type="button" class="finance-tile tile-purple primary" data-sub="financeDashboard"><span class="finance-tile-icon">📊</span><span class="finance-tile-label">Overview</span></button><button type="button" class="finance-tile tile-green" data-sub="income"><span class="finance-tile-icon">💵</span><span class="finance-tile-label">Income</span></button><button type="button" class="finance-tile tile-red" data-sub="expenses"><span class="finance-tile-icon">💸</span><span class="finance-tile-label">Expenses</span></button><button type="button" class="finance-tile tile-cyan" data-sub="budget"><span class="finance-tile-icon">🧮</span><span class="finance-tile-label">Budget</span></button><button type="button" class="finance-tile tile-gold" data-sub="investments"><span class="finance-tile-icon">📈</span><span class="finance-tile-label">Savings & Investments</span></button><button type="button" class="finance-tile tile-gold" data-sub="gold"><span class="finance-tile-icon">🪙</span><span class="finance-tile-label">GoldVault</span></button><button type="button" class="finance-tile tile-red" data-sub="loans"><span class="finance-tile-icon">🏦</span><span class="finance-tile-label">Loans</span></button><button type="button" class="finance-tile tile-cyan" data-sub="banks"><span class="finance-tile-icon">🏛️</span><span class="finance-tile-label">Banks & Accounts</span></button><button type="button" class="finance-tile tile-purple" data-sub="transactions"><span class="finance-tile-icon">🔄</span><span class="finance-tile-label">Transactions</span></button></div></div><div class="finance-content"><div class="empty finance-empty-state" id="financeEmptyState" style="display:none">Tap a tile above (Overview, Income, Expenses, etc.) to open that section.</div><div class="finance-loading" id="financeLoading" style="display:none"><span class="spinner"></span><span class="muted">Loading…</span></div>
 <div id="financeDashboard" class="financeSub"></div><div id="income" class="financeSub" style="display:none"></div><div id="expenses" class="financeSub" style="display:none"></div><div id="budget" class="financeSub" style="display:none"></div><div id="investments" class="financeSub" style="display:none"></div><div id="gold" class="financeSub" style="display:none"></div><div id="loans" class="financeSub" style="display:none"></div><div id="banks" class="financeSub" style="display:none"></div><div id="transactions" class="financeSub" style="display:none"></div></div></section>
 <section class="view" id="family"><div class="hero"><h2>FamilyVault 📁</h2><div class="muted">Personal & household documents stored locally.</div><div class="actions"><button class="btn primary" id="addPersonBtn">👤 + Person</button><button class="btn" id="addHouseBtn">🏠 + Household</button><button class="btn" id="addVehicleBtn">🚗 + Vehicle</button><button class="btn gold" id="addDocBtn">📄 + Document</button></div></div><div class="stats"><div class="stat">People<b id="peopleCount">0</b></div><div class="stat">Households<b id="houseCount">0</b></div><div class="stat">Vehicles<b id="vehicleCount">0</b></div><div class="stat">Documents<b id="docCount">0</b></div><div class="stat">Doc Expiring ≤30d<b id="docExpCount">0</b></div></div><div class="card"><input class="search" id="docSearch" placeholder="Search documents, people, households, vehicles..."><div id="familyList" class="list"></div></div></section>
 <section class="view" id="passwords"><div class="hero"><h2>PasswordVault 🔑</h2><div class="muted">Encrypted local password manager. Unlock with your PIN.</div><div class="actions"><button class="btn primary" id="addPassBtn">+ Add Password</button><button class="btn" id="genPassBtn">Generate Password</button></div></div><div class="card"><input id="passSearch" placeholder="Search passwords..."><div id="passList" class="list" style="margin-top:12px"></div></div></section>
-<section class="view" id="reminders"><div class="hero"><h2>Reminders ⏰</h2><div class="muted">Simple local reminders.</div><button class="btn primary" id="addReminderBtn">+ Add Reminder</button><button class="btn" id="enableNotificationsBtn">🔔 Enable Notifications</button><span class="muted" id="notificationStatus"></span><br><button class="btn" id="batteryOptBtn" style="display:none;margin-top:8px">🔋 Fix Battery Optimization</button><span class="muted" id="batteryOptStatus"></span></div><div class="tabs"><button type="button" class="btn tab primary" data-remtab="upcoming">Upcoming</button><button type="button" class="btn tab" data-remtab="overdue">Overdue</button><button type="button" class="btn tab" data-remtab="done">Completed</button></div><div class="card"><div id="remList" class="list"></div></div></section>
-<section class="view" id="settings"><div class="hero"><h2>Settings ⚙️</h2><div class="muted">VaultOne configuration, backup and security.</div></div><div class="card"><h3>Profile</h3><form id="profileForm" class="grid"><label>Full Name<input id="profileName" required></label><label>Currency<select id="profileCurrency"><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option></select></label><div class="actions"><button class="btn primary">Save Profile</button></div></form></div><div class="card"><h3>Security</h3><div class="grid"><label>Vault PIN<div class="password-field"><input id="pinInput" type="password" inputmode="numeric" maxlength="12" autocomplete="new-password" placeholder="4-12 digits"><button type="button" class="password-eye" id="pinEye" aria-label="Show PIN" title="Show PIN">👁️</button></div></label><label>Auto-lock<select id="autoLock"><option value="0">Off</option><option value="1">1 minute</option><option value="5">5 minutes</option><option value="15">15 minutes</option></select></label></div><div class="actions"><button class="btn primary" id="saveSecurity">Save Security</button><button class="btn" id="biometricInfo">Biometric</button></div><p class="muted">Browser version uses a PIN-derived AES-GCM key for PasswordVault. Native Android should use Android Keystore/biometrics.</p></div><div class="card"><h3>Backup & Restore</h3><div class="actions"><button class="btn primary" id="exportBtn">Export VaultOne JSON</button><button class="btn" id="importBtn">Import JSON</button><input id="importFile" type="file" accept="application/json" hidden></div><p id="backupStatus" class="muted"></p></div><div class="card"><h3>JSON Device File</h3><p class="muted">Where supported, link a JSON file for direct save. Otherwise use Export/Import.</p><div class="actions"><button class="btn" id="linkJsonBtn">Link JSON File</button><button class="btn" id="saveJsonBtn">Save to Linked JSON</button></div><p id="jsonStatus" class="muted">Not linked.</p></div><div class="card"><h3>Diagnostics</h3><button class="btn" id="selfTestBtn">Run Self-Test</button><pre id="testResult" style="white-space:pre-wrap;color:#a9b7ca"></pre></div><div class="card dangerbox"><h3>Clear All VaultOne Data</h3><p>This permanently deletes VaultOne's database, documents and encrypted password records. It does not delete unrelated files on your phone.</p><button class="btn danger" id="clearBtn">Clear All Data</button></div><div class="card"><h3>Activity Log</h3><div id="fullActivityLog" class="list"></div></div><div class="card"><p class="muted">VaultOne v1.9 • Offline-first • Schema v7</p></div></section>
+<section class="view" id="settings"><div class="hero"><h2>Settings ⚙️</h2><div class="muted">VaultOne configuration, backup and security.</div></div><div class="card"><h3>Profile</h3><form id="profileForm" class="grid"><label>Full Name<input id="profileName" required></label><label>Currency<select id="profileCurrency"><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option></select></label><div class="actions"><button class="btn primary">Save Profile</button></div></form></div><div class="card"><h3>Security</h3><div class="grid"><label>Vault PIN<div class="password-field"><input id="pinInput" type="password" inputmode="numeric" maxlength="12" autocomplete="new-password" placeholder="4-12 digits"><button type="button" class="password-eye" id="pinEye" aria-label="Show PIN" title="Show PIN">👁️</button></div></label><label>Auto-lock<select id="autoLock"><option value="0">Off</option><option value="1">1 minute</option><option value="5">5 minutes</option><option value="15">15 minutes</option></select></label></div><div class="actions"><button class="btn primary" id="saveSecurity">Save Security</button><button class="btn" id="biometricInfo">Biometric</button></div><p class="muted">Browser version uses a PIN-derived AES-GCM key for PasswordVault. Native Android should use Android Keystore/biometrics.</p></div><div class="card"><h3>Notifications & Reminders</h3><p class="muted">Reminders (manual, Loan/Insurance/Investment due dates, and Birthdays) can post real Android system notifications, even while VaultOne is closed. Two separate device permissions may be needed for fully reliable delivery.</p><div class="actions"><button class="btn primary" id="enableNotificationsBtn">🔔 Enable Notifications</button><button class="btn" id="batteryOptBtn" style="display:none">🔋 Fix Battery Optimization</button></div><p class="muted" id="notificationStatus"></p><p class="muted" id="batteryOptStatus"></p></div><div class="card"><h3>Backup & Restore</h3><div class="actions"><button class="btn primary" id="exportBtn">Export VaultOne JSON</button><button class="btn" id="importBtn">Import JSON</button><input id="importFile" type="file" accept="application/json" hidden></div><p id="backupStatus" class="muted"></p></div><div class="card"><h3>JSON Device File</h3><p class="muted">Where supported, link a JSON file for direct save. Otherwise use Export/Import.</p><div class="actions"><button class="btn" id="linkJsonBtn">Link JSON File</button><button class="btn" id="saveJsonBtn">Save to Linked JSON</button></div><p id="jsonStatus" class="muted">Not linked.</p></div><div class="card"><h3>Diagnostics</h3><button class="btn" id="selfTestBtn">Run Self-Test</button><pre id="testResult" style="white-space:pre-wrap;color:#a9b7ca"></pre></div><div class="card dangerbox"><h3>Clear All VaultOne Data</h3><p>This permanently deletes VaultOne's database, documents and encrypted password records. It does not delete unrelated files on your phone.</p><button class="btn danger" id="clearBtn">Clear All Data</button></div><div class="card"><h3>Activity Log</h3><div id="fullActivityLog" class="list"></div></div><div class="card"><p class="muted">VaultOne v1.9 • Offline-first • Schema v7</p></div></section>
 </main>
-<nav class="bottom"><div class="nav"><button type="button" class="active" data-go="home"><span>⌂</span>Home</button><button type="button" data-go="ivault"><span>₹</span>iVault</button><button type="button" data-go="family"><span>📁</span>Family</button><button type="button" data-go="passwords"><span>🔑</span>Passwords</button><button type="button" data-go="reminders"><span>⏰</span>Reminders</button><button type="button" data-go="settings"><span>⚙</span>Settings</button></div></nav>
+<nav class="bottom"><div class="nav"><button type="button" class="active" data-go="home"><span>⌂</span>Home</button><button type="button" data-go="ivault"><span>₹</span>iVault</button><button type="button" data-go="family"><span>📁</span>Family</button><button type="button" data-go="passwords"><span>🔑</span>Passwords</button><button type="button" data-go="settings"><span>⚙</span>Settings</button></div></nav>
 </div>
 <div id="modal" class="modal"><div class="sheet"><div style="display:flex;justify-content:space-between;align-items:center"><h3 id="modalTitle" style="margin:0">VaultOne</h3><button class="iconbtn" id="modalClose">✕</button></div><div id="modalBody"></div></div></div><div id="toast" class="toast"></div>
 <script>
@@ -194,7 +230,7 @@ window.addEventListener('unhandledrejection',e=>{
 });
 'use strict';
 const DB='VaultOneDB', VER=7, SCHEMA_VERSION=7, STORES=['meta','income','expenses','budgets','investments','gold','goldRates','loans','banks','transactions','persons','households','documents','passwords','reminders','activity','institutions','vehicles','insurances'];
-let db, linkedJsonHandle=null, currentReminderTab='upcoming', currentFinanceSub='financeDashboard', passwordUnlocked=false, passwordKey=null, autoLockTimer=null;
+let db, linkedJsonHandle=null, currentFinanceSub='financeDashboard', passwordUnlocked=false, passwordKey=null, autoLockTimer=null;
 const $=id=>document.getElementById(id);
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -324,11 +360,6 @@ document.querySelectorAll('[data-go]').forEach(b=>b.onclick=e=>{e.preventDefault
 $('globalSearchBtn')?.addEventListener('click',()=>{if(typeof window.globalVaultSearch==='function')window.globalVaultSearch();});
 let financeTabLoadToken=0;
 function selectFinanceTab(id,options={}){
-  /* Switching a Quick Menu section (Overview / Income / Expenses / Budget / Savings &
-     Investments / GoldVault / Loans / Banks & Accounts / Transactions) briefly shows a
-     loading spinner instead of an instant swap, giving clear visual feedback that the
-     section is being prepared. Pass {instant:true} to skip the spinner (used on the very
-     first render so the app doesn't flash a spinner before anything has loaded yet). */
   currentFinanceSub=id;
   document.querySelectorAll('[data-sub]').forEach(btn=>btn.classList.toggle('primary',btn.dataset.sub===id));
   const empty=$('financeEmptyState'), loading=$('financeLoading');
@@ -349,9 +380,6 @@ function selectFinanceTab(id,options={}){
   setTimeout(reveal,300);
 }
 (function(){
-  /* iVault Quick Menu tiles stay visible at all times (no auto-hide/auto-collapse) -- the
-     ▴/▾ toggle is still available for the user to manually hide the grid if they choose,
-     but nothing collapses it automatically on narrow screens or after picking a tile. */
   const menu=$('financeMenu'), toggleBtn=$('financeSidebarHideBtn');
   const setCollapsed=collapsed=>{
     if(!menu||!toggleBtn)return;
@@ -366,12 +394,6 @@ function selectFinanceTab(id,options={}){
   document.querySelectorAll('[data-sub]').forEach(btn=>btn.addEventListener('click',e=>{
     e.preventDefault();
     const target=btn.dataset.sub;
-    /* Exactly one history entry is used to represent "away from Overview", no matter how
-       many non-Overview sections are visited in a row -- moving from Overview pushes that
-       single entry; moving between two non-Overview sections replaces it instead of
-       stacking a new one. This guarantees a single Back press always returns to Overview,
-       instead of requiring one Back press per section visited. Overview itself never pushes
-       or replaces an entry. */
     if(target!=='financeDashboard'){
       if(currentFinanceSub==='financeDashboard') history.pushState({financeSub:target},'');
       else history.replaceState({financeSub:target},'');
@@ -379,20 +401,11 @@ function selectFinanceTab(id,options={}){
     selectFinanceTab(target);
   }));
   window.addEventListener('popstate',()=>{
-    /* Back button / back gesture pressed while viewing a Quick Menu section other than
-       Overview -- send the user back to Overview instead of navigating away. */
     if(document.getElementById('ivault')?.classList.contains('active') && currentFinanceSub!=='financeDashboard'){
       selectFinanceTab('financeDashboard');
     }
   });
 })();
-function selectReminderTab(id){
-  currentReminderTab=id;
-  document.querySelectorAll('[data-remtab]').forEach(btn=>btn.classList.toggle('primary',btn.dataset.remtab===id));
-  getCompactPage('reminders').page=1;
-  renderReminders();
-}
-document.querySelectorAll('[data-remtab]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();selectReminderTab(btn.dataset.remtab)}));
 function renderHome(){
   const name=(state.settings.name||'').trim();
   $('welcome').textContent=name?'Good day, '+name:'Welcome to VaultOne';
@@ -421,13 +434,6 @@ function pieChart(entries,total){
   return `<div class="iv-chart"><div class="pie" style="background:conic-gradient(${parts.join(',')})"></div><div class="legend">${legend}</div></div>`;
 }
 function calcExpiry(d){const n=daysUntil(d);return n!==null&&n<=30}
-/* Compact paginated list utility: used by Activity Log, Reminders, Existing Income,
-   Existing Expense and Documents so growing lists stay minimized (a few key fields per
-   row, tabular layout) instead of scrolling forever, with a Rows-per-page selector and
-   Prev/Next controls (same pattern as the Transactions ledger). Each area registers a
-   rerender callback in window.__vaultCompactRerender keyed by its own pagination state
-   key, so Prev/Next/Rows-per-page clicks redraw just that section from already-fetched
-   data without needing to refetch from storage. */
 window.__vaultCompactPageState = window.__vaultCompactPageState || {};
 window.__vaultCompactRerender = window.__vaultCompactRerender || {};
 function getCompactPage(key){
@@ -444,12 +450,27 @@ function paginateRows(key, rows){
 function miniTableHtml(headers, bodyHtml){
   return `<div class="tx-table-wrap"><table class="tx-table"><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${bodyHtml}</tbody></table></div>`;
 }
+/* Pagination footer: on desktop/browser this shows the full "Rows per page" label +
+   dropdown, the full "Showing page X of Y • Z total" sentence, and text "← Prev" /
+   "Next →" buttons (unchanged -- this already looks good in the browser). On narrow
+   mobile screens (see the .pagination-* media query in <head>), the "Rows per page"
+   label text and the full summary sentence are hidden via CSS and replaced by a
+   short "X/Y" indicator, and the Prev/Next buttons collapse to small arrow-only icon
+   buttons -- freeing up vertical space so more of the actual list is visible without
+   scrolling past pagination chrome. Both the full and compact markup are emitted
+   together (desktop text hidden on mobile, compact text hidden on desktop) so a
+   single implementation serves both layouts with no JS branching needed. */
 function paginationControlsHtml(key, page, totalPages, total, pageSize){
   return `<div class="pagination" data-pagination-for="${key}">
-    <label style="display:inline-flex;align-items:center;gap:8px;margin:0">Rows per page<select class="btn-page-size" data-key="${key}"><option value="5" ${pageSize==='5'?'selected':''}>5</option><option value="10" ${pageSize==='10'?'selected':''}>10</option><option value="25" ${pageSize==='25'?'selected':''}>25</option></select></label>
-    <span class="muted">${total?`Showing page ${page} of ${totalPages} • ${total} total`:''}</span>
-    <button type="button" class="btn btn-page-prev" data-key="${key}" ${page<=1?'disabled':''}>← Prev</button>
-    <button type="button" class="btn btn-page-next" data-key="${key}" ${page>=totalPages?'disabled':''}>Next →</button>
+    <div class="pagination-info">
+      <label style="display:inline-flex;align-items:center;gap:8px;margin:0"><span class="pagination-size-text">Rows per page</span><select class="btn-page-size" data-key="${key}"><option value="5" ${pageSize==='5'?'selected':''}>5</option><option value="10" ${pageSize==='10'?'selected':''}>10</option><option value="25" ${pageSize==='25'?'selected':''}>25</option></select></label>
+      <span class="muted pagination-summary">${total?`Showing page ${page} of ${totalPages} • ${total} total`:''}</span>
+      <span class="muted pagination-summary-compact">${total?`${page}/${totalPages}`:''}</span>
+    </div>
+    <div class="pagination-nav">
+      <button type="button" class="btn btn-page-prev" data-key="${key}" ${page<=1?'disabled':''} title="Previous page" aria-label="Previous page">←<span class="pagination-nav-text"> Prev</span></button>
+      <button type="button" class="btn btn-page-next" data-key="${key}" ${page>=totalPages?'disabled':''} title="Next page" aria-label="Next page"><span class="pagination-nav-text">Next </span>→</button>
+    </div>
   </div>`;
 }
 document.addEventListener('click', e=>{
@@ -463,11 +484,6 @@ document.addEventListener('change', e=>{
   if(sel){ const key=sel.dataset.key; const st=getCompactPage(key); st.pageSize=sel.value; st.page=1; window.__vaultCompactRerender[key]?.(); }
 });
 async function renderFamily(){const [persons,houses,docs,vehicles]=await Promise.all([getAll('persons'),getAll('households'),getAll('documents'),getAll('vehicles')]);$('peopleCount').textContent=persons.length;$('houseCount').textContent=houses.length;$('docCount').textContent=docs.length;$('vehicleCount').textContent=vehicles.length;$('docExpCount').textContent=docs.filter(d=>calcExpiry(d.expiryDate)).length;const q=($('docSearch').value||'').toLowerCase();const filtered=docs.filter(d=>[d.title,d.type,d.category,d.personName,d.householdName].some(x=>String(x||'').toLowerCase().includes(q)));const filteredVehicles=vehicles.filter(v=>[v.name,v.registrationNumber,v.make,v.model,v.ownerPersonName].some(x=>String(x||'').toLowerCase().includes(q)));
-  /* Documents are shown as a compact, paginated table (Document / Category / Owner /
-     Expiry / Actions) instead of an ever-growing list of full-detail cards, so the
-     FamilyVault view stays manageable as more documents are added. Cache the filtered
-     rows + related lookups so Prev/Next/Rows-per-page clicks can redraw the table
-     instantly without re-querying storage. */
   window.__vaultFamilyCache={persons,houses,docs,vehicles,filtered,filteredVehicles,q};
   window.__vaultCompactRerender['documents']=renderDocumentsTableFromCache;
   $('familyList').innerHTML=`<div class="actions"><button class="btn" id="managePeople">People (${persons.length})</button><button class="btn" id="manageHouses">Households (${houses.length})</button><button class="btn" id="manageVehicles">Vehicles (${vehicles.length})</button></div>`+(q?`<h4 style="margin:14px 0 6px">Vehicles</h4>`+(filteredVehicles.length?filteredVehicles.map(v=>`<div class="item"><div><div class="title">${esc(v.name||v.registrationNumber||'Vehicle')}</div><div class="sub">${esc(v.type||'Vehicle')} • ${esc(v.make||'')} ${esc(v.model||'')} • Reg: ${esc(v.registrationNumber||'Not set')}</div><div class="sub">Owner: ${esc(v.ownerPersonName||'Not assigned')}</div></div><div class="actions"><button class="btn" data-vehicle-edit="${v.id}">Edit</button><button class="btn danger" data-vehicle-del="${v.id}">Delete</button></div></div>`).join(''):'<div class="empty">No vehicles found.</div>')+`<h4 style="margin:14px 0 6px">Documents</h4>`:'')+`<div id="documentsTableHost"></div>`;
@@ -1085,7 +1101,12 @@ const reminderTimers=new Map();
    so reminders still fire as real system notifications even while VaultOne itself is
    closed or the device is idle -- which a JS setTimeout cannot do once the app is
    backgrounded. All of the functions below detect window.VaultOneAndroid and use the
-   native path automatically; the browser/desktop behavior is unchanged otherwise. */
+   native path automatically; the browser/desktop behavior is unchanged otherwise.
+   This applies uniformly to every reminder regardless of how it was created -- manual
+   reminders, Loan/Insurance/Investment "payment due" reminders (created automatically
+   via ensureFinanceReminder), and yearly Birthday reminders all live in the same
+   'reminders' store and are scheduled together below, so all three get the same native
+   notification treatment with no extra code needed per reminder type. */
 function hasNativeNotificationBridge(){
   return Boolean(window.VaultOneAndroid && typeof window.VaultOneAndroid.scheduleReminderNotification==='function');
 }
@@ -1113,7 +1134,10 @@ function updateNotificationStatus(){
    at all) otherwise. Requesting REQUEST_IGNORE_BATTERY_OPTIMIZATIONS exemption (a
    normal, Google-sanctioned use case for alarm/reminder apps) fixes this. This is a
    separate, unrelated Android permission from notification permission, so it needs
-   its own status check + its own "Allow" flow, both only relevant on the packaged APK. */
+   its own status check + its own "Allow" flow, both only relevant on the packaged APK.
+   Both controls live in Settings -> Notifications & Reminders (not on the Reminders
+   tab itself), since they are one-time device permissions rather than something the
+   user needs on every visit to Reminders. */
 function hasBatteryOptimizationBridge(){
   return Boolean(window.VaultOneAndroid && typeof window.VaultOneAndroid.isIgnoringBatteryOptimizations==='function');
 }
@@ -1148,9 +1172,6 @@ function requestBatteryOptimizationExemption(){
   }
   try{
     window.VaultOneAndroid.requestIgnoreBatteryOptimizations?.();
-    /* The system dialog is shown asynchronously (or the user is taken to a
-       Settings screen on some OEMs); re-check status shortly after so the
-       label reflects the outcome without requiring a manual refresh. */
     setTimeout(updateBatteryOptimizationStatus,1200);
     toast('If prompted, choose "Allow" so reminders can fire even when VaultOne is closed.');
   }catch(e){toast('Could not open battery settings: '+(e?.message||'Unknown error'),true)}
@@ -1160,9 +1181,6 @@ async function enableReminderNotifications(){
   if(hasNativeNotificationBridge()){
     try{
       window.VaultOneAndroid.requestNotificationPermission?.();
-      /* The native "Allow notifications?" dialog is shown asynchronously by Android;
-         re-check permission status shortly after so the status label and any pending
-         reminders reflect the user's decision without requiring a manual refresh. */
       setTimeout(()=>{updateNotificationStatus();renderReminders();},900);
       toast('If prompted, allow VaultOne to send notifications.');
     }catch(e){toast('Notification permission request failed: '+(e?.message||'Unknown error'),true)}
@@ -1187,11 +1205,6 @@ function scheduleReminderNotifications(rows){
     const delay=when-now;
     if(delay<=0) continue;
     if(nativeBridge){
-      /* Schedule a real OS-level alarm via AlarmManager (see
-         VaultOneAndroidBridge.scheduleReminderNotification in MainActivity.java) so the
-         reminder fires even if VaultOne is closed or the device is idle. Re-scheduling
-         the same reminder id simply replaces the previously scheduled alarm (no
-         duplicates), so it's safe to call this every time reminders are re-rendered. */
       try{
         window.VaultOneAndroid.scheduleReminderNotification(
           String(r.id), r.title||'VaultOne Reminder', r.description||'', String(when)
@@ -1258,8 +1271,14 @@ function nextBirthdayDate(dob, from=new Date()){
   if(month===1 && day===29 && candidate.getMonth()!==1) candidate=new Date(candidate.getFullYear(),1,28);
   return candidate.toISOString().slice(0,10);
 }
+/* Birthday reminder content is written as an actual birthday wish (title + message),
+   not just a neutral "reminder about a birthday" notice -- so what actually lands in
+   the Android notification tray reads like a warm greeting rather than a to-do item. */
 function birthdayReminderTitle(person){
-  return `🎂 ${person.name}'s Birthday`;
+  return `🎉 Happy Birthday, ${person.name}! 🎂`;
+}
+function birthdayReminderMessage(person){
+  return `Wishing you a wonderful day filled with joy and celebration, ${person.name}! 🎈🎁`;
 }
 async function ensureBirthdayReminder(person){
   if(!person?.id || !person?.dob || person.status==='Inactive') return;
@@ -1272,7 +1291,7 @@ async function ensureBirthdayReminder(person){
     date,
     time:existing?.time||'09:00',
     priority:existing?.priority||'Normal',
-    description:`Wish ${person.name} a Happy Birthday!`,
+    description:birthdayReminderMessage(person),
     completed:false,
     repeat:'yearly',
     source:'birthday',
@@ -1288,55 +1307,250 @@ async function removeBirthdayReminder(personId){
     await del('reminders',r.id);
   }
 }
+/* The standalone Reminders tab/view has been removed (the header bell panel now
+   covers viewing, adding, editing, completing, and deleting reminders from any
+   screen -- see renderBellReminders() below). renderReminders() is kept as the
+   lightweight function still invoked from refresh() on every data refresh: it
+   re-schedules native/browser reminder notifications for all reminders (manual,
+   Loan/Insurance/Investment "due" reminders, and yearly Birthday reminders alike)
+   and keeps the header bell badge count in sync. */
 function renderReminders(){
   getAll('reminders').then(rows=>{
     scheduleReminderNotifications(rows);
-    updateNotificationStatus();
-    updateBatteryOptimizationStatus();
-    let f=rows.filter(r=>{
-      if(r.repeat==='yearly'&&r.source==='birthday'){
-        return currentReminderTab==='done'?false:currentReminderTab==='overdue'?false:true;
-      }
-      return currentReminderTab==='done'?r.completed:currentReminderTab==='overdue'?!r.completed&&daysUntil(r.date)<0:!r.completed&&daysUntil(r.date)>=0;
-    });
-    f.sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-    /* Reminders are shown as a compact, paginated table (Title / Date / Priority /
-       Actions) instead of full-detail cards for every reminder, so the list stays
-       manageable as reminders accumulate over time. */
-    window.__vaultCompactRerender['reminders']=renderReminders;
-    if(!f.length){$('remList').innerHTML='<div class="empty">No reminders here.</div>';return;}
-    const {pageRows,totalPages,page,total}=paginateRows('reminders',f);
-    const st=getCompactPage('reminders');
-    const body=pageRows.map(r=>{
-      const actions=r.repeat==='yearly'&&r.source==='birthday'
-        ?`<span class="pill">🎂 Yearly</span>`
-        :`${!r.completed?`<button class="btn btn-icon" type="button" data-rdone="${r.id}" title="Complete" aria-label="Complete">✅</button>`:''}${r.repeat!=='yearly'?`<button class="btn btn-icon" type="button" data-redit="${r.id}" title="Edit" aria-label="Edit">✏️</button>`:''}<button class="btn btn-icon danger" type="button" data-rdel="${r.id}" title="Delete" aria-label="Delete">🗑️</button>`;
-      return `<tr><td>${esc(r.title)}${r.source==='birthday'?' 🎂':''}</td><td>${esc(r.date)} ${esc(r.time||'')}</td><td><span class="pill">${esc(r.priority||'Normal')}</span></td><td class="col-actions"><div class="table-actions">${actions}</div></td></tr>`;
+    updateBellReminderBadge(rows);
+  });
+}
+$('enableNotificationsBtn').onclick=enableReminderNotifications;
+/* Priority is shown as a single icon instead of a text pill: High = red exclamation
+   mark, Medium = orange circle, Normal = green circle. These are literally the
+   standard ❗ / 🟠 / 🟢 emoji, so no custom icon assets are needed. */
+function priorityIcon(priority){
+  const p=String(priority||'Normal');
+  if(p==='High')return '❗';
+  if(p==='Medium')return '🟠';
+  return '🟢';
+}
+/* Compact "Aug 24, 2026, 8:32 PM" style formatting for the single-line reminder rows
+   (falls back to the raw date/time strings if they don't parse, so a malformed value
+   never breaks the row). */
+function formatReminderDateTime(dateStr,timeStr){
+  try{
+    const d=new Date(`${dateStr}T${timeStr||'09:00'}`);
+    if(Number.isNaN(d.getTime())) return `${dateStr||''} ${timeStr||''}`.trim();
+    return d.toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  }catch{return `${dateStr||''} ${timeStr||''}`.trim();}
+}
+function reminderModal(existing=null){
+  const isEdit=!!existing;
+  const priority=existing?.priority||'Normal';
+  openModal(isEdit?'Edit Reminder':'Add Reminder',`<form class="grid">
+    <label>Title<input name="title" required value="${esc(existing?.title||'')}"></label>
+    <label>Date<input name="date" type="date" required value="${esc(existing?.date||today())}"></label>
+    <label>Time<input name="time" type="time" value="${esc(existing?.time||'09:00')}"></label>
+    <label>Priority<select name="priority"><option ${priority==='Normal'?'selected':''}>Normal</option><option ${priority==='Medium'?'selected':''}>Medium</option><option ${priority==='High'?'selected':''}>High</option></select></label>
+    <label style="grid-column:1/-1">Description<textarea name="description">${esc(existing?.description||'')}</textarea></label>
+    <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Reminder</button>${isEdit?'<button type="button" class="btn danger" id="reminderModalDeleteBtn">Delete Reminder</button>':''}</div>
+  </form>`,async fd=>{
+    await put('reminders',{id:existing?.id||uid(),title:fd.get('title'),date:fd.get('date'),time:fd.get('time'),priority:fd.get('priority'),description:fd.get('description'),completed:existing?.completed||false,createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()});
+    await log('Reminder',isEdit?'Reminder updated':'Reminder added');
+    closeModal();
+    toast('Reminder saved');
+    renderBellReminders();
+    renderReminders();
+    renderHome();
+  });
+  if(isEdit){
+    setTimeout(()=>{
+      $('reminderModalDeleteBtn')?.addEventListener('click',async()=>{
+        if(!confirm('Delete this reminder?'))return;
+        cancelNativeReminder(existing.id);
+        await del('reminders',existing.id);
+        await log('Reminder','Reminder deleted');
+        closeModal();
+        toast('Reminder deleted');
+        renderBellReminders();
+        renderReminders();
+        renderHome();
+      });
+    },0);
+  }
+}
+/* Global Reminders bell: a floating panel reachable from the header on every screen.
+   Every reminder (manual, Loan/Insurance/Investment "due" reminders, and yearly
+   Birthday reminders alike) is shown together as a single compact one-line row --
+   Date & Time, then the reminder name (prefixed with its priority icon), then just
+   two action icons (✅ Complete, 😴 Snooze) -- no table, no column headers, and no
+   separate Upcoming/Overdue/Completed filter tabs. Visual state communicates the
+   same information the tabs used to: a reminder is "unread" (purple left edge, bold
+   text) until marked complete, at which point it becomes "read" (dimmed, struck
+   through) and sinks to the bottom of the list; if its date has passed while still
+   not completed it shows as "overdue" (red left edge, red date/time) instead. Tapping
+   anywhere on a row's date/title opens it for editing (with a Delete option inside
+   that edit form) -- birthday reminders show a toast explaining they're managed
+   automatically from FamilyVault instead, since they can't be edited/deleted here. */
+function updateBellReminderBadge(rows){
+  const badge=$('bellReminderBadge');
+  if(!badge)return;
+  const pendingCount=(rows||[]).filter(r=>!r.completed).length;
+  if(pendingCount>0){badge.textContent=pendingCount>99?'99+':String(pendingCount);badge.style.display='inline-block';}
+  else{badge.style.display='none';}
+}
+window.updateBellReminderBadge=updateBellReminderBadge;
+function renderBellReminders(){
+  getAll('reminders').then(rows=>{
+    updateBellReminderBadge(rows);
+    window.__vaultCompactRerender['bellReminders']=renderBellReminders;
+    const listEl=$('bellRemList');
+    if(!listEl)return;
+    if(!rows.length){listEl.innerHTML='<div class="empty">No reminders yet.</div>';return;}
+    /* Not-yet-completed reminders first (soonest/most-overdue first, so anything due
+       now floats to the top), completed reminders after (most recently completed
+       first) -- this mirrors a notification-center's "unread on top, read at bottom"
+       behavior without needing separate filter tabs. */
+    const pending=rows.filter(r=>!r.completed).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+    const completed=rows.filter(r=>r.completed).sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+    const sortedAll=[...pending,...completed];
+    const {pageRows,totalPages,page,total}=paginateRows('bellReminders',sortedAll);
+    const st=getCompactPage('bellReminders');
+    const rowsHtml=pageRows.map(r=>{
+      const isBirthday=r.repeat==='yearly'&&r.source==='birthday';
+      const overdue=!r.completed&&!isBirthday&&daysUntil(r.date)<0;
+      const stateClass=r.completed?'is-read':(isBirthday?'is-birthday':(overdue?'is-overdue':'is-unread'));
+      const icon=isBirthday?'🎂':priorityIcon(r.priority);
+      const actions=(!isBirthday&&!r.completed)
+        ?`<button class="btn btn-icon" type="button" data-bell-rdone="${r.id}" title="Complete" aria-label="Complete">✅</button><button class="btn btn-icon" type="button" data-bell-rsnooze="${r.id}" title="Snooze" aria-label="Snooze">😴</button>`
+        :'';
+      return `<div class="reminder-row ${stateClass}">
+        <div class="reminder-row-top">
+          <span class="reminder-datetime" data-bell-ropen="${r.id}">${esc(formatReminderDateTime(r.date,r.time))}</span>
+          <div class="reminder-actions">${actions}</div>
+        </div>
+        <div class="reminder-title-line" data-bell-ropen="${r.id}"><span class="reminder-priority-icon">${icon}</span><span class="reminder-title-text">${esc(r.title)}</span></div>
+      </div>`;
     }).join('');
-    $('remList').innerHTML=miniTableHtml(['Title','Date & Time','Priority','Actions'],body)+paginationControlsHtml('reminders',page,totalPages,total,st.pageSize);
-    document.querySelectorAll('[data-rdone]').forEach(b=>b.onclick=async()=>{
-      const r=await get('reminders',b.dataset.rdone);
+    listEl.innerHTML=rowsHtml+paginationControlsHtml('bellReminders',page,totalPages,total,st.pageSize);
+    listEl.querySelectorAll('[data-bell-rdone]').forEach(b=>b.onclick=async(e)=>{
+      e.stopPropagation();
+      const r=await get('reminders',b.dataset.bellRdone);
       if(!r)return;
       r.completed=true;
       await put('reminders',r);
       cancelNativeReminder(r.id);
       await log('Reminder','Reminder completed');
-      refresh();
+      renderBellReminders();
+      renderReminders();
+      renderHome();
     });
-    document.querySelectorAll('[data-rdel]').forEach(b=>b.onclick=async()=>{
-      cancelNativeReminder(b.dataset.rdel);
-      await del('reminders',b.dataset.rdel);
-      await log('Reminder','Reminder deleted');
-      refresh();
+    listEl.querySelectorAll('[data-bell-rsnooze]').forEach(b=>b.onclick=async(e)=>{
+      e.stopPropagation();
+      const r=await get('reminders',b.dataset.bellRsnooze);
+      if(r) openSnoozeOptions(r);
     });
-    document.querySelectorAll('[data-redit]').forEach(b=>b.onclick=async()=>{
-      const r=await get('reminders',b.dataset.redit);
-      if(r) reminderModal(r);
+    listEl.querySelectorAll('[data-bell-ropen]').forEach(el=>el.onclick=async()=>{
+      const r=await get('reminders',el.dataset.bellRopen);
+      if(!r)return;
+      if(r.repeat==='yearly'&&r.source==='birthday'){
+        toast("Birthday reminders are managed automatically from the person's date of birth in FamilyVault.");
+        return;
+      }
+      reminderModal(r);
     });
   });
 }
-$('addReminderBtn').onclick=()=>reminderModal();$('enableNotificationsBtn').onclick=enableReminderNotifications;
-function reminderModal(existing=null){openModal(existing?'Edit Reminder':'Add Reminder',`<form class="grid"><label>Title<input name="title" required value="${esc(existing?.title||'')}"></label><label>Date<input name="date" type="date" required value="${esc(existing?.date||today())}"></label><label>Time<input name="time" type="time" value="${esc(existing?.time||'09:00')}"></label><label>Priority<select name="priority"><option>Normal</option><option>High</option><option>Low</option></select></label><label style="grid-column:1/-1">Description<textarea name="description">${esc(existing?.description||'')}</textarea></label><div class="actions"><button class="btn primary">Save Reminder</button></div></form>`,async fd=>{await put('reminders',{id:existing?.id||uid(),title:fd.get('title'),date:fd.get('date'),time:fd.get('time'),priority:fd.get('priority'),description:fd.get('description'),completed:existing?.completed||false,createdAt:existing?.createdAt||new Date().toISOString()});await log('Reminder',existing?'Reminder updated':'Reminder added');closeModal();toast('Reminder saved');refresh()})}
+/* Snooze: postpones a reminder without deleting/recreating it. "10 Minutes" / "1 Hour"
+   snooze relative to the current moment (i.e. "remind me again shortly"); "Tomorrow"
+   keeps the reminder's original time-of-day but moves the date to the next day. Either
+   way completed stays false and the native/browser notification is automatically
+   rescheduled for the new date/time via renderReminders() -> scheduleReminderNotifications(). */
+function openSnoozeOptions(reminder){
+  openModal('Snooze Reminder',`<div class="card"><p class="muted">Snooze "${esc(reminder.title)}" for:</p><div class="actions"><button class="btn primary" type="button" data-snooze-mins="10">⏱️ 10 Minutes</button><button class="btn primary" type="button" data-snooze-mins="60">⏱️ 1 Hour</button><button class="btn primary" type="button" data-snooze-tomorrow="1">📅 Tomorrow (same time)</button></div></div>`);
+  $('modalBody').querySelectorAll('[data-snooze-mins]').forEach(btn=>btn.onclick=()=>snoozeReminder(reminder,{minutes:Number(btn.dataset.snoozeMins)}));
+  $('modalBody').querySelector('[data-snooze-tomorrow]')?.addEventListener('click',()=>snoozeReminder(reminder,{tomorrow:true}));
+}
+async function snoozeReminder(reminder,opts){
+  let target;
+  if(opts.tomorrow){
+    target=new Date();
+    target.setDate(target.getDate()+1);
+    const [hh,mm]=String(reminder.time||'09:00').split(':').map(Number);
+    target.setHours(Number.isFinite(hh)?hh:9,Number.isFinite(mm)?mm:0,0,0);
+  }else{
+    target=new Date(Date.now()+(opts.minutes||10)*60000);
+  }
+  const pad=n=>String(n).padStart(2,'0');
+  reminder.date=`${target.getFullYear()}-${pad(target.getMonth()+1)}-${pad(target.getDate())}`;
+  reminder.time=`${pad(target.getHours())}:${pad(target.getMinutes())}`;
+  reminder.completed=false;
+  reminder.updatedAt=new Date().toISOString();
+  await put('reminders',reminder);
+  await log('Reminder','Reminder snoozed');
+  closeModal();
+  toast('Reminder snoozed');
+  renderBellReminders();
+  renderReminders();
+  renderHome();
+}
+(function(){
+  const bellBtn=$('bellReminderBtn'), panel=$('reminderFloatingPanel'), closeBtn=$('reminderFloatingClose');
+  const addBtn=$('floatingAddReminderBtn'), form=$('bellReminderForm'), cancelBtn=$('bellReminderCancel');
+  const setFormVisible=visible=>{
+    if(!form||!addBtn)return;
+    form.style.display=visible?'grid':'none';
+    addBtn.style.display=visible?'none':'inline-flex';
+    if(visible){
+      form.reset();
+      const dateInput=form.querySelector('input[name="date"]');
+      if(dateInput)dateInput.value=today();
+      form.querySelector('input[name="title"]')?.focus();
+    }
+  };
+  const openPanel=()=>{
+    if(!panel)return;
+    panel.classList.add('open');
+    setFormVisible(false);
+    renderBellReminders();
+  };
+  const closePanel=()=>{
+    if(!panel)return;
+    panel.classList.remove('open');
+    setFormVisible(false);
+  };
+  bellBtn?.addEventListener('click',()=>{
+    if(panel?.classList.contains('open')) closePanel(); else openPanel();
+  });
+  closeBtn?.addEventListener('click',closePanel);
+  addBtn?.addEventListener('click',()=>setFormVisible(true));
+  cancelBtn?.addEventListener('click',()=>setFormVisible(false));
+  form?.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const fd=new FormData(form);
+    const title=String(fd.get('title')||'').trim();
+    const date=String(fd.get('date')||'').trim();
+    if(!title){toast('Enter a reminder title',true);return;}
+    if(!date){toast('Select a reminder date',true);return;}
+    await put('reminders',{
+      id:uid(),
+      title,
+      date,
+      time:String(fd.get('time')||'09:00'),
+      priority:String(fd.get('priority')||'Normal'),
+      description:String(fd.get('description')||''),
+      completed:false,
+      createdAt:new Date().toISOString()
+    });
+    await log('Reminder','Reminder added');
+    toast('Reminder saved');
+    setFormVisible(false);
+    renderBellReminders();
+    renderReminders();
+    renderHome();
+  });
+  document.addEventListener('click',e=>{
+    if(!panel||!panel.classList.contains('open'))return;
+    if(panel.contains(e.target)||bellBtn?.contains(e.target))return;
+    closePanel();
+  });
+})();
 /* Activity Log is shown as a compact, paginated table (Date & Time / Type / Details)
    instead of an ever-growing card list, since this log accumulates one entry per action
    taken across the whole app and would otherwise scroll indefinitely. */
@@ -1353,7 +1567,7 @@ function renderActivityLogCompact(){
     el.innerHTML=miniTableHtml(['Date & Time','Type','Details'],body)+paginationControlsHtml('activityLog',page,totalPages,total,st.pageSize);
   });
 }
-function renderSettings(){const s=state.settings;$('profileName').value=s.name||'';$('profileCurrency').value=s.currency||'INR';$('pinInput').value='';$('autoLock').value=String(s.autoLock||0);updateNotificationStatus();getAll('documents').then(d=>$('backupStatus').textContent=d.length+' documents included in full JSON backup.');renderActivityLogCompact();if(linkedJsonHandle)$('jsonStatus').textContent='Linked: '+linkedJsonHandle.name}
+function renderSettings(){const s=state.settings;$('profileName').value=s.name||'';$('profileCurrency').value=s.currency||'INR';$('pinInput').value='';$('autoLock').value=String(s.autoLock||0);updateNotificationStatus();updateBatteryOptimizationStatus();getAll('documents').then(d=>$('backupStatus').textContent=d.length+' documents included in full JSON backup.');renderActivityLogCompact();if(linkedJsonHandle)$('jsonStatus').textContent='Linked: '+linkedJsonHandle.name}
 $('profileForm').onsubmit=async e=>{e.preventDefault();state.settings.name=$('profileName').value.trim();state.settings.currency=$('profileCurrency').value;await put('meta',state.settings);await log('Settings','Profile updated');toast('Profile saved');refresh()};$('saveSecurity').onclick=async()=>{const p=$('pinInput').value;if(p&&!/^\d{4,12}$/.test(p)){toast('PIN must be 4-12 digits',true);return}if(p){if(state.settings.pinHash){const old=prompt('Enter your current Vault PIN to change it:');if(old===null)return;if(await hashPin(old)!==state.settings.pinHash){toast('Current PIN is incorrect',true);return}}state.settings.pinHash=await hashPin(p)}state.settings.autoLock=Number($('autoLock').value);await put('meta',state.settings);toast('Security saved');scheduleAutoLock()};$('biometricInfo').onclick=()=>toast('Biometric is an Android-native feature; enable it in the APK build.');
 $('pinEye').onclick=()=>{const x=$('pinInput'),b=$('pinEye');const v=x.type==='text';x.type=v?'password':'text';b.textContent=v?'👁️':'🙈';b.title=v?'Show PIN':'Hide PIN'};
 $('selfTestBtn').onclick=async()=>{const results=[];const ok=async(name,fn)=>{try{await fn();results.push('PASS  '+name)}catch(e){results.push('FAIL  '+name+' — '+e.message)}};await ok('Storage available',async()=>{if(!indexedDB&&storageMode!=='fallback')throw Error('No supported local storage');if(storageMode==='fallback'){const id=uid();await put('meta',{id,value:'ok'});const r=await get('meta',id);if(!r||r.value!=='ok')throw Error('Compatibility storage unavailable');await del('meta',id)}});await ok('CRUD income',async()=>{const id=uid();await put('income',{id,amount:123,date:today(),type:'Test'});const r=await get('income',id);if(!r||r.amount!==123)throw Error('CRUD mismatch');await del('income',id)});await ok('Gold current valuation',async()=>{const g={id:uid(),weight:2,purity:'22K',purchaseRate:13000};const r={id:uid(),date:today(),K22:15000,K18:0,K24:0};if(g.weight*r.K22!==30000)throw Error('valuation mismatch')});await ok('Document binary round-trip',async()=>{const bytes=new Uint8Array([1,2,3,4]).buffer;const b=bufToB64(bytes);const out=new Uint8Array(b64ToBuf(b));if(out[2]!==3)throw Error('binary mismatch')});await ok('Password encryption round-trip',async()=>{const e=await encryptPassword({name:'test',password:'Secret123!'},'1234');const p=await decryptPassword(e,'1234');if(p.password!=='Secret123!')throw Error('decrypt mismatch')});await ok('Backup schema',async()=>{const s=await snapshot();if(s.app!=='VaultOne'||Number(s.schemaVersion)!==SCHEMA_VERSION)throw Error('schema mismatch')});await ok('Vehicle CRUD',async()=>{const id=uid();await put('vehicles',{id,name:'Test Vehicle',registrationNumber:'TEST123',type:'Car'});const r=await get('vehicles',id);if(!r||r.registrationNumber!=='TEST123')throw Error('vehicle CRUD mismatch');await del('vehicles',id)});await ok('Insurance CRUD',async()=>{const id=uid();await put('insurances',{id,type:'Term Insurance',insurer:'Test Insurer',policyNumber:'POL1'});const r=await get('insurances',id);if(!r||r.insurer!=='Test Insurer')throw Error('insurance CRUD mismatch');await del('insurances',id)});$('testResult').textContent=results.join('\n');toast(results.every(x=>x.startsWith('PASS'))?'All self-tests passed':'Some tests failed',!results.every(x=>x.startsWith('PASS')))};
@@ -1651,7 +1865,6 @@ const sector=s(fd.get('sector'))||'Other';
   }
   function editDemat(x){openInvestmentForm('demat',x)}
   async function deleteInvestment(id){if(!confirm('Delete this investment record?'))return;await del(STORE,id);await renderInvestments();toast('Investment deleted')}
-  /* ===== Sortable data-table infrastructure (fixes: Delete button overflow + tabular format) ===== */
   const tableSort = window.__vaultTableSort = window.__vaultTableSort || {
     demat:{col:'stockName',dir:'asc'}, fd:{col:'name',dir:'asc'}, rd:{col:'name',dir:'asc'},
     recurring:{col:'name',dir:'asc'}, other:{col:'name',dir:'asc'}, insurance:{col:'type',dir:'asc'}
@@ -1666,9 +1879,6 @@ const sector=s(fd.get('sector'))||'Other';
       return dir==='asc'?cmp:-cmp;
     });
   }
-  /* Per-row "Details" expanded state, keyed by table then row id -- persisted on window
-     (same pattern as tableSort) so expand/collapse survives re-renders triggered by
-     other actions (sorting, edits, refresh) elsewhere in Savings & Investments. */
   const tableExpanded = window.__vaultTableExpanded = window.__vaultTableExpanded || {};
   function renderDataTable(tableKey,rows,columns,actionsHtmlFn,emptyMsg){
     if(!rows.length)return `<div class="empty">${esc(emptyMsg)}</div>`;
@@ -2275,8 +2485,6 @@ const sector=s(fd.get('sector'))||'Other';
       if(type==='Loan')return loans.filter(x=>String(x.accountId)===String(a.id)).reduce((sum,x)=>sum+loanOutstanding2(x),0);
       return N(a.initialBalance);
     };
-    /* Same "important field visible, rest behind Details" pattern used for the
-       Savings & Investments tables -- persisted expand state so it survives re-renders. */
     const bankExpanded=window.__vaultBankDetailsExpanded=window.__vaultBankDetailsExpanded||new Set();
     el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h3 style="margin:0">Banks & Accounts</h3><p class="muted" style="margin:4px 0">Central account master. Other finance modules reference these accounts.</p></div><button class="btn primary" type="button" id="addBankAccountBtn">+ Add Account</button></div><div class="list" style="margin-top:14px">${accounts.length?accounts.map(a=>{const bal=accountValue(a);const type=S(a.accountType||'Savings');const valueLabel=type==='Loan'?'Outstanding':(type==='Savings'||type==='Current'?'Current Balance':'Current Value');const showIfsc=['Bank','Post Office'].includes(S(a.institutionType||'Bank'));const isExpanded=bankExpanded.has(a.id);const detailHtml=`<div class="sub">${esc2(a.accountType||'Account')} • ${esc2(a.ownershipType||'Individual')} • Holder: ${esc2(personName(a.primaryHolderPersonId)||a.accountHolder||'Not assigned')}${a.ownershipType==='Joint Account'&&(a.holderPersonIds||[]).length>1?' • Joint: '+esc2((a.holderPersonIds||[]).slice(1).map(personName).filter(Boolean).join(', ')):''}</div><div class="sub">${a.nomineePersonId?'Nominee: '+esc2(personName(a.nomineePersonId))+(a.nomineeRelationship?' • '+esc2(a.nomineeRelationship):''):'Nominee: Not set'}</div><div class="sub">A/C: ${esc2(a.accountNumber||'Not set')}${showIfsc?' • IFSC: '+esc2(a.ifsc||'Not set'):''}</div>`;return `<div class="item"><div style="min-width:0;flex:1"><div class="title">${esc2(a.name||'Account')} <span class="pill">${esc2(a.institutionType||'Bank')}</span> <span class="pill">${esc2(a.accountType||'Savings')}</span></div><div class="sub">${valueLabel}: <b>${money(bal)}</b> • ${esc2(a.status||'Active')}</div><div class="account-detail-panel" data-bank-detail-for="${esc2(a.id)}" style="display:${isExpanded?'grid':'none'}">${detailHtml}</div></div><div class="actions"><button class="btn btn-icon details-toggle" type="button" data-toggle-bank-details="${esc2(a.id)}" title="${isExpanded?'Hide Details':'Details'}" aria-label="${isExpanded?'Hide Details':'Details'}">${isExpanded?'▴':'▾'}</button><button class="btn btn-icon" type="button" data-copy-bank-account="${esc2(a.id)}" title="Copy Account Number" aria-label="Copy Account Number">📋</button><button class="btn btn-icon" type="button" data-edit-bank-account="${esc2(a.id)}" title="Edit" aria-label="Edit">✏️</button><button class="btn btn-icon" type="button" data-reconcile-bank="${esc2(a.id)}" title="Reconcile" aria-label="Reconcile">⚖️</button></div></div>`}).join(''):'<div class="empty">No accounts added yet. Add a Bank or Post Office account.</div>'}</div></div>`;
     $('addBankAccountBtn').onclick=()=>openBankAccountForm();
@@ -2375,14 +2583,6 @@ const sector=s(fd.get('sector'))||'Other';
       return bt.localeCompare(at);
     });
   }
-  /* Transaction Delete: transactions are often auto-generated by other actions (Loan EMI
-     payments, Income/Expense entries, Investments, Insurance premiums, Transfers, Balance
-     Adjustments) and linked via referenceId. Editing is intentionally NOT offered here --
-     corrections should be made on the originating record instead (Existing Income /
-     Existing Expense on the Income & Expense tab support Edit directly, and keep the
-     linked transaction in sync automatically). Delete is still available here but shows
-     an explicit warning since it only removes this ledger entry, not any originating
-     record, which may need separate cleanup. */
   async function deleteTransactionRow(id){
     if(!confirm('Delete this transaction?\n\nIf it was auto-generated by another record (Loan EMI, Income, Expense, Investment, Insurance Premium, Transfer, etc.), that original record will NOT be deleted -- only this ledger entry -- which may cause account balances to look off until reconciled.'))return;
     await del('transactions',id);
@@ -2402,7 +2602,7 @@ const sector=s(fd.get('sector'))||'Other';
     const el=$('transactions');if(!el)return;
     const [rows,accounts]=await Promise.all([getAll('transactions'),getAll('banks')]);
     let currentPage=1, pageSize=$('txPageSize')?.value||'10';
-    el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h3 style="margin:0">Transactions</h3><p class="muted" style="margin:4px 0">Central financial activity ledger, sorted by Date & Time (most recent first). Investments and transfers are not treated as expenses.</p></div><div class="actions"><button class="btn primary" type="button" id="addTransferBtn">+ Transfer</button><button class="btn" type="button" id="exportTransactionsBtn">Download CSV</button></div></div><div class="grid" style="margin-top:14px"><label>Search<input id="txSearch" placeholder="Search description, category, account..."></label><label>Type<select id="txType"><option value="">All</option>${Object.keys(typeLabel).map(k=>`<option>${esc2(k)}</option>`).join('')}</select></label><label>Account<select id="txAccount"><option value="">All accounts</option>${accounts.map(a=>`<option value="${esc2(a.id)}">${esc2(a.name||'Account')} • ${esc2(a.accountNumber||'')}</option>`).join('')}</select></label><label>Period<select id="txPeriod"><option value="all">All</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="week">Current Week</option><option value="lastweek">Last Week</option><option value="month">Current Month</option><option value="lastmonth">Last Month</option><option value="year">Current Year</option><option value="lastyear">Last Year</option><option value="custom">Custom Date Range</option></select></label><label id="txFromWrap" style="display:none">From<input id="txFrom" type="date"></label><label id="txToWrap" style="display:none">To<input id="txTo" type="date"></label></div></div><div class="card"><div id="txList"></div><div class="pagination" id="txPagination"><label style="display:inline-flex;align-items:center;gap:8px;margin:0">Rows per page<select id="txPageSize"><option value="5">5</option><option value="10" selected>10</option><option value="25">25</option></select></label><span class="muted" id="txPageInfo"></span><button type="button" class="btn" id="txPrevPage">← Prev</button><button type="button" class="btn" id="txNextPage">Next →</button></div></div>`;
+    el.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h3 style="margin:0">Transactions</h3><p class="muted" style="margin:4px 0">Central financial activity ledger, sorted by Date & Time (most recent first). Investments and transfers are not treated as expenses.</p></div><div class="actions"><button class="btn primary" type="button" id="addTransferBtn">+ Transfer</button><button class="btn" type="button" id="exportTransactionsBtn">Download CSV</button></div></div><div class="grid" style="margin-top:14px"><label>Search<input id="txSearch" placeholder="Search description, category, account..."></label><label>Type<select id="txType"><option value="">All</option>${Object.keys(typeLabel).map(k=>`<option>${esc2(k)}</option>`).join('')}</select></label><label>Account<select id="txAccount"><option value="">All accounts</option>${accounts.map(a=>`<option value="${esc2(a.id)}">${esc2(a.name||'Account')} • ${esc2(a.accountNumber||'')}</option>`).join('')}</select></label><label>Period<select id="txPeriod"><option value="all">All</option><option value="today">Today</option><option value="yesterday">Yesterday</option><option value="week">Current Week</option><option value="lastweek">Last Week</option><option value="month">Current Month</option><option value="lastmonth">Last Month</option><option value="year">Current Year</option><option value="lastyear">Last Year</option><option value="custom">Custom Date Range</option></select></label><label id="txFromWrap" style="display:none">From<input id="txFrom" type="date"></label><label id="txToWrap" style="display:none">To<input id="txTo" type="date"></label></div></div><div class="card"><div id="txList"></div><div class="pagination" id="txPagination"><div class="pagination-info"><label style="display:inline-flex;align-items:center;gap:8px;margin:0"><span class="pagination-size-text">Rows per page</span><select id="txPageSize"><option value="5">5</option><option value="10" selected>10</option><option value="25">25</option></select></label><span class="muted pagination-summary" id="txPageInfo"></span><span class="muted pagination-summary-compact" id="txPageInfoCompact"></span></div><div class="pagination-nav"><button type="button" class="btn" id="txPrevPage" title="Previous page" aria-label="Previous page">←<span class="pagination-nav-text"> Prev</span></button><button type="button" class="btn" id="txNextPage" title="Next page" aria-label="Next page"><span class="pagination-nav-text">Next </span>→</button></div></div></div>`;
     const apply=()=>{
       const q=S($('txSearch').value).toLowerCase(),type=$('txType').value,aid=$('txAccount').value,period=$('txPeriod').value,from=$('txFrom').value,to=$('txTo').value;const now=new Date();
       const d0=new Date(now.getFullYear(),now.getMonth(),now.getDate());const day=d0.getDay();const monday=new Date(d0);monday.setDate(d0.getDate()-(day===0?6:day-1));const prevMon=new Date(monday);prevMon.setDate(prevMon.getDate()-7);const prevSun=new Date(monday);prevSun.setDate(prevSun.getDate()-1);const monthStart=new Date(now.getFullYear(),now.getMonth(),1),monthEnd=new Date(now.getFullYear(),now.getMonth()+1,0);const lastMonthStart=new Date(now.getFullYear(),now.getMonth()-1,1),lastMonthEnd=new Date(now.getFullYear(),now.getMonth(),0);const yearStart=new Date(now.getFullYear(),0,1),yearEnd=new Date(now.getFullYear(),11,31),lastYearStart=new Date(now.getFullYear()-1,0,1),lastYearEnd=new Date(now.getFullYear()-1,11,31);
@@ -2413,6 +2613,7 @@ const sector=s(fd.get('sector'))||'Other';
       currentPage=result.curPage;
       $('txList').innerHTML=result.total?result.html:'<div class="empty">No transactions match the selected filters.</div>';
       $('txPageInfo').textContent=result.total?`Showing page ${result.curPage} of ${result.totalPages} • ${result.total} total transaction(s)`:'';
+      $('txPageInfoCompact').textContent=result.total?`${result.curPage}/${result.totalPages}`:'';
       $('txPrevPage').disabled=currentPage<=1;
       $('txNextPage').disabled=currentPage>=result.totalPages;
       return out;
@@ -2451,12 +2652,6 @@ const sector=s(fd.get('sector'))||'Other';
     $('exportTransactionsBtn').onclick=()=>{const out=sortTransactionsDesc(rows);const csv=[['Date','Type','Description','Category','Source Account','Destination Account','Amount','Principal','Interest','Reference'],...out.map(t=>[t.date,t.type,t.description,t.category,accountLabel(t.sourceAccountId,accounts),accountLabel(t.destinationAccountId,accounts),t.amount,t.principal||'',t.interest||'',t.referenceId])].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),'VaultOne_Transactions_'+today()+'.csv');toast('Transactions CSV exported')};
   }
   const incomeTypeOptions=['Salary','Shift Allowance','Other Income','Interest','Dividend'];
-  /* Existing Income / Existing Expense: unlike Transactions (the auto-generated ledger,
-     which intentionally has no Edit), these are the actual source records, so Edit here
-     is full (Type/Category, Amount, Date, Account, Note) -- and the linked auto-generated
-     transaction (matched via referenceId) is kept in sync automatically on save so account
-     balances stay correct. Delete removes both the record and its linked transaction. Both
-     lists are shown as compact, paginated tables so they stay manageable as records grow. */
   async function editIncomeRecord(id){
     const row=await get('income',id); if(!row)return;
     const accounts=await getAll('banks');
@@ -2556,11 +2751,6 @@ const sector=s(fd.get('sector'))||'Other';
   function loanRemaining2(x){return Math.max(0,Math.floor(N(x.tenure))-Math.floor(N(x.emisPaid)))}
   function loanOutstanding2(x){if(x.status==='Settled')return 0;if(x.loanType==='Gold Loan')return Math.max(0,N(x.outstandingPrincipal??x.principal));if(x.manualOutstanding!==undefined&&x.manualOutstanding!=='')return Math.max(0,N(x.manualOutstanding));const p=N(x.principal),paid=Math.max(0,Math.floor(N(x.emisPaid))),emi=N(x.emi),r=N(x.interest)/100/12;if(p<=0)return 0;if(emi<=0)return p;if(r<=0)return Math.max(0,p-emi*paid);return Math.max(0,p*Math.pow(1+r,paid)-emi*((Math.pow(1+r,paid)-1)/r))}
   function loanDueText(date){if(!date)return 'Not set';const d=new Date(date+'T23:59:59'),days=Math.ceil((d-Date.now())/86400000);return days<0?'Overdue by '+Math.abs(days)+' days':days===0?'Due today':'Due in '+days+' days'}
-  /* Loans list: same "important field visible, rest behind Details" pattern used for the
-     Savings & Investments tables and Banks & Accounts -- the previously always-visible
-     EMI/tenure/due-date breakdown (detail-grid) is now collapsed behind a "Details ▾"
-     toggle, and Edit / Make EMI Payment / Record Payment / Advance-Prepay / Delete are
-     icon buttons instead of text, matching the rest of the app. */
   async function renderLoans2(){
     const loans=await getAll('loans');const accounts=await getAccounts();const el=$('loans');if(!el)return;
     const loanExpanded=window.__vaultLoanDetailsExpanded=window.__vaultLoanDetailsExpanded||new Set();
@@ -2857,11 +3047,6 @@ const sector=s(fd.get('sector'))||'Other';
   };
 })();
 /* ===== VaultOne v1.9 Stable Event Architecture ===== */
-/* v1.9 changes: Savings & Investments (Demat / FD / RD / PPF-SSA-NPS / Other Savings) and Insurance are now rendered
-   as sortable data tables (click any column heading to sort ascending/descending) with an Actions column that
-   contains its buttons safely, fixing the Delete button overflowing outside its card on the Demat/Stock view and
-   any other multi-entry list in this section. RD, PPF, SSA and NPS now all expose a "+ Add Contribution" button
-   to record a monthly contribution paid from a bank account (previously only available for PPF/SSA). */
 </script>
 <div style="text-align:center;color:#64748b;font-size:11px;padding:10px 14px 90px">© 2026 Deepan Chakkaravarthi. All Rights Reserved. VaultOne™</div>
 </body></html>
