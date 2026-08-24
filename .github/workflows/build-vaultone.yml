@@ -441,6 +441,7 @@ jobs:
 
           dependencies {
               implementation 'androidx.webkit:webkit:1.16.0'
+              implementation 'androidx.core:core:1.13.1'
           }
           EOF
 
@@ -454,6 +455,24 @@ jobs:
           <?xml version="1.0" encoding="utf-8"?>
 
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+              <!--
+                  Required so VaultOne reminders can post real Android system
+                  notifications from a background alarm (Android 13+ requires
+                  this to be explicitly granted at runtime).
+              -->
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+              <!--
+                  Lets VaultOne schedule reminder alarms that fire at the
+                  precise time even while the device is idle (Doze mode).
+                  On Android 12+ this may require the user to enable
+                  "Alarms & reminders" for VaultOne in system Settings; if not
+                  granted, VaultOne automatically falls back to an inexact
+                  alarm so reminders still fire (potentially a few minutes
+                  later) instead of not firing at all.
+              -->
+              <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
               <application
                   android:allowBackup="false"
@@ -479,6 +498,16 @@ jobs:
                       </intent-filter>
 
                   </activity>
+
+                  <!--
+                      Wakes up at the exact time an AlarmManager alarm fires
+                      (scheduled by VaultOneAndroidBridge.scheduleReminderNotification)
+                      and posts the actual system notification, even if
+                      VaultOne itself is closed at that moment.
+                  -->
+                  <receiver
+                      android:name=".ReminderReceiver"
+                      android:exported="false" />
 
               </application>
 
@@ -537,8 +566,14 @@ jobs:
           package com.vaultone.app;
 
           import android.app.Activity;
+          import android.app.AlarmManager;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.PendingIntent;
           import android.content.ContentValues;
+          import android.content.Context;
           import android.content.Intent;
+          import android.content.pm.PackageManager;
           import android.net.Uri;
           import android.os.Build;
           import android.os.Bundle;
@@ -554,6 +589,8 @@ jobs:
           import android.webkit.WebViewClient;
           import android.widget.Toast;
 
+          import androidx.core.app.NotificationManagerCompat;
+          import androidx.core.content.ContextCompat;
           import androidx.webkit.WebViewAssetLoader;
 
           import java.io.OutputStream;
@@ -572,10 +609,23 @@ jobs:
 
               private static final int FILE_CHOOSER_REQUEST_CODE = 51426;
 
+              /*
+               * Android's WebView does not implement the Web Notifications API
+               * that VaultOne.html uses when opened in a normal browser
+               * (Notification.requestPermission() / new Notification(...)).
+               * This channel + the POST_NOTIFICATIONS permission request below
+               * let VaultOneAndroidBridge post real system notifications
+               * instead, via AlarmManager + ReminderReceiver.
+               */
+              private static final String REMINDER_CHANNEL_ID = "vaultone_reminders";
+              private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 48213;
+
               @Override
               protected void onCreate(Bundle savedInstanceState) {
 
                   super.onCreate(savedInstanceState);
+
+                  createReminderNotificationChannel();
 
                   webView = new WebView(this);
 
@@ -819,6 +869,183 @@ jobs:
                           return false;
                       }
                   }
+
+                  /**
+                   * Returns whether VaultOne currently has permission to post
+                   * system notifications. On Android 12 and below this is
+                   * granted by default (notifications are only individually
+                   * toggle-able by the user in Settings, which this check also
+                   * respects via NotificationManagerCompat). On Android 13+ it
+                   * reflects the POST_NOTIFICATIONS runtime permission.
+                   */
+                  @JavascriptInterface
+                  public boolean hasNotificationPermission() {
+                      if (Build.VERSION.SDK_INT >= 33) {
+                          return ContextCompat.checkSelfPermission(
+                                  MainActivity.this,
+                                  android.Manifest.permission.POST_NOTIFICATIONS
+                          ) == PackageManager.PERMISSION_GRANTED;
+                      }
+                      return NotificationManagerCompat.from(MainActivity.this).areNotificationsEnabled();
+                  }
+
+                  /**
+                   * Triggers the native Android "Allow notifications?" system
+                   * dialog (Android 13+ only; a no-op on older versions where
+                   * notification permission is granted by default). VaultOne.html
+                   * calls hasNotificationPermission() shortly afterwards to pick
+                   * up the user's decision.
+                   */
+                  @JavascriptInterface
+                  public void requestNotificationPermission() {
+                      if (Build.VERSION.SDK_INT >= 33) {
+                          runOnUiThread(() -> requestPermissions(
+                                  new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                                  NOTIFICATION_PERMISSION_REQUEST_CODE
+                          ));
+                      }
+                  }
+
+                  /**
+                   * Schedules a real OS-level alarm (AlarmManager) that fires
+                   * ReminderReceiver at triggerAtMillis, even if VaultOne is
+                   * closed or the device is idle at that time -- unlike a JS
+                   * setTimeout, which is lost the moment the app is
+                   * backgrounded. Calling this again with the same id simply
+                   * replaces the previously scheduled alarm (no duplicates).
+                   */
+                  @JavascriptInterface
+                  public boolean scheduleReminderNotification(
+                          String id, String title, String body, String triggerAtMillis) {
+                      try {
+                          long when = Long.parseLong(triggerAtMillis);
+                          if (when <= System.currentTimeMillis()) {
+                              return false;
+                          }
+
+                          int requestCode = stableRequestCode(id);
+
+                          Intent intent = new Intent(MainActivity.this, ReminderReceiver.class);
+                          intent.putExtra("notificationId", requestCode);
+                          intent.putExtra("title", title);
+                          intent.putExtra("body", body);
+
+                          PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                                  MainActivity.this,
+                                  requestCode,
+                                  intent,
+                                  PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                          );
+
+                          AlarmManager alarmManager =
+                                  (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                          if (alarmManager == null) {
+                              return false;
+                          }
+
+                          try {
+                              if (Build.VERSION.SDK_INT >= 31 && !alarmManager.canScheduleExactAlarms()) {
+                                  /*
+                                   * "Alarms & reminders" special access was not
+                                   * granted -- fall back to an inexact alarm so
+                                   * the reminder still fires (possibly a few
+                                   * minutes later during the next Doze
+                                   * maintenance window) instead of not firing
+                                   * at all.
+                                   */
+                                  alarmManager.setAndAllowWhileIdle(
+                                          AlarmManager.RTC_WAKEUP, when, pendingIntent);
+                              } else {
+                                  alarmManager.setExactAndAllowWhileIdle(
+                                          AlarmManager.RTC_WAKEUP, when, pendingIntent);
+                              }
+                          } catch (SecurityException se) {
+                              alarmManager.setAndAllowWhileIdle(
+                                      AlarmManager.RTC_WAKEUP, when, pendingIntent);
+                          }
+
+                          return true;
+                      } catch (Exception e) {
+                          return false;
+                      }
+                  }
+
+                  /**
+                   * Cancels a previously scheduled reminder alarm, e.g. when
+                   * the reminder is marked complete or deleted in VaultOne.
+                   */
+                  @JavascriptInterface
+                  public boolean cancelReminderNotification(String id) {
+                      try {
+                          int requestCode = stableRequestCode(id);
+
+                          Intent intent = new Intent(MainActivity.this, ReminderReceiver.class);
+
+                          PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                                  MainActivity.this,
+                                  requestCode,
+                                  intent,
+                                  PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                          );
+
+                          AlarmManager alarmManager =
+                                  (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                          if (alarmManager != null) {
+                              alarmManager.cancel(pendingIntent);
+                          }
+                          pendingIntent.cancel();
+
+                          NotificationManagerCompat.from(MainActivity.this).cancel(requestCode);
+
+                          return true;
+                      } catch (Exception e) {
+                          return false;
+                      }
+                  }
+
+                  /**
+                   * Converts VaultOne's string reminder id into a stable,
+                   * positive int -- required by AlarmManager/PendingIntent/
+                   * NotificationManager, which all key off int request codes.
+                   * The same VaultOne id always maps to the same int, so
+                   * re-scheduling or cancelling a reminder targets the correct
+                   * previously-created alarm/notification.
+                   */
+                  private int stableRequestCode(String id) {
+                      if (id == null) {
+                          return 0;
+                      }
+                      return (id.hashCode() & 0x7fffffff) % 1000000000;
+                  }
+              }
+
+              private void createReminderNotificationChannel() {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+                      NotificationChannel channel = new NotificationChannel(
+                              REMINDER_CHANNEL_ID,
+                              "VaultOne Reminders",
+                              NotificationManager.IMPORTANCE_DEFAULT
+                      );
+                      channel.setDescription("Reminder notifications from VaultOne");
+
+                      NotificationManager manager = getSystemService(NotificationManager.class);
+                      if (manager != null) {
+                          manager.createNotificationChannel(channel);
+                      }
+                  }
+              }
+
+              @Override
+              public void onRequestPermissionsResult(
+                      int requestCode, String[] permissions, int[] grantResults) {
+                  super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+                  /*
+                   * No explicit handling needed here -- VaultOne.html re-checks
+                   * hasNotificationPermission() itself right after calling
+                   * requestNotificationPermission(), so the JS side always
+                   * reflects the user's latest decision.
+                   */
               }
 
               @Override
@@ -847,6 +1074,116 @@ jobs:
                   }
 
                   super.onDestroy();
+              }
+          }
+          EOF
+
+      # ==========================================================
+      # 17B. CREATE REMINDER NOTIFICATION RECEIVER
+      #
+      # Android's WebView does not implement the Web Notifications API
+      # (Notification.requestPermission()/new Notification(...)) that
+      # VaultOne.html uses when running in a normal desktop/mobile browser.
+      # This receiver is woken up by AlarmManager (scheduled from
+      # VaultOneAndroidBridge.scheduleReminderNotification in
+      # MainActivity.java) at the exact reminder time -- even if VaultOne
+      # itself is closed or the device is idle -- and posts a real Android
+      # system notification via NotificationCompat.
+      # ==========================================================
+      - name: Create ReminderReceiver.java
+        shell: bash
+        run: |
+          cat > app/src/main/java/com/vaultone/app/ReminderReceiver.java <<'EOF'
+          package com.vaultone.app;
+
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.PendingIntent;
+          import android.content.BroadcastReceiver;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.os.Build;
+
+          import androidx.core.app.NotificationCompat;
+          import androidx.core.app.NotificationManagerCompat;
+
+          public class ReminderReceiver extends BroadcastReceiver {
+
+              private static final String CHANNEL_ID = "vaultone_reminders";
+
+              @Override
+              public void onReceive(Context context, Intent intent) {
+
+                  int notificationId = intent.getIntExtra("notificationId", 0);
+                  String title = intent.getStringExtra("title");
+                  String body = intent.getStringExtra("body");
+
+                  if (title == null || title.isEmpty()) {
+                      title = "VaultOne Reminder";
+                  }
+                  if (body == null) {
+                      body = "";
+                  }
+
+                  ensureChannel(context);
+
+                  NotificationCompat.Builder builder =
+                          new NotificationCompat.Builder(context, CHANNEL_ID)
+                                  .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                                  .setContentTitle(title)
+                                  .setContentText(body)
+                                  .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                                  .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                                  .setAutoCancel(true);
+
+                  Intent launchIntent =
+                          context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
+
+                  if (launchIntent != null) {
+                      launchIntent.setFlags(
+                              Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                      );
+
+                      PendingIntent contentIntent = PendingIntent.getActivity(
+                              context,
+                              notificationId,
+                              launchIntent,
+                              PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                      );
+
+                      builder.setContentIntent(contentIntent);
+                  }
+
+                  try {
+                      NotificationManagerCompat.from(context).notify(notificationId, builder.build());
+                  } catch (SecurityException e) {
+                      /*
+                       * POST_NOTIFICATIONS was not granted. VaultOne.html
+                       * re-checks permission status (hasNotificationPermission)
+                       * the next time the app is opened, so this is silently
+                       * ignored here rather than crashing the receiver.
+                       */
+                  }
+              }
+
+              private void ensureChannel(Context context) {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+                      NotificationManager manager =
+                              (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+                      if (manager != null && manager.getNotificationChannel(CHANNEL_ID) == null) {
+
+                          NotificationChannel channel = new NotificationChannel(
+                                  CHANNEL_ID,
+                                  "VaultOne Reminders",
+                                  NotificationManager.IMPORTANCE_DEFAULT
+                          );
+                          channel.setDescription("Reminder notifications from VaultOne");
+
+                          manager.createNotificationChannel(channel);
+                      }
+                  }
               }
           }
           EOF
