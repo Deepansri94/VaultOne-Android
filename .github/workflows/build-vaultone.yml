@@ -1025,10 +1025,10 @@ jobs:
 
           cp \
             "./app/build/outputs/apk/debug/app-debug.apk" \
-            "./release/VaultOne-debug.apk"
+            "./release/VaultOne.apk"
 
           echo "Prepared APK:"
-          ls -lh "./release/VaultOne-debug.apk"
+          ls -lh "./release/VaultOne.apk"
 
       # ==========================================================
       # 26. UPLOAD APK
@@ -1037,7 +1037,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: VaultOne-APK
-          path: release/VaultOne-debug.apk
+          path: release/VaultOne.apk
           if-no-files-found: error
 
       # ==========================================================
