@@ -178,7 +178,7 @@ tr.detail-row td{background:#0a1525;border-bottom:1px solid #ffffff10;padding:10
 <div id="financeDashboard" class="financeSub"></div><div id="income" class="financeSub" style="display:none"></div><div id="expenses" class="financeSub" style="display:none"></div><div id="budget" class="financeSub" style="display:none"></div><div id="investments" class="financeSub" style="display:none"></div><div id="gold" class="financeSub" style="display:none"></div><div id="loans" class="financeSub" style="display:none"></div><div id="banks" class="financeSub" style="display:none"></div><div id="transactions" class="financeSub" style="display:none"></div></div></section>
 <section class="view" id="family"><div class="hero"><h2>FamilyVault 📁</h2><div class="muted">Personal & household documents stored locally.</div><div class="actions"><button class="btn primary" id="addPersonBtn">👤 + Person</button><button class="btn" id="addHouseBtn">🏠 + Household</button><button class="btn" id="addVehicleBtn">🚗 + Vehicle</button><button class="btn gold" id="addDocBtn">📄 + Document</button></div></div><div class="stats"><div class="stat">People<b id="peopleCount">0</b></div><div class="stat">Households<b id="houseCount">0</b></div><div class="stat">Vehicles<b id="vehicleCount">0</b></div><div class="stat">Documents<b id="docCount">0</b></div><div class="stat">Doc Expiring ≤30d<b id="docExpCount">0</b></div></div><div class="card"><input class="search" id="docSearch" placeholder="Search documents, people, households, vehicles..."><div id="familyList" class="list"></div></div></section>
 <section class="view" id="passwords"><div class="hero"><h2>PasswordVault 🔑</h2><div class="muted">Encrypted local password manager. Unlock with your PIN.</div><div class="actions"><button class="btn primary" id="addPassBtn">+ Add Password</button><button class="btn" id="genPassBtn">Generate Password</button></div></div><div class="card"><input id="passSearch" placeholder="Search passwords..."><div id="passList" class="list" style="margin-top:12px"></div></div></section>
-<section class="view" id="reminders"><div class="hero"><h2>Reminders ⏰</h2><div class="muted">Simple local reminders.</div><button class="btn primary" id="addReminderBtn">+ Add Reminder</button><button class="btn" id="enableNotificationsBtn">🔔 Enable Notifications</button><span class="muted" id="notificationStatus"></span></div><div class="tabs"><button type="button" class="btn tab primary" data-remtab="upcoming">Upcoming</button><button type="button" class="btn tab" data-remtab="overdue">Overdue</button><button type="button" class="btn tab" data-remtab="done">Completed</button></div><div class="card"><div id="remList" class="list"></div></div></section>
+<section class="view" id="reminders"><div class="hero"><h2>Reminders ⏰</h2><div class="muted">Simple local reminders.</div><button class="btn primary" id="addReminderBtn">+ Add Reminder</button><button class="btn" id="enableNotificationsBtn">🔔 Enable Notifications</button><span class="muted" id="notificationStatus"></span><br><button class="btn" id="batteryOptBtn" style="display:none;margin-top:8px">🔋 Fix Battery Optimization</button><span class="muted" id="batteryOptStatus"></span></div><div class="tabs"><button type="button" class="btn tab primary" data-remtab="upcoming">Upcoming</button><button type="button" class="btn tab" data-remtab="overdue">Overdue</button><button type="button" class="btn tab" data-remtab="done">Completed</button></div><div class="card"><div id="remList" class="list"></div></div></section>
 <section class="view" id="settings"><div class="hero"><h2>Settings ⚙️</h2><div class="muted">VaultOne configuration, backup and security.</div></div><div class="card"><h3>Profile</h3><form id="profileForm" class="grid"><label>Full Name<input id="profileName" required></label><label>Currency<select id="profileCurrency"><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option></select></label><div class="actions"><button class="btn primary">Save Profile</button></div></form></div><div class="card"><h3>Security</h3><div class="grid"><label>Vault PIN<div class="password-field"><input id="pinInput" type="password" inputmode="numeric" maxlength="12" autocomplete="new-password" placeholder="4-12 digits"><button type="button" class="password-eye" id="pinEye" aria-label="Show PIN" title="Show PIN">👁️</button></div></label><label>Auto-lock<select id="autoLock"><option value="0">Off</option><option value="1">1 minute</option><option value="5">5 minutes</option><option value="15">15 minutes</option></select></label></div><div class="actions"><button class="btn primary" id="saveSecurity">Save Security</button><button class="btn" id="biometricInfo">Biometric</button></div><p class="muted">Browser version uses a PIN-derived AES-GCM key for PasswordVault. Native Android should use Android Keystore/biometrics.</p></div><div class="card"><h3>Backup & Restore</h3><div class="actions"><button class="btn primary" id="exportBtn">Export VaultOne JSON</button><button class="btn" id="importBtn">Import JSON</button><input id="importFile" type="file" accept="application/json" hidden></div><p id="backupStatus" class="muted"></p></div><div class="card"><h3>JSON Device File</h3><p class="muted">Where supported, link a JSON file for direct save. Otherwise use Export/Import.</p><div class="actions"><button class="btn" id="linkJsonBtn">Link JSON File</button><button class="btn" id="saveJsonBtn">Save to Linked JSON</button></div><p id="jsonStatus" class="muted">Not linked.</p></div><div class="card"><h3>Diagnostics</h3><button class="btn" id="selfTestBtn">Run Self-Test</button><pre id="testResult" style="white-space:pre-wrap;color:#a9b7ca"></pre></div><div class="card dangerbox"><h3>Clear All VaultOne Data</h3><p>This permanently deletes VaultOne's database, documents and encrypted password records. It does not delete unrelated files on your phone.</p><button class="btn danger" id="clearBtn">Clear All Data</button></div><div class="card"><h3>Activity Log</h3><div id="fullActivityLog" class="list"></div></div><div class="card"><p class="muted">VaultOne v1.9 • Offline-first • Schema v7</p></div></section>
 </main>
 <nav class="bottom"><div class="nav"><button type="button" class="active" data-go="home"><span>⌂</span>Home</button><button type="button" data-go="ivault"><span>₹</span>iVault</button><button type="button" data-go="family"><span>📁</span>Family</button><button type="button" data-go="passwords"><span>🔑</span>Passwords</button><button type="button" data-go="reminders"><span>⏰</span>Reminders</button><button type="button" data-go="settings"><span>⚙</span>Settings</button></div></nav>
@@ -1106,6 +1106,56 @@ function updateNotificationStatus(){
   if(!('Notification' in window)){el.textContent='Browser notifications unavailable';return}
   el.textContent='Notifications: '+Notification.permission;
 }
+/* Battery optimization: even with notification permission granted and a reminder
+   alarm successfully scheduled, Android's Doze/battery-optimization system can defer
+   or silently drop that alarm while VaultOne is closed or backgrounded -- this is why
+   a reminder may fire exactly on time if the app happens to be open, but late (or not
+   at all) otherwise. Requesting REQUEST_IGNORE_BATTERY_OPTIMIZATIONS exemption (a
+   normal, Google-sanctioned use case for alarm/reminder apps) fixes this. This is a
+   separate, unrelated Android permission from notification permission, so it needs
+   its own status check + its own "Allow" flow, both only relevant on the packaged APK. */
+function hasBatteryOptimizationBridge(){
+  return Boolean(window.VaultOneAndroid && typeof window.VaultOneAndroid.isIgnoringBatteryOptimizations==='function');
+}
+function updateBatteryOptimizationStatus(){
+  const btn=$('batteryOptBtn'), statusEl=$('batteryOptStatus');
+  if(!btn||!statusEl)return;
+  if(!hasBatteryOptimizationBridge()){
+    btn.style.display='none';
+    statusEl.textContent='';
+    return;
+  }
+  btn.style.display='inline-flex';
+  try{
+    const ignoring=window.VaultOneAndroid.isIgnoringBatteryOptimizations();
+    if(ignoring){
+      statusEl.textContent='Battery: not restricted — reminders can fire on time even when closed.';
+      btn.textContent='🔋 Battery Optimization Off';
+      btn.classList.add('primary');
+    }else{
+      statusEl.textContent='Battery: optimization is ON — reminders may be delayed (or missed) while VaultOne is closed.';
+      btn.textContent='🔋 Fix Battery Optimization';
+      btn.classList.remove('primary');
+    }
+  }catch(e){
+    statusEl.textContent='Battery optimization status unknown.';
+  }
+}
+function requestBatteryOptimizationExemption(){
+  if(!hasBatteryOptimizationBridge()){
+    toast('Battery optimization settings are only available in the Android app.',true);
+    return;
+  }
+  try{
+    window.VaultOneAndroid.requestIgnoreBatteryOptimizations?.();
+    /* The system dialog is shown asynchronously (or the user is taken to a
+       Settings screen on some OEMs); re-check status shortly after so the
+       label reflects the outcome without requiring a manual refresh. */
+    setTimeout(updateBatteryOptimizationStatus,1200);
+    toast('If prompted, choose "Allow" so reminders can fire even when VaultOne is closed.');
+  }catch(e){toast('Could not open battery settings: '+(e?.message||'Unknown error'),true)}
+}
+$('batteryOptBtn')?.addEventListener('click',requestBatteryOptimizationExemption);
 async function enableReminderNotifications(){
   if(hasNativeNotificationBridge()){
     try{
@@ -1242,6 +1292,7 @@ function renderReminders(){
   getAll('reminders').then(rows=>{
     scheduleReminderNotifications(rows);
     updateNotificationStatus();
+    updateBatteryOptimizationStatus();
     let f=rows.filter(r=>{
       if(r.repeat==='yearly'&&r.source==='birthday'){
         return currentReminderTab==='done'?false:currentReminderTab==='overdue'?false:true;

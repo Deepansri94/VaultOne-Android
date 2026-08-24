@@ -474,6 +474,19 @@ jobs:
               -->
               <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
+              <!--
+                  Lets VaultOne show the system "Allow VaultOne to run in the
+                  background / Don't optimize" dialog. Without this, Android's
+                  battery optimization (Doze mode) can defer or silently drop
+                  scheduled reminder alarms while VaultOne is closed/backgrounded;
+                  reminders only fire on time if the app happens to be open,
+                  or shortly after (delayed up to ~1 hour). This permission
+                  itself is auto-granted on install (it only unlocks the ability
+                  to show the request dialog below); Google explicitly allows
+                  this for alarm/reminder apps.
+              -->
+              <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
               <application
                   android:allowBackup="false"
                   android:label="VaultOne"
@@ -578,7 +591,9 @@ jobs:
           import android.os.Build;
           import android.os.Bundle;
           import android.os.Environment;
+          import android.os.PowerManager;
           import android.provider.MediaStore;
+          import android.provider.Settings;
           import android.webkit.JavascriptInterface;
           import android.webkit.ValueCallback;
           import android.webkit.WebChromeClient;
@@ -1000,6 +1015,51 @@ jobs:
                           return true;
                       } catch (Exception e) {
                           return false;
+                      }
+                  }
+
+                  /**
+                   * Returns whether VaultOne is currently exempt from Android's
+                   * battery optimization (Doze mode). If this is false, the
+                   * OS may defer or drop scheduled reminder alarms while
+                   * VaultOne is closed or backgrounded -- reminders then only
+                   * fire promptly if the app happens to already be open (or
+                   * within roughly an hour afterwards, per Android's inexact
+                   * alarm delivery guarantee).
+                   */
+                  @JavascriptInterface
+                  public boolean isIgnoringBatteryOptimizations() {
+                      PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                      if (pm == null) {
+                          return false;
+                      }
+                      return pm.isIgnoringBatteryOptimizations(getPackageName());
+                  }
+
+                  /**
+                   * Shows the native Android "Allow VaultOne to ignore battery
+                   * optimizations?" system dialog. Declaring
+                   * REQUEST_IGNORE_BATTERY_OPTIMIZATIONS in the manifest is
+                   * sufficient to unlock this dialog (it is a normal
+                   * permission, auto-granted on install -- no separate runtime
+                   * permission prompt is required for the permission itself).
+                   * VaultOne.html re-checks isIgnoringBatteryOptimizations()
+                   * shortly after calling this to reflect the user's decision.
+                   */
+                  @JavascriptInterface
+                  public void requestIgnoreBatteryOptimizations() {
+                      try {
+                          Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                          intent.setData(Uri.parse("package:" + getPackageName()));
+                          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                          startActivity(intent);
+                      } catch (Exception e) {
+                          /*
+                           * Some OEM firmwares (or devices without Google
+                           * Play Services) do not support this intent.
+                           * VaultOne.html falls back to instructing the user
+                           * to open battery settings manually in that case.
+                           */
                       }
                   }
 
