@@ -1,0 +1,389 @@
+name: Build VaultOne Desktop EXE
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+
+  build:
+    name: Build VaultOne Windows EXE
+    runs-on: windows-latest
+
+    steps:
+
+      # ==========================================================
+      # 1. CHECKOUT
+      # ==========================================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ==========================================================
+      # 2. NODE.JS
+      # ==========================================================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # ==========================================================
+      # 3. FIND VAULTONE.HTML
+      # ==========================================================
+      - name: Find VaultOne HTML
+        id: find-html
+        shell: bash
+        run: |
+          set -e
+
+          HTML_FILE=""
+
+          if [ -f "./VaultOne.html" ]; then
+            HTML_FILE="VaultOne.html"
+          else
+            HTML_FILE=$(find . \
+              -type f \
+              -name "VaultOne.html" \
+              -not -path "./.git/*" \
+              -not -path "./node_modules/*" \
+              -not -path "./dist/*" \
+              | head -n 1 || true)
+            HTML_FILE="${HTML_FILE#./}"
+          fi
+
+          if [ -z "$HTML_FILE" ]; then
+            echo "ERROR: VaultOne.html was not found."
+            find . -type f \( -iname "*.html" -o -iname "*.htm" \) \
+              -not -path "./.git/*" -not -path "./node_modules/*" -print || true
+            exit 1
+          fi
+
+          echo "Found: $HTML_FILE"
+          echo "html_file=$HTML_FILE" >> "$GITHUB_OUTPUT"
+
+      # ==========================================================
+      # 4. VALIDATE VAULTONE.HTML
+      # ==========================================================
+      - name: Validate VaultOne HTML
+        shell: bash
+        run: |
+          set -e
+          HTML_FILE="${{ steps.find-html.outputs.html_file }}"
+          FILE_SIZE=$(wc -c < "$HTML_FILE")
+          echo "HTML size: ${FILE_SIZE} bytes"
+          if [ "$FILE_SIZE" -lt 100 ]; then
+            echo "ERROR: VaultOne.html appears to be empty or invalid."
+            exit 1
+          fi
+
+      # ==========================================================
+      # 5. CREATE ELECTRON PROJECT STRUCTURE
+      # ==========================================================
+      - name: Create Electron project structure
+        shell: bash
+        run: mkdir -p assets build
+
+      # ==========================================================
+      # 6. COPY VAULTONE.HTML INTO ASSETS
+      # ==========================================================
+      - name: Copy VaultOne web application
+        shell: bash
+        run: |
+          set -e
+          cp "${{ steps.find-html.outputs.html_file }}" "assets/VaultOne.html"
+          ls -lh assets/
+
+      # ==========================================================
+      # 7. COPY APP ICON (OPTIONAL)
+      # ==========================================================
+      - name: Prepare app icon
+        shell: bash
+        run: |
+          set -e
+          if [ -f "./VaultOne.png" ]; then
+            cp "./VaultOne.png" "assets/icon.png"
+          elif [ -f "./assets/icon.png" ]; then
+            echo "Using existing assets/icon.png"
+          else
+            echo "ERROR: Add VaultOne.png at the repository root or assets/icon.png."
+            exit 1
+          fi
+          echo "VaultOne icon is ready."
+
+      # ==========================================================
+      # 8. CREATE package.json
+      # ==========================================================
+      - name: Create package.json
+        shell: pwsh
+        run: |
+          $json = @'
+          {
+          "name": "vaultone-desktop",
+          "version": "1.0.0",
+          "description": "VaultOne - Offline personal vault desktop app",
+          "main": "main.js",
+          "private": true,
+          "scripts": {
+          "start": "electron .",
+          "dist": "electron-builder --win --x64"
+          },
+          "build": {
+          "appId": "com.vaultone.desktop",
+          "productName": "VaultOne",
+          "asar": true,
+          "files": [
+          "main.js",
+          "preload.js",
+          "assets/**/*"
+          ],
+          "directories": {
+          "output": "dist"
+          },
+          "win": {
+          "target": [
+          { "target": "portable", "arch": ["x64"] },
+          { "target": "nsis", "arch": ["x64"] }
+          ],
+          "icon": "assets/icon.png"
+          },
+          "portable": {
+          "artifactName": "VaultOne-Portable.exe"
+          },
+          "nsis": {
+          "oneClick": false,
+          "allowToChangeInstallationDirectory": true,
+          "artifactName": "VaultOne-Setup.exe",
+          "createDesktopShortcut": true,
+          "createStartMenuShortcut": true
+          }
+          },
+          "devDependencies": {
+          "electron": "^36.0.0",
+          "electron-builder": "^24.13.3"
+          }
+          }
+          '@
+          Set-Content -Path "package.json" -Value $json -Encoding UTF8
+
+      # ==========================================================
+      # 9. CREATE main.js
+      # ==========================================================
+      - name: Create main.js
+        shell: pwsh
+        run: |
+          $js = @'
+          const { app, BrowserWindow, protocol, net, ipcMain, dialog } = require('electron');
+          const path = require('path');
+          const fs = require('fs');
+          
+          const ASSETS_DIR = path.join(__dirname, 'assets');
+          
+          /*
+          * Register a privileged custom scheme ("app://") BEFORE app is ready.
+          * Loads from a standard+secure origin instead of file://, guaranteeing
+          * full support for IndexedDB, crypto.subtle, and all web platform APIs.
+          */
+          protocol.registerSchemesAsPrivileged([
+          {
+          scheme: 'app',
+          privileges: {
+          standard: true,
+          secure: true,
+          supportFetchAPI: true,
+          corsEnabled: true,
+          allowServiceWorkers: true,
+          stream: true
+          }
+          }
+          ]);
+          
+          function registerAppProtocol() {
+          protocol.handle('app', (request) => {
+          const url = request.url.replace('app://vaultone/', '');
+          const filePath = path.join(ASSETS_DIR, decodeURIComponent(url));
+          return net.fetch('file://' + filePath);
+          });
+          }
+          
+          let mainWindow;
+          
+          function createWindow() {
+          mainWindow = new BrowserWindow({
+          width: 1200,
+          height: 860,
+          minWidth: 380,
+          minHeight: 600,
+          autoHideMenuBar: true,
+          backgroundColor: '#060b16',
+          icon: path.join(__dirname, 'assets', 'icon.png'),
+          webPreferences: {
+          preload: path.join(__dirname, 'preload.js'),
+          contextIsolation: true,
+          nodeIntegration: false,
+          sandbox: true
+          }
+          });
+          
+          mainWindow.setMenuBarVisibility(false);
+          mainWindow.loadURL('app://vaultone/VaultOne.html');
+          
+          mainWindow.on('closed', () => {
+          mainWindow = null;
+          });
+          }
+          
+          app.whenReady().then(() => {
+          registerAppProtocol();
+          createWindow();
+          
+          app.on('activate', () => {
+          if (BrowserWindow.getAllWindows().length === 0) createWindow();
+          });
+          });
+          
+          app.on('window-all-closed', () => {
+          if (process.platform !== 'darwin') app.quit();
+          });
+          
+          /*
+          * Native file bridge — exposes saveFile, pickFile, writeFile via IPC.
+          * VaultOne.html detects window.VaultOneBridge and uses native dialogs
+          * for Export, Import, and Link JSON automatically.
+          */
+          
+          ipcMain.handle('vaultone:saveFile', async (event, payload) => {
+          const win = BrowserWindow.fromWebContents(event.sender);
+          const { canceled, filePath } = await dialog.showSaveDialog(win, {
+          title: 'Export VaultOne Backup',
+          defaultPath: (payload && payload.fileName) || 'VaultOne_Backup.json',
+          filters: [{ name: 'JSON', extensions: ['json'] }]
+          });
+          
+          if (canceled || !filePath) return false;
+          
+          fs.writeFileSync(filePath, payload.content, 'utf-8');
+          return true;
+          });
+          
+          ipcMain.handle('vaultone:pickFile', async (event, payload) => {
+          const win = BrowserWindow.fromWebContents(event.sender);
+          const isLinkFlow = Boolean(payload && payload.persistPermission);
+          
+          const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+          title: isLinkFlow ? 'Select JSON file to link' : 'Select VaultOne Backup JSON',
+          properties: ['openFile'],
+          filters: [{ name: 'JSON', extensions: ['json'] }]
+          });
+          
+          if (canceled || !filePaths || filePaths.length === 0) return false;
+          
+          if (isLinkFlow) {
+          return { uri: filePaths[0], name: path.basename(filePaths[0]) };
+          }
+          
+          const content = fs.readFileSync(filePaths[0], 'utf-8');
+          return { content };
+          });
+          
+          ipcMain.handle('vaultone:writeFile', async (event, payload) => {
+          try {
+          fs.writeFileSync(payload.uri, payload.content, 'utf-8');
+          return true;
+          } catch (e) {
+          return false;
+          }
+          });
+          '@
+          Set-Content -Path "main.js" -Value $js -Encoding UTF8
+
+      # ==========================================================
+      # 10. CREATE preload.js
+      # ==========================================================
+      - name: Create preload.js
+        shell: pwsh
+        run: |
+          $js = @'
+          const { contextBridge, ipcRenderer } = require('electron');
+          
+          /*
+          * Exposed as window.VaultOneBridge inside VaultOne.html's renderer.
+          * The app's existing bridge detection logic looks for this exact global,
+          * so Export, Import, and Link JSON work natively with no HTML changes.
+          */
+          contextBridge.exposeInMainWorld('VaultOneBridge', {
+          saveFile: (payload) => ipcRenderer.invoke('vaultone:saveFile', payload),
+          pickFile: (payload) => ipcRenderer.invoke('vaultone:pickFile', payload),
+          writeFile: (payload) => ipcRenderer.invoke('vaultone:writeFile', payload)
+          });
+          '@
+          Set-Content -Path "preload.js" -Value $js -Encoding UTF8
+
+      - name: Validate generated Electron files
+        shell: bash
+        run: |
+          set -e
+          node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8')); console.log('package.json is valid.')"
+          node --check main.js
+          node --check preload.js
+
+      # ==========================================================
+      # 11. INSTALL DEPENDENCIES
+      # ==========================================================
+      - name: Install dependencies
+        shell: bash
+        run: npm install
+
+      # ==========================================================
+      # 12. BUILD WINDOWS EXE
+      # ==========================================================
+      - name: Build VaultOne Windows EXE
+        shell: bash
+        run: npx electron-builder --win --x64
+
+      # ==========================================================
+      # 13. VERIFY EXE
+      # ==========================================================
+      - name: Verify EXE output
+        shell: bash
+        run: |
+          set -e
+          EXE_FILES=$(find dist -type f -name "*.exe" -print || true)
+          if [ -z "$EXE_FILES" ]; then
+            echo "ERROR: No EXE was generated."
+            exit 1
+          fi
+          echo "SUCCESS: VaultOne EXE generated."
+          ls -lh dist/*.exe
+
+      # ==========================================================
+      # 14. UPLOAD EXE
+      # ==========================================================
+      - name: Upload VaultOne EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: VaultOne-Desktop-EXE
+          path: |
+            dist/VaultOne-Portable.exe
+            dist/VaultOne-Setup.exe
+          if-no-files-found: error
+
+      # ==========================================================
+      # 15. UPLOAD BUILD LOGS
+      # ==========================================================
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VaultOne-Desktop-Build-Logs
+          path: |
+            dist/builder-*.yml
+            dist/builder-effective-config.yaml
+          if-no-files-found: ignore
