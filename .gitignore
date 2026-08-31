@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Test reports
+QA/selenium/reports/
+
+# Backup / export files
+*.json.bak
+VaultOne_Backup_*.json
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db
+
+# Android build output
+build/
+*.apk
+*.aab

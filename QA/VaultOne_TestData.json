@@ -1,0 +1,586 @@
+{
+  "_meta": {
+    "description": "VaultOne QA Synthetic Test Data — completely isolated from production data",
+    "warning": "NEVER use localStorage.clear(). NEVER delete production IndexedDB. This data is for QA use only.",
+    "qaNamespace": "VaultOne_QA_TestDB",
+    "version": "1.0.0",
+    "created": "2025-01-01"
+  },
+
+  "testUsers": [
+    {
+      "id": "TU-001",
+      "name": "Test User Alpha",
+      "email": "testuser.alpha@qa.local",
+      "phone": "9000000001",
+      "pin": "1234",
+      "currency": "INR",
+      "currencySymbol": "₹"
+    },
+    {
+      "id": "TU-002",
+      "name": "Test User Beta",
+      "email": "testuser.beta@qa.local",
+      "phone": "9000000002",
+      "pin": "5678",
+      "currency": "INR",
+      "currencySymbol": "₹"
+    }
+  ],
+
+  "testBankAccounts": [
+    {
+      "id": "TBA-001",
+      "bankName": "Test National Bank",
+      "accountHolder": "Test User Alpha",
+      "accountNumber": "000012345678",
+      "ifsc": "TEST0001234",
+      "accountType": "Savings",
+      "initialBalance": 100000,
+      "currentBalance": 100000,
+      "status": "Active",
+      "note": "Primary test savings account"
+    },
+    {
+      "id": "TBA-002",
+      "bankName": "Test Commercial Bank",
+      "accountHolder": "Test User Alpha",
+      "accountNumber": "000087654321",
+      "ifsc": "TEST0005678",
+      "accountType": "Current",
+      "initialBalance": 50000,
+      "currentBalance": 50000,
+      "status": "Active",
+      "note": "Secondary test current account"
+    },
+    {
+      "id": "TBA-003",
+      "bankName": "Test Post Office",
+      "accountHolder": "Test User Alpha",
+      "accountNumber": "000011112222",
+      "ifsc": "IPOS0001234",
+      "accountType": "Post Office Savings",
+      "initialBalance": 25000,
+      "currentBalance": 25000,
+      "status": "Active",
+      "note": "Post office savings account"
+    },
+    {
+      "id": "TBA-004",
+      "bankName": "Test Inactive Bank",
+      "accountHolder": "Test User Alpha",
+      "accountNumber": "000099998888",
+      "ifsc": "TEST0009999",
+      "accountType": "Savings",
+      "initialBalance": 5000,
+      "currentBalance": 5000,
+      "status": "Inactive",
+      "note": "Inactive account for status testing"
+    },
+    {
+      "id": "TBA-005",
+      "bankName": "Test Closed Bank",
+      "accountHolder": "Test User Alpha",
+      "accountNumber": "000077776666",
+      "ifsc": "TEST0007777",
+      "accountType": "Savings",
+      "initialBalance": 0,
+      "currentBalance": 0,
+      "status": "Closed",
+      "note": "Closed account for status testing"
+    }
+  ],
+
+  "testTransactions": [
+    {
+      "id": "TTX-001",
+      "type": "Income",
+      "amount": 50000,
+      "category": "Salary",
+      "accountId": "TBA-001",
+      "date": "2025-01-01",
+      "description": "Test monthly salary",
+      "note": "Income transaction test"
+    },
+    {
+      "id": "TTX-002",
+      "type": "Expense",
+      "amount": 5000,
+      "category": "Groceries",
+      "accountId": "TBA-001",
+      "date": "2025-01-05",
+      "description": "Test grocery expense",
+      "note": "Expense transaction test"
+    },
+    {
+      "id": "TTX-003",
+      "type": "Transfer",
+      "amount": 10000,
+      "fromAccountId": "TBA-001",
+      "toAccountId": "TBA-002",
+      "date": "2025-01-10",
+      "description": "Test bank-to-bank transfer",
+      "note": "Transfer transaction test — net worth must not change"
+    },
+    {
+      "id": "TTX-004",
+      "type": "Investment",
+      "amount": 5000,
+      "category": "FD",
+      "accountId": "TBA-001",
+      "date": "2025-01-15",
+      "description": "Test FD investment",
+      "note": "Investment transaction — no expense should be created"
+    },
+    {
+      "id": "TTX-005",
+      "type": "LoanPayment",
+      "amount": 8500,
+      "loanId": "TLN-001",
+      "accountId": "TBA-001",
+      "date": "2025-01-20",
+      "principalComponent": 7000,
+      "interestComponent": 1500,
+      "description": "Test loan EMI payment",
+      "note": "Loan EMI — bank decreases by EMI, principal decreases, expense = interest only"
+    }
+  ],
+
+  "testLoans": [
+    {
+      "id": "TLN-001",
+      "type": "Personal Loan",
+      "lender": "Test Finance Corp",
+      "principal": 200000,
+      "interestRate": 12.5,
+      "tenureMonths": 24,
+      "emisPaid": 3,
+      "emiAmount": 9500,
+      "startDate": "2024-10-01",
+      "dueDate": "2026-10-01",
+      "status": "Active",
+      "note": "Personal loan for EMI testing"
+    },
+    {
+      "id": "TLN-002",
+      "type": "Home Loan",
+      "lender": "Test Housing Bank",
+      "principal": 2000000,
+      "interestRate": 8.5,
+      "tenureMonths": 240,
+      "emisPaid": 12,
+      "emiAmount": 17500,
+      "startDate": "2024-01-01",
+      "dueDate": "2044-01-01",
+      "status": "Active",
+      "note": "Home loan for long-tenure testing"
+    },
+    {
+      "id": "TLN-003",
+      "type": "Vehicle Loan",
+      "lender": "Test Auto Finance",
+      "principal": 500000,
+      "interestRate": 9.0,
+      "tenureMonths": 60,
+      "emisPaid": 6,
+      "emiAmount": 10400,
+      "startDate": "2024-07-01",
+      "dueDate": "2029-07-01",
+      "status": "Active",
+      "note": "Vehicle loan for testing"
+    },
+    {
+      "id": "TLN-004",
+      "type": "Gold Loan",
+      "lender": "Test Gold Finance",
+      "outstandingPrincipal": 75000,
+      "interestRate": 18.0,
+      "startDate": "2024-12-01",
+      "dueDate": "2025-06-01",
+      "status": "Active",
+      "note": "Gold loan — uses outstandingPrincipal directly, no EMI logic"
+    },
+    {
+      "id": "TLN-005",
+      "type": "Personal Loan",
+      "lender": "Test Settled Finance",
+      "principal": 50000,
+      "interestRate": 14.0,
+      "tenureMonths": 12,
+      "emisPaid": 12,
+      "emiAmount": 4500,
+      "startDate": "2024-01-01",
+      "dueDate": "2025-01-01",
+      "status": "Settled",
+      "note": "Settled loan — outstanding should be 0"
+    }
+  ],
+
+  "testBudgets": [
+    {
+      "id": "TBD-001",
+      "month": "2025-01",
+      "category": "All Categories",
+      "categories": {
+        "Housing": 15000,
+        "Food": 8000,
+        "Transport": 3000,
+        "Utilities": 2000,
+        "Entertainment": 2000,
+        "Healthcare": 1000,
+        "Savings": 10000,
+        "Miscellaneous": 2000
+      },
+      "totalBudget": 43000,
+      "note": "January 2025 test budget"
+    },
+    {
+      "id": "TBD-002",
+      "month": "2025-02",
+      "category": "All Categories",
+      "categories": {
+        "Housing": 15000,
+        "Food": 9000,
+        "Transport": 3500,
+        "Utilities": 2000,
+        "Entertainment": 1500,
+        "Healthcare": 500,
+        "Savings": 12000,
+        "Miscellaneous": 1500
+      },
+      "totalBudget": 45000,
+      "note": "February 2025 test budget — for previous/next month navigation testing"
+    }
+  ],
+
+  "testInvestments": {
+    "fd": [
+      {
+        "id": "TFD-001",
+        "bankName": "Test National Bank",
+        "principal": 50000,
+        "interestRate": 7.0,
+        "tenureMonths": 12,
+        "startDate": "2025-01-01",
+        "maturityDate": "2026-01-01",
+        "maturityAmount": 53500,
+        "status": "Active",
+        "note": "FD test — bank should decrease when created"
+      },
+      {
+        "id": "TFD-002",
+        "bankName": "Test Commercial Bank",
+        "principal": 100000,
+        "interestRate": 7.5,
+        "tenureMonths": 24,
+        "startDate": "2024-06-01",
+        "maturityDate": "2026-06-01",
+        "maturityAmount": 116000,
+        "status": "Active",
+        "note": "FD maturity calculation test"
+      }
+    ],
+    "rd": [
+      {
+        "id": "TRD-001",
+        "bankName": "Test National Bank",
+        "monthlyInstallment": 2000,
+        "interestRate": 6.5,
+        "tenureMonths": 12,
+        "startDate": "2025-01-01",
+        "maturityDate": "2026-01-01",
+        "note": "RD test — monthly installment from bank"
+      }
+    ],
+    "ppf": [
+      {
+        "id": "TPPF-001",
+        "accountNumber": "PPF000012345",
+        "bankName": "Test Post Office",
+        "yearlyContribution": 150000,
+        "currentBalance": 300000,
+        "interestRate": 7.1,
+        "openDate": "2023-04-01",
+        "maturityDate": "2038-04-01",
+        "note": "PPF test — bank decreases, PPF increases, no expense"
+      }
+    ],
+    "ssa": [
+      {
+        "id": "TSSA-001",
+        "accountNumber": "SSA000054321",
+        "holderName": "Test Child Alpha",
+        "bankName": "Test Post Office",
+        "yearlyContribution": 100000,
+        "currentBalance": 150000,
+        "interestRate": 8.2,
+        "openDate": "2023-04-01",
+        "maturityDate": "2044-04-01",
+        "note": "SSA test — bank decreases, SSA increases, no expense"
+      }
+    ],
+    "nps": [
+      {
+        "id": "TNPS-001",
+        "pran": "NPS000099999",
+        "tier": "Tier I",
+        "currentBalance": 200000,
+        "monthlyContribution": 5000,
+        "note": "NPS test — contribution tracking"
+      }
+    ],
+    "demat": [
+      {
+        "id": "TDMT-001",
+        "brokerName": "Test Broker",
+        "accountNumber": "DEMAT000011111",
+        "holdings": [
+          { "symbol": "TESTCO", "quantity": 100, "avgPrice": 500, "currentPrice": 550 },
+          { "symbol": "QASTOCK", "quantity": 50, "avgPrice": 200, "currentPrice": 210 }
+        ],
+        "note": "Demat test — holdings and valuation"
+      }
+    ],
+    "goldVault": [
+      {
+        "id": "TGV-001",
+        "type": "Physical Gold",
+        "purity": "22K",
+        "weightGrams": 10,
+        "purchasePrice": 55000,
+        "note": "Gold vault test — 22K purity mapping to K22 rate key"
+      },
+      {
+        "id": "TGV-002",
+        "type": "Physical Gold",
+        "purity": "18K",
+        "weightGrams": 5,
+        "purchasePrice": 22000,
+        "note": "Gold vault test — 18K purity mapping to K18 rate key"
+      }
+    ]
+  },
+
+  "testFamilyVault": {
+    "people": [
+      {
+        "id": "TFP-001",
+        "name": "Test Person Alpha",
+        "relationship": "Self",
+        "dob": "1990-06-15",
+        "gender": "Male",
+        "status": "Active",
+        "address": "123 Test Street, Test City, Test State 400001",
+        "note": "Primary test person"
+      },
+      {
+        "id": "TFP-002",
+        "name": "Test Person Beta",
+        "relationship": "Spouse",
+        "dob": "1992-09-20",
+        "gender": "Female",
+        "status": "Active",
+        "address": "123 Test Street, Test City, Test State 400001",
+        "note": "Spouse test person — same address for copy-address test"
+      },
+      {
+        "id": "TFP-003",
+        "name": "Test Child Alpha",
+        "relationship": "Child",
+        "dob": "2018-03-10",
+        "gender": "Female",
+        "status": "Active",
+        "address": "123 Test Street, Test City, Test State 400001",
+        "note": "Child test person — age calculation test"
+      },
+      {
+        "id": "TFP-004",
+        "name": "Test Person Inactive",
+        "relationship": "Other",
+        "dob": "1960-01-01",
+        "gender": "Male",
+        "status": "Inactive",
+        "address": "456 Old Street, Test City",
+        "note": "Inactive person for status testing"
+      }
+    ],
+    "documents": [
+      {
+        "id": "TDC-001",
+        "personId": "TFP-001",
+        "type": "Aadhaar",
+        "documentNumber": "XXXX-XXXX-0001",
+        "issueDate": "2015-01-01",
+        "expiryDate": "2035-01-01",
+        "note": "Non-expiring document test"
+      },
+      {
+        "id": "TDC-002",
+        "personId": "TFP-001",
+        "type": "Passport",
+        "documentNumber": "TESTPASS001",
+        "issueDate": "2020-01-01",
+        "expiryDate": "2030-01-01",
+        "note": "Valid passport — expiry test"
+      },
+      {
+        "id": "TDC-003",
+        "personId": "TFP-001",
+        "type": "Driving License",
+        "documentNumber": "TESTDL001",
+        "issueDate": "2019-06-01",
+        "expiryDate": "2025-06-01",
+        "note": "Expiring soon — expiry alert test"
+      }
+    ]
+  },
+
+  "testPasswordVault": [
+    {
+      "id": "TPV-001",
+      "site": "Test Website Alpha",
+      "url": "https://test-alpha.qa.local",
+      "username": "testuser_alpha",
+      "password": "TestP@ss#001",
+      "category": "Work",
+      "note": "Test password entry — visibility toggle test"
+    },
+    {
+      "id": "TPV-002",
+      "site": "Test Website Beta",
+      "url": "https://test-beta.qa.local",
+      "username": "testuser_beta",
+      "password": "TestP@ss#002",
+      "category": "Personal",
+      "note": "Test password entry — edit/delete test"
+    },
+    {
+      "id": "TPV-003",
+      "site": "Test Website Gamma",
+      "url": "https://test-gamma.qa.local",
+      "username": "testuser_gamma",
+      "password": "Weak",
+      "category": "Finance",
+      "note": "Weak password — password strength test"
+    }
+  ],
+
+  "testReminders": [
+    {
+      "id": "TRM-001",
+      "title": "Test Upcoming Reminder",
+      "type": "General",
+      "dueDate": "2099-12-31",
+      "status": "Pending",
+      "note": "Far-future reminder — upcoming test"
+    },
+    {
+      "id": "TRM-002",
+      "title": "Test Overdue Reminder",
+      "type": "Financial",
+      "dueDate": "2020-01-01",
+      "status": "Pending",
+      "note": "Past-date reminder — overdue test"
+    },
+    {
+      "id": "TRM-003",
+      "title": "Test Birthday Reminder",
+      "type": "Birthday",
+      "personId": "TFP-003",
+      "dueDate": "2025-03-10",
+      "status": "Pending",
+      "note": "Birthday reminder — linked to Test Child Alpha"
+    },
+    {
+      "id": "TRM-004",
+      "title": "Test Completed Reminder",
+      "type": "General",
+      "dueDate": "2024-06-01",
+      "status": "Completed",
+      "completedDate": "2024-06-01",
+      "note": "Completed reminder — status test"
+    }
+  ],
+
+  "testGoldRates": {
+    "K24": 6500,
+    "K22": 5960,
+    "K18": 4875,
+    "note": "Synthetic gold rates per gram for QA testing only"
+  },
+
+  "criticalFlowTestData": {
+    "bankToExpense": {
+      "bankId": "TBA-001",
+      "initialBalance": 100000,
+      "expenseAmount": 5000,
+      "expectedBalanceAfter": 95000,
+      "description": "Bank → Expense: balance must decrease by expense amount"
+    },
+    "bankToPPF": {
+      "bankId": "TBA-001",
+      "ppfId": "TPPF-001",
+      "contributionAmount": 10000,
+      "expectedBankDecrease": 10000,
+      "expectedPPFIncrease": 10000,
+      "noExpenseCreated": true,
+      "description": "Bank → PPF: bank decreases, PPF increases, no expense record"
+    },
+    "bankToSSA": {
+      "bankId": "TBA-001",
+      "ssaId": "TSSA-001",
+      "contributionAmount": 8000,
+      "expectedBankDecrease": 8000,
+      "expectedSSAIncrease": 8000,
+      "noExpenseCreated": true,
+      "description": "Bank → SSA: bank decreases, SSA increases, no expense record"
+    },
+    "bankToFD": {
+      "bankId": "TBA-001",
+      "fdId": "TFD-001",
+      "amount": 50000,
+      "expectedBankDecrease": 50000,
+      "expectedFDIncrease": 50000,
+      "noExpenseCreated": true,
+      "description": "Bank → FD: bank decreases, FD increases, no expense record"
+    },
+    "bankToRD": {
+      "bankId": "TBA-001",
+      "rdId": "TRD-001",
+      "monthlyAmount": 2000,
+      "expectedBankDecrease": 2000,
+      "expectedRDIncrease": 2000,
+      "noExpenseCreated": true,
+      "description": "Bank → RD: bank decreases, RD increases, no expense record"
+    },
+    "bankAToB": {
+      "bankAId": "TBA-001",
+      "bankBId": "TBA-002",
+      "transferAmount": 10000,
+      "expectedBankADecrease": 10000,
+      "expectedBankBIncrease": 10000,
+      "netWorthChange": 0,
+      "description": "Bank A → Bank B: net worth must not change"
+    },
+    "loanEMI": {
+      "loanId": "TLN-001",
+      "bankId": "TBA-001",
+      "emiAmount": 9500,
+      "principalComponent": 7000,
+      "interestComponent": 2500,
+      "expectedBankDecrease": 9500,
+      "expectedPrincipalDecrease": 7000,
+      "expectedExpenseAmount": 2500,
+      "description": "Loan EMI: bank decreases by full EMI, principal decreases by principal component, expense = interest only"
+    },
+    "goldLoan": {
+      "loanId": "TLN-004",
+      "principalPayment": 10000,
+      "interestPayment": 1125,
+      "expectedPrincipalDecrease": 10000,
+      "expectedInterestDecrease": 1125,
+      "noEMIRecord": true,
+      "description": "Gold Loan: principal payment reduces principal, interest payment reduces interest due, no EMI records"
+    }
+  }
+}
