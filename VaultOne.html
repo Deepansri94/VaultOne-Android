@@ -199,6 +199,27 @@ tr.detail-row td{background:#0a1525;border-bottom:1px solid #ffffff10;padding:10
 .reminder-title-text{min-width:0;overflow-wrap:anywhere;word-break:break-word}
 @media(max-width:480px){.reminder-datetime{font-size:10px}.reminder-title-line{font-size:13px}}
 </style>
+<style>
+/* Notes FAB */
+.notes-fab{position:fixed;bottom:96px;right:18px;z-index:35;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px #0008;cursor:pointer;transition:transform .15s}
+.notes-fab:active{transform:scale(.93)}
+.notes-panel{position:fixed;bottom:0;left:0;right:0;z-index:45;background:#0b1627;border:1px solid #ffffff18;border-radius:26px 26px 0 0;padding:18px;max-height:82vh;overflow-y:auto;display:none;box-shadow:0 -8px 40px #0009}
+.notes-panel.open{display:block}
+.notes-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.notes-panel-head h3{margin:0;font-size:18px}
+.note-card{background:#0a1525;border:1px solid #ffffff10;border-radius:16px;padding:14px;margin-bottom:10px}
+.note-card-title{font-weight:800;font-size:14px;margin-bottom:4px}
+.note-card-body{color:#b7c2d4;font-size:13px;white-space:pre-wrap;word-break:break-word}
+.note-card-meta{color:var(--muted);font-size:11px;margin-top:6px}
+.note-card-actions{display:flex;gap:6px;margin-top:8px}.note-type-tabs{display:flex;gap:6px;margin-bottom:10px}.note-type-tab{flex:1;padding:6px 0;border:1px solid #ffffff18;border-radius:8px;background:none;color:var(--muted);font-size:12px;cursor:pointer;transition:background .15s}.note-type-tab.active{background:#1e3a5f;color:#fff;border-color:var(--cyan)}.checklist-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #ffffff08}.checklist-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--cyan);flex-shrink:0}.checklist-item label{flex:1;font-size:13px;cursor:pointer}.checklist-item label.done{text-decoration:line-through;color:var(--muted)}.note-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}.note-table th{background:#0a1525;color:var(--cyan);padding:5px 8px;text-align:left;border:1px solid #ffffff15}.note-table td{padding:5px 8px;border:1px solid #ffffff10;color:#b7c2d4}.note-table tr:nth-child(even) td{background:#0a1525}.note-badge{font-size:10px;padding:1px 6px;border-radius:10px;margin-left:6px;vertical-align:middle}.note-badge.checklist{background:#1e3a5f;color:var(--cyan)}.note-badge.table{background:#1a2e1a;color:#4ade80}
+/* Budget sub-items */
+.budget-items-wrap{grid-column:1/-1;margin-bottom:8px}
+.budget-item-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.budget-item-row input{margin-top:0;flex:1}
+.budget-item-row input.item-amt{flex:0 0 110px}
+.budget-item-row .btn-icon{flex:0 0 auto}
+.budget-items-toggle{grid-column:1/-1;background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:4px 0 2px 0;text-align:left;width:100%}
+</style>
 </head>
 <body>
 <div class="app">
@@ -217,14 +238,33 @@ tr.detail-row td{background:#0a1525;border-bottom:1px solid #ffffff10;padding:10
   <div id="bellRemList" class="list" style="margin-top:12px"></div>
 </div>
 <main class="content">
-<section class="view active" id="home"><div class="hero"><h2 id="welcome">Welcome to VaultOne</h2><div class="muted">Your private personal vault. Data stays on this device.</div><div class="actions"><button type="button" class="btn primary" data-go="ivault">Open iVault</button><button type="button" class="btn" data-go="family">FamilyVault</button><button type="button" class="btn" data-go="passwords">PasswordVault</button></div></div><div class="stats"><div class="stat">iVault<b id="hNet">₹0</b></div><div class="stat">Documents<b id="hDocs">0</b></div><div class="stat">Passwords<b id="hPass">0</b></div><div class="stat">Reminders<b id="hRem">0</b></div></div><div class="card"><h3>Upcoming Reminders</h3><div id="homeReminders" class="list"></div></div></section>
+<section class="view active" id="home"><div class="hero"><h2 id="welcome">Welcome to VaultOne</h2><div class="muted">Your private personal vault. Data stays on this device.</div><div class="actions"><button type="button" class="btn primary" data-go="ivault">Open iVault</button><button type="button" class="btn" data-go="family">FamilyVault</button><button type="button" class="btn" data-go="passwords">PasswordVault</button></div></div><div class="stats"><div class="stat">iVault<b id="hNet">₹0</b></div><div class="stat">Documents<b id="hDocs">0</b></div><div class="stat">Passwords<b id="hPass">0</b></div><div class="stat">Reminders<b id="hRem">0</b></div></div><div class="card"><h3>Upcoming Reminders</h3><div id="homeReminders" class="list"></div></div><div class="card"><h3>Recent Activity</h3><div id="activityList" class="list"></div></div></section>
 <section class="view" id="ivault"><div class="hero"><h2>iVault 💰</h2><div class="muted">Personal Finance & Wealth Management</div></div><div class="stats"><div class="stat">Net Worth<b id="netWorth">₹0</b></div><div class="stat">Income<b class="green" id="mIncome">₹0</b></div><div class="stat">Expenses<b class="red" id="mExpense">₹0</b></div><div class="stat">Savings<b class="cyan" id="mSavings">₹0</b></div></div><div class="grid" style="margin-top:14px"><div class="card"><h3>Monthly Budget</h3><div class="metric" id="budgetTotal">₹0</div><div class="progress"><i id="budgetBar" style="width:0%"></i></div><p class="muted" id="budgetInfo">No budget configured.</p></div><div class="card"><h3>GoldVault 🪙</h3><div class="metric goldtext" id="goldValue">₹0</div><p class="muted" id="goldRateInfo">No current rate.</p></div></div><div class="card finance-menu-card"><div class="finance-menu-head"><span class="finance-menu-label">Quick Menu</span><button type="button" class="finance-menu-toggle" id="financeSidebarHideBtn" title="Hide menu" aria-label="Hide menu">▴</button></div><div class="finance-tile-grid" id="financeMenu"><button type="button" class="finance-tile tile-purple primary" data-sub="financeDashboard"><span class="finance-tile-icon">📊</span><span class="finance-tile-label">Overview</span></button><button type="button" class="finance-tile tile-green" data-sub="income"><span class="finance-tile-icon">💵</span><span class="finance-tile-label">Income</span></button><button type="button" class="finance-tile tile-red" data-sub="expenses"><span class="finance-tile-icon">💸</span><span class="finance-tile-label">Expenses</span></button><button type="button" class="finance-tile tile-cyan" data-sub="budget"><span class="finance-tile-icon">🧮</span><span class="finance-tile-label">Budget</span></button><button type="button" class="finance-tile tile-gold" data-sub="investments"><span class="finance-tile-icon">📈</span><span class="finance-tile-label">Savings & Investments</span></button><button type="button" class="finance-tile tile-gold" data-sub="gold"><span class="finance-tile-icon">🪙</span><span class="finance-tile-label">GoldVault</span></button><button type="button" class="finance-tile tile-red" data-sub="loans"><span class="finance-tile-icon">🏦</span><span class="finance-tile-label">Loans</span></button><button type="button" class="finance-tile tile-cyan" data-sub="banks"><span class="finance-tile-icon">🏛️</span><span class="finance-tile-label">Banks & Accounts</span></button><button type="button" class="finance-tile tile-purple" data-sub="transactions"><span class="finance-tile-icon">🔄</span><span class="finance-tile-label">Transactions</span></button></div></div><div class="finance-content"><div class="empty finance-empty-state" id="financeEmptyState" style="display:none">Tap a tile above (Overview, Income, Expenses, etc.) to open that section.</div><div class="finance-loading" id="financeLoading" style="display:none"><span class="spinner"></span><span class="muted">Loading…</span></div>
 <div id="financeDashboard" class="financeSub"></div><div id="income" class="financeSub" style="display:none"></div><div id="expenses" class="financeSub" style="display:none"></div><div id="budget" class="financeSub" style="display:none"></div><div id="investments" class="financeSub" style="display:none"></div><div id="gold" class="financeSub" style="display:none"></div><div id="loans" class="financeSub" style="display:none"></div><div id="banks" class="financeSub" style="display:none"></div><div id="transactions" class="financeSub" style="display:none"></div></div></section>
 <section class="view" id="family"><div class="hero"><h2>FamilyVault 📁</h2><div class="muted">Personal & household documents stored locally.</div><div class="actions"><button class="btn primary" id="addPersonBtn">👤 + Person</button><button class="btn" id="addHouseBtn">🏠 + Household</button><button class="btn" id="addVehicleBtn">🚗 + Vehicle</button><button class="btn gold" id="addDocBtn">📄 + Document</button></div></div><div class="stats"><div class="stat">People<b id="peopleCount">0</b></div><div class="stat">Households<b id="houseCount">0</b></div><div class="stat">Vehicles<b id="vehicleCount">0</b></div><div class="stat">Documents<b id="docCount">0</b></div><div class="stat">Doc Expiring ≤30d<b id="docExpCount">0</b></div></div><div class="card"><input class="search" id="docSearch" placeholder="Search documents, people, households, vehicles..."><div id="familyList" class="list"></div></div></section>
 <section class="view" id="passwords"><div class="hero"><h2>PasswordVault 🔑</h2><div class="muted">Encrypted local password manager. Unlock with your PIN.</div><div class="actions"><button class="btn primary" id="addPassBtn">+ Add Password</button><button class="btn" id="genPassBtn">Generate Password</button></div></div><div class="card"><input id="passSearch" placeholder="Search passwords..."><div id="passList" class="list" style="margin-top:12px"></div></div></section>
-<section class="view" id="settings"><div class="hero"><h2>Settings ⚙️</h2><div class="muted">VaultOne configuration, backup and security.</div></div><div class="card"><h3>Profile</h3><form id="profileForm" class="grid"><label >Full Name <span class="req-star">*</span><input id="profileName" required></label><label>Currency<select id="profileCurrency"><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option></select></label><div class="actions"><button class="btn primary">Save Profile</button></div></form></div><div class="card"><h3>Security</h3><div class="grid"><label>Vault PIN<div class="password-field"><input id="pinInput" type="password" inputmode="numeric" maxlength="12" autocomplete="new-password" placeholder="4-12 digits"><button type="button" class="password-eye" id="pinEye" aria-label="Show PIN" title="Show PIN">👁️</button></div></label><label>Auto-lock<select id="autoLock"><option value="0">Off</option><option value="1">1 minute</option><option value="5">5 minutes</option><option value="15">15 minutes</option></select></label></div><div class="actions"><button class="btn primary" id="saveSecurity">Save Security</button><button class="btn" id="biometricInfo">Biometric</button></div><p class="muted">Browser version uses a PIN-derived AES-GCM key for PasswordVault. Native Android should use Android Keystore/biometrics.</p></div><div class="card"><h3>Notifications & Reminders</h3><p class="muted">Reminders (manual, Loan/Insurance/Investment due dates, and Birthdays) can post real Android system notifications, even while VaultOne is closed. Two separate device permissions may be needed for fully reliable delivery.</p><div class="actions"><button class="btn primary" id="enableNotificationsBtn">🔔 Enable Notifications</button><button class="btn" id="batteryOptBtn" style="display:none">🔋 Fix Battery Optimization</button></div><p class="muted" id="notificationStatus"></p><p class="muted" id="batteryOptStatus"></p></div><div class="card"><h3>Backup & Restore</h3><div class="actions"><button class="btn primary" id="exportBtn">Export VaultOne JSON</button><button class="btn" id="importBtn">Import JSON</button><input id="importFile" type="file" accept="application/json" hidden></div><p id="backupStatus" class="muted"></p></div><div class="card"><h3>JSON Device File</h3><p class="muted">Where supported, link a JSON file for direct save. Otherwise use Export/Import.</p><div class="actions"><button class="btn" id="linkJsonBtn">Link JSON File</button><button class="btn" id="saveJsonBtn">Save to Linked JSON</button></div><p id="jsonStatus" class="muted">Not linked.</p></div><div class="card"><h3>Diagnostics</h3><button class="btn" id="selfTestBtn">Run Self-Test</button><pre id="testResult" style="white-space:pre-wrap;color:#a9b7ca"></pre></div><div class="card dangerbox"><h3>Clear All VaultOne Data</h3><p>This permanently deletes VaultOne's database, documents and encrypted password records. It does not delete unrelated files on your phone.</p><button class="btn danger" id="clearBtn">Clear All Data</button></div><div class="card"><h3>Activity Log</h3><div id="fullActivityLog" class="list"></div></div><div class="card"><p class="muted">VaultOne v1.9 • Offline-first • Schema v7</p></div></section>
+<section class="view" id="settings"><div class="hero"><h2>Settings ⚙️</h2><div class="muted">VaultOne configuration, backup and security.</div></div><div class="card"><h3>Profile</h3><form id="profileForm" class="grid"><label >Full Name <span class="req-star">*</span><input id="profileName" required></label><label>Currency<select id="profileCurrency"><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option></select></label><div class="actions"><button class="btn primary">Save Profile</button></div></form></div><div class="card"><h3>Security</h3><div class="grid"><label>Vault PIN<div class="password-field"><input id="pinInput" type="password" inputmode="numeric" maxlength="12" autocomplete="new-password" placeholder="4-12 digits"><button type="button" class="password-eye" id="pinEye" aria-label="Show PIN" title="Show PIN">👁️</button></div></label><label>Auto-lock<select id="autoLock"><option value="0">Off</option><option value="1">1 minute</option><option value="5">5 minutes</option><option value="15">15 minutes</option></select></label></div><div class="actions"><button class="btn primary" id="saveSecurity">Save Security</button><button class="btn" id="biometricInfo">Biometric</button></div><p class="muted">Browser version uses a PIN-derived AES-GCM key for PasswordVault. Native Android should use Android Keystore/biometrics.</p></div><div class="card"><h3>Notifications & Reminders</h3><p class="muted">Reminders (manual, Loan/Insurance/Investment due dates, and Birthdays) can post real Android system notifications, even while VaultOne is closed. Two separate device permissions may be needed for fully reliable delivery.</p><div class="actions"><button class="btn primary" id="enableNotificationsBtn">🔔 Enable Notifications</button><button class="btn" id="batteryOptBtn" style="display:none">🔋 Fix Battery Optimization</button></div><p class="muted" id="notificationStatus"></p><p class="muted" id="batteryOptStatus"></p></div><div class="card"><h3>Backup & Restore</h3><div class="actions"><button class="btn primary" id="exportBtn">Export VaultOne JSON</button><button class="btn" id="importBtn">Import JSON</button><input id="importFile" type="file" accept="application/json" hidden></div><p id="backupStatus" class="muted"></p></div><div class="card"><h3>JSON Device File</h3><p class="muted">Where supported, link a JSON file for direct save. Otherwise use Export/Import.</p><div class="actions"><button class="btn" id="linkJsonBtn">Link JSON File</button><button class="btn" id="saveJsonBtn">Save to Linked JSON</button></div><p id="jsonStatus" class="muted">Not linked.</p></div><div class="card"><h3>Diagnostics</h3><button class="btn" id="selfTestBtn">Run Self-Test</button><pre id="testResult" style="white-space:pre-wrap;color:#a9b7ca"></pre></div><div class="card dangerbox"><h3>Clear All VaultOne Data</h3><p>This permanently deletes VaultOne's database, documents and encrypted password records. It does not delete unrelated files on your phone.</p><button class="btn danger" id="clearBtn">Clear All Data</button></div><div class="card"><h3>Activity Log</h3><div id="fullActivityLog" class="list"></div></div><div class="card"><p class="muted">VaultOne v1.9 • Offline-first • Schema v8</p></div></section>
 </main>
 <nav class="bottom"><div class="nav"><button type="button" class="active" data-go="home"><span>⌂</span>Home</button><button type="button" data-go="ivault"><span>₹</span>iVault</button><button type="button" data-go="family"><span>📁</span>Family</button><button type="button" data-go="passwords"><span>🔑</span>Passwords</button><button type="button" data-go="settings"><span>⚙</span>Settings</button></div></nav>
+</div>
+<!-- Notes FAB -->
+<button class="notes-fab" id="notesFab" title="Notes">📝</button>
+<div id="notesPanel" class="notes-panel">
+  <div class="notes-panel-head"><h3>📝 Notes</h3><button class="iconbtn" id="notesPanelClose">✕</button></div>
+  <div class="actions" style="margin-bottom:12px"><button class="btn primary" id="notesAddBtn">+ Add Note</button></div>
+  <form id="notesForm" style="display:none;margin-bottom:14px">
+    <input type="hidden" name="id">
+    <input type="hidden" name="type" value="text">
+    <div class="note-type-tabs">
+      <button type="button" class="note-type-tab active" data-type="text">&#128221; Note</button>
+      <button type="button" class="note-type-tab" data-type="checklist">&#9989; Checklist</button>
+      <button type="button" class="note-type-tab" data-type="table">&#128202; Table</button>
+    </div>
+    <label style="display:block;margin-bottom:8px">Title<input name="title" placeholder="e.g. Grocery List" style="margin-top:4px;width:100%"></label>
+    <div id="notesFormBody"></div>
+    <div class="actions" style="margin-top:10px"><button type="submit" class="btn primary">Save</button><button type="button" class="btn ghost" id="notesCancelBtn">Cancel</button></div>
+  </form>
+  <div id="notesList"></div>
 </div>
 <div id="modal" class="modal"><div class="sheet"><div style="display:flex;justify-content:space-between;align-items:center"><h3 id="modalTitle" style="margin:0">VaultOne</h3><button class="iconbtn" id="modalClose">✕</button></div><div id="modalBody"></div></div></div><div id="toast" class="toast"></div>
 <script>
@@ -236,7 +276,7 @@ window.addEventListener('unhandledrejection',e=>{
   console.error('VaultOne promise error:',e.reason);
 });
 'use strict';
-const DB='VaultOneDB', VER=7, SCHEMA_VERSION=7, STORES=['meta','income','expenses','budgets','investments','gold','goldRates','loans','banks','transactions','persons','households','documents','passwords','reminders','activity','institutions','vehicles','insurances'];
+const DB='VaultOneDB', VER=8, SCHEMA_VERSION=8, STORES=['meta','income','expenses','budgets','investments','gold','goldRates','loans','banks','transactions','persons','households','documents','passwords','reminders','activity','institutions','vehicles','insurances','notes','budgetItems'];
 let db, linkedJsonHandle=null, currentFinanceSub='financeDashboard', passwordUnlocked=false, passwordKey=null, autoLockTimer=null;
 const $=id=>document.getElementById(id);
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
@@ -1012,7 +1052,7 @@ async function previewDoc(id){
         <p class="muted">${fileName}</p>
         <div class="actions">${openBtn}${downloadBtn}<button type="button" class="btn" data-action="preview-close">Close</button></div>`;
     }else if(isPdf(d)){
-      body=`<div style="background:#fff;border-radius:16px;overflow:hidden"><iframe class="preview" title="PDF preview" src="${url}" style="display:block;width:100%;height:65vh;border:0"></iframe></div>
+      body=`<div style="background:#fff;border-radius:16px;overflow:hidden"><iframe class="preview" sandbox="allow-scripts allow-same-origin" title="PDF preview" src="${url}" style="display:block;width:100%;height:65vh;border:0"></iframe></div>
         <p class="muted">${fileName}</p>
         <div class="actions">${openBtn}${downloadBtn}<button type="button" class="btn" data-action="preview-close">Close</button></div>`;
     }else{
@@ -1571,6 +1611,187 @@ async function snoozeReminder(reminder,opts){
     closePanel();
   });
 })();
+/* ===== Notes ===== */
+(function(){
+  const fab=$('notesFab'),panel=$('notesPanel'),closeBtn=$('notesPanelClose');
+  const addBtn=$('notesAddBtn'),form=$('notesForm'),cancelBtn=$('notesCancelBtn');
+  const listEl=$('notesList'),formBody=$('notesFormBody');
+  const openPanel=()=>{panel.classList.add('open');renderNotesList();};
+  const closePanel=()=>panel.classList.remove('open');
+  fab.onclick=()=>panel.classList.contains('open')?closePanel():openPanel();
+  closeBtn.onclick=closePanel;
+  document.addEventListener('click',e=>{
+    if(!panel.classList.contains('open'))return;
+    if(panel.contains(e.target)||fab.contains(e.target))return;
+    closePanel();
+  });
+
+  /* ── type tabs ── */
+  let currentType='text';
+  form.querySelectorAll('.note-type-tab').forEach(tab=>{
+    tab.onclick=()=>{
+      currentType=tab.dataset.type;
+      form.querySelector('[name=type]').value=currentType;
+      form.querySelectorAll('.note-type-tab').forEach(t=>t.classList.toggle('active',t===tab));
+      renderFormBody(currentType);
+    };
+  });
+
+  function renderFormBody(type,data=null){
+    if(type==='checklist'){
+      const items=(data&&data.items)||[''];
+      formBody.innerHTML='<div id="clItems">'+items.map((txt,i)=>
+        '<div style="display:flex;gap:6px;margin-bottom:6px">'
+        +'<input type="text" class="cl-item-inp" placeholder="Item '+(i+1)+'" value="'+esc(txt)+'" style="flex:1">'
+        +'<button type="button" class="btn btn-icon danger" data-cl-rm="'+i+'">&times;</button>'
+        +'</div>').join('')
+        +'</div>'
+        +'<button type="button" class="btn ghost" style="font-size:12px;margin-top:4px" id="clAddRow">+ Add Item</button>';
+      $('clAddRow').onclick=()=>{
+        const wrap=$('clItems');
+        const idx=wrap.children.length;
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;gap:6px;margin-bottom:6px';
+        row.innerHTML='<input type="text" class="cl-item-inp" placeholder="Item '+(idx+1)+'" style="flex:1">'
+          +'<button type="button" class="btn btn-icon danger" data-cl-rm="'+idx+'">&times;</button>';
+        wrap.appendChild(row);
+        row.querySelector('[data-cl-rm]').onclick=()=>row.remove();
+      };
+      formBody.querySelectorAll('[data-cl-rm]').forEach(b=>b.onclick=()=>b.closest('div').remove());
+    } else if(type==='table'){
+      const rows=(data&&data.rows)||[['',''],['','']];
+      const cols=(data&&data.cols)||['Item','Amount'];
+      formBody.innerHTML='<div style="margin-bottom:6px;display:flex;gap:6px;align-items:center">'
+        +'<label style="font-size:12px;color:var(--muted)">Col 1 <input class="tbl-col" data-ci="0" type="text" value="'+esc(cols[0]||'')+'" style="width:90px;margin-top:0"></label>'
+        +'<label style="font-size:12px;color:var(--muted)">Col 2 <input class="tbl-col" data-ci="1" type="text" value="'+esc(cols[1]||'')+'" style="width:90px;margin-top:0"></label>'
+        +'<label style="font-size:12px;color:var(--muted)">Col 3 <input class="tbl-col" data-ci="2" type="text" value="'+esc(cols[2]||'')+'" style="width:90px;margin-top:0"></label>'
+        +'</div>'
+        +'<div id="tblRows">'+rows.map((row,ri)=>
+          '<div style="display:flex;gap:4px;margin-bottom:4px">'
+          +'<input type="text" class="tbl-cell" data-ri="'+ri+'" data-ci="0" placeholder="—" value="'+esc(row[0]||'')+'" style="flex:1">'
+          +'<input type="text" class="tbl-cell" data-ri="'+ri+'" data-ci="1" placeholder="—" value="'+esc(row[1]||'')+'" style="flex:1">'
+          +'<input type="text" class="tbl-cell" data-ri="'+ri+'" data-ci="2" placeholder="—" value="'+esc(row[2]||'')+'" style="flex:1">'
+          +'<button type="button" class="btn btn-icon danger" data-tbl-rm="'+ri+'">&times;</button>'
+          +'</div>').join('')
+        +'</div>'
+        +'<button type="button" class="btn ghost" style="font-size:12px;margin-top:4px" id="tblAddRow">+ Add Row</button>';
+      $('tblAddRow').onclick=()=>{
+        const wrap=$('tblRows');
+        const ri=wrap.children.length;
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;gap:4px;margin-bottom:4px';
+        row.innerHTML='<input type="text" class="tbl-cell" data-ri="'+ri+'" data-ci="0" placeholder="—" style="flex:1">'
+          +'<input type="text" class="tbl-cell" data-ri="'+ri+'" data-ci="1" placeholder="—" style="flex:1">'
+          +'<input type="text" class="tbl-cell" data-ri="'+ri+'" data-ci="2" placeholder="—" style="flex:1">'
+          +'<button type="button" class="btn btn-icon danger" data-tbl-rm="'+ri+'">&times;</button>';
+        wrap.appendChild(row);
+        row.querySelector('[data-tbl-rm]').onclick=()=>row.remove();
+      };
+      formBody.querySelectorAll('[data-tbl-rm]').forEach(b=>b.onclick=()=>b.closest('div').remove());
+    } else {
+      formBody.innerHTML='<label style="display:block">Content <span class="req-star">*</span>'
+        +'<textarea name="body" required placeholder="Write your note here..." style="margin-top:4px;min-height:80px;width:100%">'
+        +(data&&data.body?esc(data.body):'')+'</textarea></label>';
+    }
+  }
+
+  const showForm=(note=null)=>{
+    form.style.display='block';
+    addBtn.style.display='none';
+    form.querySelector('[name=id]').value=note?note.id:'';
+    form.querySelector('[name=title]').value=note?note.title||'':'';
+    currentType=note?note.type||'text':'text';
+    form.querySelector('[name=type]').value=currentType;
+    form.querySelectorAll('.note-type-tab').forEach(t=>t.classList.toggle('active',t.dataset.type===currentType));
+    renderFormBody(currentType,note);
+    form.querySelector('[name=title]').focus();
+  };
+  const hideForm=()=>{form.style.display='none';addBtn.style.display='inline-flex';};
+  addBtn.onclick=()=>{renderFormBody('text');showForm();};
+  cancelBtn.onclick=hideForm;
+
+  form.onsubmit=async e=>{
+    e.preventDefault();
+    const fd=new FormData(form);
+    const id=String(fd.get('id')||'').trim()||uid();
+    const title=String(fd.get('title')||'').trim();
+    const type=String(fd.get('type')||'text');
+    const existing=await get('notes',id).catch(()=>null);
+    let record={id,title,type,createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
+    if(type==='checklist'){
+      const items=[...formBody.querySelectorAll('.cl-item-inp')].map(i=>i.value.trim()).filter(Boolean);
+      if(!items.length){toast('Add at least one checklist item',true);return;}
+      const prevChecked=(existing&&existing.checked)||{};
+      record.items=items;
+      record.checked=Object.fromEntries(items.map(it=>[it,prevChecked[it]||false]));
+    } else if(type==='table'){
+      const cols=[...formBody.querySelectorAll('.tbl-col')].map(i=>i.value.trim());
+      const rowEls=[...$('tblRows').children];
+      const rows=rowEls.map(row=>[...row.querySelectorAll('.tbl-cell')].map(c=>c.value.trim()));
+      if(!rows.length){toast('Add at least one row',true);return;}
+      record.cols=cols;
+      record.rows=rows;
+    } else {
+      const body=formBody.querySelector('[name=body]');
+      if(!body||!body.value.trim()){toast('Note content is required',true);return;}
+      record.body=body.value.trim();
+    }
+    await put('notes',record);
+    hideForm();
+    renderNotesList();
+    toast('Saved');
+  };
+
+  async function renderNotesList(){
+    const rows=(await getAll('notes')).sort((a,b)=>(b.updatedAt||b.createdAt||'').localeCompare(a.updatedAt||a.createdAt||''));
+    if(!rows.length){listEl.innerHTML='<div class="empty">No notes yet.</div>';return;}
+    listEl.innerHTML=rows.map(n=>{
+      const badge=n.type==='checklist'?'<span class="note-badge checklist">checklist</span>'
+                 :n.type==='table'?'<span class="note-badge table">table</span>':'';
+      let bodyHtml='';
+      if(n.type==='checklist'&&n.items){
+        bodyHtml='<div style="margin-top:6px">'+n.items.map(it=>{
+          const done=n.checked&&n.checked[it];
+          return '<div class="checklist-item">'
+            +'<input type="checkbox" id="cl_'+n.id+'_'+it.replace(/\W/g,'_')+'"'+(done?' checked':'')+' data-note-id="'+n.id+'" data-item="'+esc(it)+'">'
+            +'<label for="cl_'+n.id+'_'+it.replace(/\W/g,'_')+'" class="'+(done?'done':'')+'">'+(it?esc(it):'')+'</label>'
+            +'</div>';
+        }).join('')+'</div>';
+      } else if(n.type==='table'&&n.rows){
+        const cols=n.cols&&n.cols.some(Boolean)?n.cols:['Col 1','Col 2','Col 3'];
+        bodyHtml='<table class="note-table"><thead><tr>'+cols.filter((_,i)=>n.rows.some(r=>r[i])).map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead>'
+          +'<tbody>'+n.rows.map(row=>'<tr>'+row.filter((_,i)=>n.rows.some(r=>r[i])).map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+      } else {
+        bodyHtml='<div class="note-card-body">'+esc(n.body||'')+'</div>';
+      }
+      return '<div class="note-card">'
+        +'<div class="note-card-title">'+esc(n.title||'Note')+badge+'</div>'
+        +bodyHtml
+        +'<div class="note-card-meta">'+new Date(n.updatedAt||n.createdAt).toLocaleString()+'</div>'
+        +'<div class="note-card-actions">'
+        +'<button class="btn" type="button" data-note-edit="'+n.id+'">&#9998; Edit</button>'
+        +'<button class="btn danger" type="button" data-note-del="'+n.id+'">&#128465; Delete</button>'
+        +'</div></div>';
+    }).join('');
+    listEl.querySelectorAll('[data-note-edit]').forEach(b=>b.onclick=async()=>{const n=await get('notes',b.dataset.noteEdit);if(n)showForm(n);});
+    listEl.querySelectorAll('[data-note-del]').forEach(b=>b.onclick=async()=>{
+      if(!confirm('Delete this note?'))return;
+      await del('notes',b.dataset.noteDel);
+      renderNotesList();toast('Deleted');
+    });
+    listEl.querySelectorAll('input[type=checkbox][data-note-id]').forEach(cb=>cb.onchange=async()=>{
+      const n=await get('notes',cb.dataset.noteId);
+      if(!n)return;
+      n.checked=n.checked||{};
+      n.checked[cb.dataset.item]=cb.checked;
+      n.updatedAt=new Date().toISOString();
+      await put('notes',n);
+      renderNotesList();
+    });
+  }
+  window.renderNotesList=renderNotesList;
+})();
+/* ===== End Notes ===== */
 /* Activity Log is shown as a compact, paginated table (Date & Time / Type / Details)
    instead of an ever-growing card list, since this log accumulates one entry per action
    taken across the whole app and would otherwise scroll indefinitely. */
@@ -1588,7 +1809,7 @@ function renderActivityLogCompact(){
   });
 }
 function renderSettings(){const s=state.settings;$('profileName').value=s.name||'';$('profileCurrency').value=s.currency||'INR';$('pinInput').value='';$('autoLock').value=String(s.autoLock||0);updateNotificationStatus();updateBatteryOptimizationStatus();getAll('documents').then(d=>$('backupStatus').textContent=d.length+' documents included in full JSON backup.');renderActivityLogCompact();if(linkedJsonHandle)$('jsonStatus').textContent='Linked: '+linkedJsonHandle.name}
-$('profileForm').onsubmit=async e=>{e.preventDefault();state.settings.name=$('profileName').value.trim();state.settings.currency=$('profileCurrency').value;await put('meta',state.settings);await log('Settings','Profile updated');toast('Profile saved');refresh()};$('saveSecurity').onclick=async()=>{const p=$('pinInput').value;if(p&&!/^\d{4,12}$/.test(p)){toast('PIN must be 4-12 digits',true);return}if(p){if(state.settings.pinHash){const old=prompt('Enter your current Vault PIN to change it:');if(old===null)return;if(await hashPin(old)!==state.settings.pinHash){toast('Current PIN is incorrect',true);return}}state.settings.pinHash=await hashPin(p)}state.settings.autoLock=Number($('autoLock').value);await put('meta',state.settings);toast('Security saved');scheduleAutoLock()};$('biometricInfo').onclick=()=>toast('Biometric is an Android-native feature; enable it in the APK build.');
+$('profileForm').onsubmit=async e=>{e.preventDefault();try{state.settings.name=$('profileName').value.trim();state.settings.currency=$('profileCurrency').value;await put('meta',state.settings);await log('Settings','Profile updated');toast('Profile saved');refresh();}catch(err){toast('Profile could not be saved: '+(err?.message||'Unknown error'),true);}};$('saveSecurity').onclick=async()=>{const p=$('pinInput').value;if(p&&!/^\d{4,12}$/.test(p)){toast('PIN must be 4-12 digits',true);return}if(p){if(state.settings.pinHash){const old=prompt('Enter your current Vault PIN to change it:');if(old===null)return;if(await hashPin(old)!==state.settings.pinHash){toast('Current PIN is incorrect',true);return}}state.settings.pinHash=await hashPin(p)}state.settings.autoLock=Number($('autoLock').value);await put('meta',state.settings);toast('Security saved');scheduleAutoLock()};$('biometricInfo').onclick=()=>toast('Biometric is an Android-native feature; enable it in the APK build.');
 $('pinEye').onclick=()=>{const x=$('pinInput'),b=$('pinEye');const v=x.type==='text';x.type=v?'password':'text';b.textContent=v?'👁️':'🙈';b.title=v?'Show PIN':'Hide PIN'};
 $('selfTestBtn').onclick=async()=>{const results=[];const ok=async(name,fn)=>{try{await fn();results.push('PASS  '+name)}catch(e){results.push('FAIL  '+name+' — '+e.message)}};await ok('Storage available',async()=>{if(!indexedDB&&storageMode!=='fallback')throw Error('No supported local storage');if(storageMode==='fallback'){const id=uid();await put('meta',{id,value:'ok'});const r=await get('meta',id);if(!r||r.value!=='ok')throw Error('Compatibility storage unavailable');await del('meta',id)}});await ok('CRUD income',async()=>{const id=uid();await put('income',{id,amount:123,date:today(),type:'Test'});const r=await get('income',id);if(!r||r.amount!==123)throw Error('CRUD mismatch');await del('income',id)});await ok('Gold current valuation',async()=>{const g={id:uid(),weight:2,purity:'22K',purchaseRate:13000};const r={id:uid(),date:today(),K22:15000,K18:0,K24:0};if(g.weight*r.K22!==30000)throw Error('valuation mismatch')});await ok('Document binary round-trip',async()=>{const bytes=new Uint8Array([1,2,3,4]).buffer;const b=bufToB64(bytes);const out=new Uint8Array(b64ToBuf(b));if(out[2]!==3)throw Error('binary mismatch')});await ok('Password encryption round-trip',async()=>{const e=await encryptPassword({name:'test',password:'Secret123!'},'1234');const p=await decryptPassword(e,'1234');if(p.password!=='Secret123!')throw Error('decrypt mismatch')});await ok('Backup schema',async()=>{const s=await snapshot();if(s.app!=='VaultOne'||Number(s.schemaVersion)!==SCHEMA_VERSION)throw Error('schema mismatch')});await ok('Vehicle CRUD',async()=>{const id=uid();await put('vehicles',{id,name:'Test Vehicle',registrationNumber:'TEST123',type:'Car'});const r=await get('vehicles',id);if(!r||r.registrationNumber!=='TEST123')throw Error('vehicle CRUD mismatch');await del('vehicles',id)});await ok('Insurance CRUD',async()=>{const id=uid();await put('insurances',{id,type:'Term Insurance',insurer:'Test Insurer',policyNumber:'POL1'});const r=await get('insurances',id);if(!r||r.insurer!=='Test Insurer')throw Error('insurance CRUD mismatch');await del('insurances',id)});$('testResult').textContent=results.join('\n');toast(results.every(x=>x.startsWith('PASS'))?'All self-tests passed':'Some tests failed',!results.every(x=>x.startsWith('PASS')))};
 async function snapshot(){const out={app:'VaultOne',version:7,schemaVersion:SCHEMA_VERSION,exportedAt:new Date().toISOString(),settings:state.settings};for(const store of STORES.filter(x=>x!=='meta')){const rows=await getAll(store);if(store==='documents'){out[store]=[];for(const r of rows){const x={...r};if(x.fileBlob instanceof Blob){x.fileBytes=bufToB64(await x.fileBlob.arrayBuffer());delete x.fileBlob}out[store].push(x)}}else out[store]=rows}out.meta={settings:state.settings,schema:{id:'schema',version:SCHEMA_VERSION}};return out}
@@ -2347,7 +2568,7 @@ const sector=s(fd.get('sector'))||'Other';
     const [y,mo]=m.split('-').map(Number);
     return new Date(y,mo-1,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
   }
-  function renderBudgetWithData(bud,exp,inc){
+  async function renderBudgetWithData(bud,exp,inc){
     const month=normalizeBudgetMonth(window.__vaultBudgetMonth||monthNow());window.__vaultBudgetMonth=month;
     const cats=budgetRowsForMonthFinal(bud,month);
     const actual={};categories.forEach(c=>actual[c]=0);
@@ -2364,12 +2585,73 @@ const sector=s(fd.get('sector'))||'Other';
     }else suggestions.push('Add monthly income to receive Want / Need / Save suggestions.');
     const saved=bud.filter(x=>x.category==='All Categories'||x.category==='Consolidated').sort((a,b)=>(b.month||'').localeCompare(a.month||''));
     const budEl=$('budget');if(!budEl)return;
-    budEl.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><h3>Monthly Budget</h3><p class="muted">Selected month: <b>${esc(formatBudgetMonth(month))}</b>. Each month is stored independently.</p></div><div class="actions"><button class="btn" type="button" id="budgetPrev">← Previous</button><button class="btn" type="button" id="budgetNext">Next →</button></div></div>
-    ${total===0?`<div class="empty" style="margin-top:12px">No budget configured for ${esc(formatBudgetMonth(month))}.</div>`:''}    <form id="budgetPlanner" class="grid" style="margin-top:12px"><label >Budget Month <span class="req-star">*</span><input name="month" type="month" value="${month}" required><small class="muted">Budgets are stored as YYYY-MM. Each month is independent.</small></label><div></div><div class="budget-grid" style="grid-column:1/-1">${categories.map(c=>`<label>${esc(c)}</label><input name="cat_${esc(c)}" type="number" min="0" step="0.01" value="${n(cats[c])}">`).join('')}</div><div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Budget</button></div></form></div>
+    budEl.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><h3>Monthly Budget</h3><p class="muted">Selected month: <b>${esc(formatBudgetMonth(month))}</b>. Each month is stored independently.</p></div><div class="actions"><button class="btn" type="button" id="budgetPrev">&larr; Previous</button><button class="btn" type="button" id="budgetNext">Next &rarr;</button><button class="btn" type="button" id="budgetCopyPrev" title="Copy from previous month">&#128203; Copy Prev Month</button></div></div>
+    ${total===0?`<div class="empty" style="margin-top:12px">No budget configured for ${esc(formatBudgetMonth(month))}.</div>`:''}
+    <form id="budgetPlanner" class="grid" style="margin-top:12px">
+      <label>Budget Month <span class="req-star">*</span><input name="month" type="month" value="${month}" required><small class="muted">Budgets are stored as YYYY-MM. Each month is independent.</small></label>
+      <div></div>
+      <div class="budget-grid" style="grid-column:1/-1">
+        ${categories.map(c=>{const safeId=c.replace(/[^a-z0-9]/gi,'_');return `<label>${esc(c)}</label>
+          <input name="cat_${esc(c)}" id="catInput_${safeId}" type="number" min="0" step="0.01" value="${n(cats[c])}">
+          <button type="button" class="budget-items-toggle" data-items-cat="${esc(c)}">▸ Sub-items</button>
+          <div class="budget-items-wrap" id="budgetItemsWrap_${safeId}" style="display:none"></div>`;
+        }).join('')}
+
+      </div>
+      <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Budget</button></div>
+    </form></div>
     <div class="card"><h3>Budget Allocation</h3><div class="metric">${money(total)}</div>${pieChart(Object.entries(cats).filter(e=>e[1]>0),total)}</div>
-    <div class="card"><h3>Want • Need • Save</h3><div class="grid3"><div class="stat">Need<b>${money(need)}</b><span class="muted">${incMonth?Math.round(need/incMonth*100):0}% of income</span></div><div class="stat">Want<b>${money(want)}</b><span class="muted">${incMonth?Math.round(want/incMonth*100):0}% of income</span></div><div class="stat">Save<b class="cyan">${money(save)}</b><span class="muted">${incMonth?Math.round(save/incMonth*100):0}% of income</span></div></div><div class="suggestion">💡 Guidance: Needs 50–60% • Wants 20–30% • Savings 20%+. These are suggestions only.</div>${suggestions.map(sg=>`<div class="suggestion">💡 ${esc(sg)}</div>`).join('')}</div>
-    <div class="card"><h3>Budgeted vs Actual</h3><table class="comparison"><thead><tr><th>Category</th><th>Budgeted</th><th>Actual</th><th>Variance</th></tr></thead><tbody>${categories.map(c=>{const d=n(cats[c])-n(actual[c]);const over=n(actual[c])>n(cats[c])&&n(cats[c])>0;return `<tr><td>${esc(c)}${over?' <span class="bad">⚠</span>':''}</td><td>${money(cats[c])}</td><td>${money(actual[c])}</td><td class="${d>=0?'good':'bad'}">${money(d)}</td></tr>`}).join('')}</tbody></table><p class="muted">Budget ${money(total)} • Actual ${money(actualTotal)} • Remaining ${money(Math.max(0,total-actualTotal))}</p></div>
-    <div class="card"><h3>Budget History</h3><div class="list">${saved.length?saved.map(x=>`<div class="item"><div><div class="title">${esc(formatBudgetMonth(x.month||''))}</div><div class="sub">Total: ${money(x.total||Object.values(x.categories||{}).reduce((a,b)=>a+n(b),0))}</div></div><button class="btn btn-icon" type="button" data-load-budget="${x.id}" title="Load / Edit" aria-label="Load / Edit">✏️</button></div>`).join(''):'<div class="empty">No saved monthly budgets yet.</div>'}</div></div>`;
+    <div class="card"><h3>Want / Need / Save</h3><div class="grid3"><div class="stat">Need<b>${money(need)}</b><span class="muted">${incMonth?Math.round(need/incMonth*100):0}% of income</span></div><div class="stat">Want<b>${money(want)}</b><span class="muted">${incMonth?Math.round(want/incMonth*100):0}% of income</span></div><div class="stat">Save<b class="cyan">${money(save)}</b><span class="muted">${incMonth?Math.round(save/incMonth*100):0}% of income</span></div></div><div class="suggestion">&#128161; Guidance: Needs 50-60% &middot; Wants 20-30% &middot; Savings 20%+. These are suggestions only.</div>${suggestions.map(sg=>`<div class="suggestion">&#128161; ${esc(sg)}</div>`).join('')}</div>
+    <div class="card"><h3>Budgeted vs Actual</h3><table class="comparison"><thead><tr><th>Category</th><th>Budgeted</th><th>Actual</th><th>Variance</th></tr></thead><tbody>${categories.map(c=>{const d=n(cats[c])-n(actual[c]);const over=n(actual[c])>n(cats[c])&&n(cats[c])>0;return `<tr><td>${esc(c)}${over?' <span class="bad">&#9888;</span>':''}</td><td>${money(cats[c])}</td><td>${money(actual[c])}</td><td class="${d>=0?'good':'bad'}">${money(d)}</td></tr>`}).join('')}</tbody></table><p class="muted">Budget ${money(total)} &middot; Actual ${money(actualTotal)} &middot; Remaining ${money(Math.max(0,total-actualTotal))}</p></div>
+    <div class="card"><h3>Budget History</h3><div class="list">${saved.length?saved.map(x=>`<div class="item"><div><div class="title">${esc(formatBudgetMonth(x.month||''))}</div><div class="sub">Total: ${money(x.total||Object.values(x.categories||{}).reduce((a,b)=>a+n(b),0))}</div></div><button class="btn btn-icon" type="button" data-load-budget="${x.id}" title="Load / Edit" aria-label="Load / Edit">&#9998;</button></div>`).join(''):'<div class="empty">No saved monthly budgets yet.</div>'}</div></div>`;
+    /* Budget sub-items: load and wire up per-category item lists */
+    const allItems=await getAll('budgetItems');
+    const itemSavers=[];
+    const defaultBudgetItems={
+      'Household':['Rent','Electricity','Water / Maintenance','Internet / Cable','Gas / LPG'],
+      'Transport':['Fuel / Petrol','Auto / Cab / Bus','Vehicle EMI','Parking / Toll'],
+      'Food & Personal':['Groceries','Vegetables & Fruits','Milk & Dairy','Eating Out / Sweets','Personal Care'],
+      'Health & Emergency':['Medicine / Pharmacy','Doctor / Hospital','Emergency Fund'],
+      'Loans & Financial':['Home Loan EMI','Car / Bike Loan','Personal Loan','Credit Card'],
+      'Family / Religious / Social':['Festivals / Pooja','Gifts / Events','Donations','School / Tuition'],
+      'Savings & Investments':['SIP / Mutual Fund','PPF / RD','Insurance Premium','FD'],
+      'Other':['Miscellaneous','Subscriptions','Clothing','Home Maintenance']
+    };
+    categories.forEach(c=>{
+      const safeId=c.replace(/[^a-z0-9]/gi,'_');
+      const wrap=$('budgetItemsWrap_'+safeId);
+      const catInput=$('catInput_'+safeId);
+      if(!wrap||!catInput)return;
+      const savedItems=allItems.filter(x=>x.month===month&&x.category===c);
+      const items=savedItems.length>0
+        ? savedItems.map(x=>({...x}))
+        : (defaultBudgetItems[c]||[]).map(name=>({id:uid(),month,category:c,name,amount:0}));
+      const recalc=()=>{const sum=items.reduce((a,x)=>a+(Number(x.amount)||0),0);if(sum>0)catInput.value=sum;};
+      const renderItems=()=>{
+        wrap.innerHTML=items.map((it,i)=>`<div class="budget-item-row">
+          <input class="item-name" type="text" placeholder="Item name" value="${esc(it.name||'')}" data-ii="${i}">
+          <input class="item-amt" type="number" min="0" step="0.01" placeholder="Amount" value="${it.amount||''}" data-ii="${i}">
+          <button type="button" class="btn btn-icon danger" data-rm="${i}" title="Remove">&times;</button>
+        </div>`).join('')+`<button type="button" class="btn ghost" style="font-size:12px;margin-top:4px" data-add-item="1">+ Add Item</button>`;
+        wrap.querySelectorAll('.item-name').forEach(inp=>inp.oninput=()=>{items[+inp.dataset.ii].name=inp.value;});
+        wrap.querySelectorAll('.item-amt').forEach(inp=>inp.oninput=()=>{items[+inp.dataset.ii].amount=Number(inp.value)||0;recalc();});
+        wrap.querySelectorAll('[data-rm]').forEach(btn=>btn.onclick=()=>{items.splice(+btn.dataset.rm,1);renderItems();recalc();});
+        wrap.querySelector('[data-add-item]').onclick=()=>{items.push({id:uid(),month,category:c,name:'',amount:0});renderItems();};
+      };
+      renderItems();
+      const toggleBtn=budEl.querySelector(`[data-items-cat="${c}"]`);
+      if(toggleBtn)toggleBtn.onclick=()=>{
+        const open=wrap.style.display==='none';
+        wrap.style.display=open?'block':'none';
+        toggleBtn.textContent=(open?'\u25be':'\u25b8')+' Sub-items';
+      };
+      itemSavers.push(async()=>{
+        const fresh=await getAll('budgetItems');
+        const old=fresh.filter(x=>x.month===month&&x.category===c);
+        for(const o of old)await del('budgetItems',o.id);
+        for(const it of items.filter(x=>x.name||x.amount>0))await put('budgetItems',{id:it.id||uid(),month,category:c,name:it.name,amount:Number(it.amount)||0});
+      });
+    });
     $('budgetPlanner').onsubmit=async e=>{
       e.preventDefault();
       try{
@@ -2381,6 +2663,7 @@ const sector=s(fd.get('sector'))||'Other';
         const record={...(existingRecord||{}),id:existingRecord?.id||uid(),month:m,category:'All Categories',categories:categoriesObj,total:Object.values(categoriesObj).reduce((a,b)=>a+n(b),0),createdAt:existingRecord?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};
         await put('budgets',record);
         for(const x of freshBud.filter(r=>r.month===m&&(r.category==='All Categories'||r.category==='Consolidated')&&r.id!==record.id)) await del('budgets',x.id);
+        for(const saver of itemSavers) await saver();
         try{await log('Finance','Monthly budget saved for '+m);}catch(logErr){console.warn('Budget log failed:',logErr);}
         window.__vaultBudgetMonth=m;
         toast(existingRecord?'Budget updated':'Budget saved');
@@ -2388,6 +2671,56 @@ const sector=s(fd.get('sector'))||'Other';
       }catch(err){console.error('Budget save failed:',err);toast('Budget could not be saved: '+(err?.message||'Unknown error'),true);}
     };
     $('budgetPrev').onclick=()=>{const d=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1);d.setMonth(d.getMonth()-1);window.__vaultBudgetMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');refresh();};
+    $('budgetCopyPrev').onclick=async()=>{
+      const d=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1);
+      d.setMonth(d.getMonth()-1);
+      const prevMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      const [allBud,allItems]=await Promise.all([getAll('budgets'),getAll('budgetItems')]);
+      const prevRec=allBud.find(x=>x.month===prevMonth&&(x.category==='All Categories'||x.category==='Consolidated'));
+      const prevItems=allItems.filter(x=>x.month===prevMonth);
+      if(!prevRec&&!prevItems.length){toast('No budget found for '+prevMonth,true);return;}
+      if(prevRec&&prevRec.categories){
+        categories.forEach(c=>{
+          const inp=$('catInput_'+c.replace(/[^a-z0-9]/gi,'_'));
+          if(inp&&prevRec.categories[c]!=null)inp.value=prevRec.categories[c];
+        });
+      }
+      if(prevItems.length){
+        const savers=$('budgetPlanner')._itemSavers||[];
+        categories.forEach(c=>{
+          const safeId=c.replace(/[^a-z0-9]/gi,'_');
+          const wrap=$('budgetItemsWrap_'+safeId);
+          const catInput=$('catInput_'+safeId);
+          if(!wrap)return;
+          const copied=prevItems.filter(x=>x.category===c).map(x=>({id:uid(),month,category:c,name:x.name,amount:x.amount}));
+          if(!copied.length)return;
+          const items=copied;
+          const rerender=()=>{
+            wrap.innerHTML=items.map((it,i)=>'<div class="budget-item-row">'
+              +'<input class="item-name" type="text" placeholder="Item name" value="'+esc(it.name||'')+'" data-ii="'+i+'">'
+              +'<input class="item-amt" type="number" min="0" step="0.01" placeholder="Amount" value="'+(it.amount||'')+'" data-ii="'+i+'">'
+              +'<button type="button" class="btn btn-icon danger" data-rm="'+i+'" title="Remove">&times;</button>'
+              +'</div>').join('')+'<button type="button" class="btn ghost" style="font-size:12px;margin-top:4px" data-add-item="1">+ Add Item</button>';
+            wrap.querySelectorAll('.item-name').forEach(inp=>inp.oninput=()=>{items[+inp.dataset.ii].name=inp.value;});
+            wrap.querySelectorAll('.item-amt').forEach(inp=>inp.oninput=()=>{items[+inp.dataset.ii].amount=Number(inp.value)||0;const sum=items.reduce((a,x)=>a+(Number(x.amount)||0),0);if(sum>0&&catInput)catInput.value=sum;});
+            wrap.querySelectorAll('[data-rm]').forEach(btn=>btn.onclick=()=>{items.splice(+btn.dataset.rm,1);rerender();});
+            wrap.querySelector('[data-add-item]').onclick=()=>{items.push({id:uid(),month,category:c,name:'',amount:0});rerender();};
+          };
+          rerender();
+          wrap.style.display='block';
+          const toggleBtn=budEl.querySelector('[data-items-cat="'+c+'"]');
+          if(toggleBtn)toggleBtn.textContent='\u25be Sub-items';
+          const saverIdx=categories.indexOf(c);
+          if(saverIdx>=0)savers[saverIdx]=async()=>{
+            const fresh=await getAll('budgetItems');
+            const old=fresh.filter(x=>x.month===month&&x.category===c);
+            for(const o of old)await del('budgetItems',o.id);
+            for(const it of items.filter(x=>x.name||x.amount>0))await put('budgetItems',{id:it.id||uid(),month,category:c,name:it.name,amount:Number(it.amount)||0});
+          };
+        });
+      }
+      const [py,pm]=prevMonth.split('-');const pLabel=new Date(+py,+pm-1,1).toLocaleString('default',{month:'short',year:'numeric'});toast('Copied from '+pLabel);
+    };
     $('budgetNext').onclick=()=>{const d=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1);d.setMonth(d.getMonth()+1);window.__vaultBudgetMonth=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');refresh();};
     budEl.querySelectorAll('[data-load-budget]').forEach(b=>b.onclick=()=>{
       const x=bud.find(r=>r.id===b.dataset.loadBudget);
@@ -3106,7 +3439,7 @@ const sector=s(fd.get('sector'))||'Other';
       input.addEventListener('change',handler,{once:true});input.click();
     });
   }
-  function validateBackup(x){if(!x||x.app!=='VaultOne')throw new Error('This is not a VaultOne backup file.');if(![1,2,3,4,5,6,7].includes(Number(x.schemaVersion)))throw new Error('Unsupported VaultOne backup version.');return true;}
+  function validateBackup(x){if(!x||x.app!=='VaultOne')throw new Error('This is not a VaultOne backup file.');if(![1,2,3,4,5,6,7,8].includes(Number(x.schemaVersion)))throw new Error('Unsupported VaultOne backup version.');return true;}
   async function restoreBackup(x){
     validateBackup(x);
     if(!confirm('Restore this backup? Existing VaultOne data will be replaced.'))return false;
