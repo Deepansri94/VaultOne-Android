@@ -505,20 +505,22 @@ function renderDocumentsTableFromCache(){
   if(!filtered.length){host.innerHTML=q?'<div class="empty">No documents match your search.</div>':'<div class="empty">No documents found.</div>';return;}
   const {pageRows,totalPages,page,total}=paginateRows('documents',filtered);
   const st=getCompactPage('documents');
-  const rows=pageRows.map(d=>{
+  const tbody=pageRows.map(d=>{
     const owner=esc(d.personName||d.householdName||'—');
     const expWarn=d.expiryDate&&calcExpiry(d.expiryDate)?' ⚠️':'';
-    return `<div class="doc-list-row">
-      <div class="doc-list-title" title="${esc(d.title)}">${esc(d.title)}${d.favorite?' ⭐':''}${expWarn}</div>
-      <div class="doc-list-owner" title="${owner}">${owner}</div>
-      <div class="doc-list-actions">
+    return `<tr>
+      <td data-label="Title"><span class="cell-inner">${esc(d.title)}${d.favorite?' ⭐':''}${expWarn}</span></td>
+      <td data-label="Type"><span class="cell-inner">${esc(d.type||'—')}</span></td>
+      <td data-label="Owner"><span class="cell-inner">${owner}</span></td>
+      <td data-label="Expiry"><span class="cell-inner">${esc(d.expiryDate||'—')}</span></td>
+      <td class="col-actions" data-label="Actions"><div class="table-actions">
         <button class="btn btn-icon" type="button" data-details="${d.id}" title="Details" aria-label="Details">👁️</button>
         <button class="btn btn-icon" type="button" data-docedit="${d.id}" title="Edit" aria-label="Edit">✏️</button>
         <button class="btn btn-icon danger" type="button" data-docdel="${d.id}" title="Delete" aria-label="Delete">🗑️</button>
-      </div>
-    </div>`;
+      </div></td>
+    </tr>`;
   }).join('');
-  host.innerHTML=`<div class="card" style="padding:0;overflow:hidden">${rows}</div>`+paginationControlsHtml('documents',page,totalPages,total,st.pageSize);
+  host.innerHTML=`<div class="tx-table-wrap"><table class="tx-table"><thead><tr><th>Title</th><th>Type</th><th>Owner</th><th>Expiry</th><th class="col-actions-head">Actions</th></tr></thead><tbody>${tbody}</tbody></table></div>`+paginationControlsHtml('documents',page,totalPages,total,st.pageSize);
   host.querySelectorAll('[data-details]').forEach(b=>b.onclick=()=>documentDetails(b.dataset.details));
   host.querySelectorAll('[data-docedit]').forEach(b=>b.onclick=()=>editDoc(b.dataset.docedit));
   host.querySelectorAll('[data-docdel]').forEach(b=>b.onclick=async()=>{if(confirm('Delete this document?')){await del('documents',b.dataset.docdel);await log('Document','Document deleted');refresh()}});
