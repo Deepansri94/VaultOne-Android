@@ -22,6 +22,7 @@ VaultOne is a fully offline, single-file personal vault that runs directly in an
 - [Security](#security)
 - [Android APK Build](#android-apk-build)
 - [Self-Test](#self-test)
+- [QA & Test Suite](#qa--test-suite)
 - [Project Structure](#project-structure)
 
 ---
@@ -398,17 +399,86 @@ PASS  Insurance CRUD
 
 ---
 
+## QA & Test Suite
+
+The `QA/` folder contains the full test suite for VaultOne.
+
+### Test Data & Cases
+
+| File | Contents |
+|---|---|
+| `QA/VaultOne_TestCases.json` | All test cases with steps, expected results, and status |
+| `QA/VaultOne_TestData.json` | Seed data used by automated tests |
+| `QA/VaultOne_Defects.json` | Defect log with severity, status, and reproduction steps |
+
+### Selenium Automation (`QA/selenium/`)
+
+Python + Selenium WebDriver tests covering all modules.
+
+**Prerequisites:**
+```
+pip install -r QA/selenium/requirements_vaultone_test.txt
+```
+
+**Run all tests:**
+```
+cd QA/selenium
+pytest
+```
+or on Windows:
+```
+QA\selenium\run_tests.bat
+```
+
+**Test files:**
+
+| File | Coverage |
+|---|---|
+| `conftest.py` | Fixtures, helpers, IndexedDB utilities |
+| `test_home.py` | Home dashboard, nav tabs, bell panel |
+| `test_ivault.py` | Income, Expenses, Budget, Banks, Loans, Transactions |
+| `test_investments.py` | FD, RD, PPF, SSA, NPS, Demat, Gold |
+| `test_family.py` | People, Households, Vehicles, Documents |
+| `test_passwords.py` | PasswordVault lock/unlock, CRUD, generator |
+| `test_misc.py` | Reminders (bell panel), Settings, Activity Log |
+| `test_mobile.py` | Mobile viewport (Pixel 5 emulation) responsive tests |
+
+Test reports are written to `QA/selenium/reports/` (excluded from git via `.gitignore`).
+
+---
+
 ## Project Structure
 
 ```
 VaultOne/
-├── VaultOne.html          # Main application (v1.9, schema v7)
-├── VaultOne.png           # App icon
-├── vaultone_seed.json     # Optional seed data for first run
+├── VaultOne.html                    # Main application (v1.9, schema v7)
+├── VaultOne.png                     # App icon
+├── vaultone_seed.json               # Seed data format template
+├── .gitignore                       # Git ignore rules
+├── README.md
+├── README_VaultOne_Selenium.txt     # Selenium setup quick-reference
+├── requirements_vaultone_test.txt   # Python test dependencies
+├── vaultone_selenium_test.py        # Standalone single-file test script
 ├── .github/
 │   └── workflows/
-│       └── build-vaultone.yml   # Android APK CI build
-└── README.md
+│       └── build-vaultone.yml       # Android APK CI build
+└── QA/
+    ├── VaultOne_TestCases.json
+    ├── VaultOne_TestData.json
+    ├── VaultOne_Defects.json
+    └── selenium/
+        ├── conftest.py
+        ├── pytest.ini
+        ├── run_tests.bat
+        ├── requirements_vaultone_test.txt
+        ├── test_home.py
+        ├── test_ivault.py
+        ├── test_investments.py
+        ├── test_family.py
+        ├── test_passwords.py
+        ├── test_misc.py
+        ├── test_mobile.py
+        └── vaultone_selenium_test.py
 ```
 
 ---
