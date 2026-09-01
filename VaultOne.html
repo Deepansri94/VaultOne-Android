@@ -2925,7 +2925,7 @@ const sector=s(fd.get('sector'))||'Other';
   function renderGold(gold,rates){
     const latest=(rates||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0]||{};
     const total=gold.reduce((a,g)=>a+goldValues(g,rates).current,0),purchase=gold.reduce((a,g)=>a+goldValues(g,rates).purchase,0),totalGrams=gold.reduce((a,g)=>a+n(g.weight),0);
-    $('gold').innerHTML=`<div class="card"><h3>GoldVault 🪙</h3><div class="stats"><div class="stat">Purchase Value<b>${money(purchase)}</b></div><div class="stat">Current Value<b>${money(total)}</b></div><div class="stat">Gain/Loss<b class="${total-purchase>=0?'green':'red'}">${money(total-purchase)}</b></div><div class="stat">Holdings<b>${totalGrams.toFixed(3)} g</b></div></div></div><div class="card"><h3>Gold Holdings</h3><div class="actions" style="justify-content:flex-start;gap:8px"><button type="button" class="btn primary" id="toggleAddGoldForm">+ Add Gold</button><button type="button" class="btn" id="togglePriceForm">📊 Update Price</button></div><div id="addGoldFormContainer" style="display:none;margin-top:12px"><form id="goldAddForm" class="grid"><label >Name <span class="req-star">*</span><input name="name" required></label><label>Purity<select name="purity"><option>18K</option><option selected>22K</option><option>24K</option></select></label><label >Quantity / Weight (g) <span class="req-star">*</span><input name="weight" type="number" min="0" step="0.001" required></label><label >Purchase Rate / g <span class="req-star">*</span><input name="purchaseRate" type="number" min="0" step="0.01" required></label><label >Purchase Date <span class="req-star">*</span><input name="date" type="date" value="${today()}" required></label><label>Note<input name="note"></label><div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Gold</button></div></form></div><div id="priceFormContainer" style="display:none;margin-top:12px"><div class="muted" style="font-size:12px;margin-bottom:10px;padding:8px 10px;background:rgba(255,193,7,.1);border-left:3px solid #ffc107;border-radius:4px">🌐 <b>Fetch Live Rates</b> requires an internet connection. The app will go online only for this request. Rates are fetched in USD and converted to INR.</div><form id="goldRateForm" class="grid"><label >Date <span class="req-star">*</span><input name="date" type="date" value="${today()}" required></label><label>18K / g<input name="K18" id="goldK18" type="number" min="0" step="0.01" value="${n(latest.K18)}"></label><label>22K / g<input name="K22" id="goldK22" type="number" min="0" step="0.01" value="${n(latest.K22)}"></label><label>24K / g<input name="K24" id="goldK24" type="number" min="0" step="0.01" value="${n(latest.K24)}"></label><div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button type="button" class="btn" id="fetchGoldRateBtn">🌐 Fetch Live Rates</button><span id="fetchGoldStatus" class="muted" style="font-size:12px"></span></div><div class="actions" style="grid-column:1/-1"><button class="btn primary">Update Price</button></div></form></div><div class="list" style="margin-top:12px">${gold.length?gold.map(g=>{const v=goldValues(g,rates);return `<div class="item"><div><div class="title">${esc(g.name||'Gold')} • ${esc(g.purity||'22K')}</div><div class="sub">${n(g.weight)} g • Purchase ${money(v.purchase)}</div></div><b class="${v.current>=v.purchase?'green':'red'}">${money(v.current)}</b><div class="actions"><button type="button" class="btn btn-icon" data-edit-gold="${g.id}" title="Edit">✏️</button><button type="button" class="btn btn-icon" data-delete-gold="${g.id}" title="Delete">🗑️</button></div></div>`}).join(''):'<div class="empty">No gold holdings. Add one to get started.</div>'}</div></div>`;
+    $('gold').innerHTML=`<div class="card"><h3>GoldVault 🪙</h3><div class="stats"><div class="stat">Purchase Value<b>${money(purchase)}</b></div><div class="stat">Current Value<b>${money(total)}</b></div><div class="stat">Gain/Loss<b class="${total-purchase>=0?'green':'red'}">${money(total-purchase)}</b></div><div class="stat">Holdings<b>${totalGrams.toFixed(3)} g</b></div></div></div><div class="card"><h3>Gold Holdings</h3><div class="actions" style="justify-content:flex-start;gap:8px"><button type="button" class="btn primary" id="toggleAddGoldForm">+ Add Gold</button><button type="button" class="btn" id="togglePriceForm">📊 Update Price</button></div><div id="addGoldFormContainer" style="display:none;margin-top:12px"><form id="goldAddForm" class="grid"><label >Name <span class="req-star">*</span><input name="name" required></label><label>Purity<select name="purity"><option>18K</option><option selected>22K</option><option>24K</option></select></label><label >Quantity / Weight (g) <span class="req-star">*</span><input name="weight" type="number" min="0" step="0.001" required></label><label >Purchase Rate / g <span class="req-star">*</span><input name="purchaseRate" type="number" min="0" step="0.01" required></label><label >Purchase Date <span class="req-star">*</span><input name="date" type="date" value="${today()}" required></label><label>Note<input name="note"></label><div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Gold</button></div></form></div><div id="priceFormContainer" style="display:none;margin-top:12px"><div class="muted" style="font-size:12px;margin-bottom:10px;padding:8px 10px;background:rgba(255,193,7,.1);border-left:3px solid #ffc107;border-radius:4px">🌐 <b>Fetch Live Rates</b> requires an internet connection. The app will go online only for this request. Rates are sourced from GoldAPI.io (XAU/INR) — direct INR per gram, no conversion needed.</div><form id="goldRateForm" class="grid"><label >Date <span class="req-star">*</span><input name="date" type="date" value="${today()}" required></label><label>18K / g<input name="K18" id="goldK18" type="number" min="0" step="0.01" value="${n(latest.K18)}"></label><label>22K / g<input name="K22" id="goldK22" type="number" min="0" step="0.01" value="${n(latest.K22)}"></label><label>24K / g<input name="K24" id="goldK24" type="number" min="0" step="0.01" value="${n(latest.K24)}"></label><div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button type="button" class="btn" id="fetchGoldRateBtn">🌐 Fetch Live Rates</button><span id="fetchGoldStatus" class="muted" style="font-size:12px"></span></div><div class="actions" style="grid-column:1/-1"><button class="btn primary">Update Price</button></div></form></div><div class="list" style="margin-top:12px">${gold.length?gold.map(g=>{const v=goldValues(g,rates);return `<div class="item"><div><div class="title">${esc(g.name||'Gold')} • ${esc(g.purity||'22K')}</div><div class="sub">${n(g.weight)} g • Purchase ${money(v.purchase)}</div></div><b class="${v.current>=v.purchase?'green':'red'}">${money(v.current)}</b><div class="actions"><button type="button" class="btn btn-icon" data-edit-gold="${g.id}" title="Edit">✏️</button><button type="button" class="btn btn-icon" data-delete-gold="${g.id}" title="Delete">🗑️</button></div></div>`}).join(''):'<div class="empty">No gold holdings. Add one to get started.</div>'}</div></div>`;
     $('toggleAddGoldForm').onclick=()=>{
       const container=$('addGoldFormContainer');
       container.style.display=container.style.display==='none'?'block':'none';
@@ -2943,35 +2943,28 @@ const sector=s(fd.get('sector'))||'Other';
       btn.onclick=async()=>{
         const statusEl=$('fetchGoldStatus');
         if(!navigator.onLine){toast('📵 No internet connection. Please enter rates manually.',true);return;}
-        btn.disabled=true;statusEl.textContent='⏳ Fetching…';statusEl.style.color='';
+        btn.disabled=true;statusEl.textContent='⏳ Fetching live INR rates…';statusEl.style.color='';
         try{
-          // Fetch spot gold price (USD/troy oz) + USD/INR rate
-          const [goldRes,fxRes]=await Promise.all([
-            fetch('https://corsproxy.io/?'+encodeURIComponent('https://api.metals.live/v1/spot/gold'),{signal:AbortSignal.timeout(10000)}),
-            fetch('https://corsproxy.io/?'+encodeURIComponent('https://api.frankfurter.app/latest?from=USD&to=INR'),{signal:AbortSignal.timeout(10000)})
-          ]);
-          if(!goldRes.ok)throw new Error('Gold API error '+goldRes.status);
-          const goldJson=await goldRes.json();
-          // metals.live returns [{gold: priceUSD}] or {price: priceUSD}
-          const goldUsdOz=Array.isArray(goldJson)?goldJson[0]?.gold:goldJson?.price||goldJson?.gold;
-          if(!goldUsdOz||goldUsdOz<=0)throw new Error('Invalid gold price response');
-          let usdInr=84.5;// fallback
-          try{if(fxRes.ok){const fx=await fxRes.json();usdInr=fx?.rates?.INR||usdInr;}}catch(_){}
-          // Convert: USD/troy oz -> INR/gram (1 troy oz = 31.1035 g)
-          const goldInrGram=goldUsdOz*usdInr/31.1035;
-          // Purity ratios: 24K=pure, 22K=22/24, 18K=18/24
-          const k24=goldInrGram,k22=goldInrGram*(22/24),k18=goldInrGram*(18/24);
+          const res=await fetch('https://www.goldapi.io/api/XAU/INR',{
+            headers:{'x-access-token':'goldapi-3e22a76d60af2e0ef9618292382a88ac-io','Content-Type':'application/json'},
+            signal:AbortSignal.timeout(10000)
+          });
+          if(!res.ok)throw new Error('GoldAPI error '+res.status);
+          const d=await res.json();
+          if(d.error)throw new Error(d.error);
+          const k24=d.price_gram_24k,k22=d.price_gram_22k,k18=d.price_gram_18k;
+          if(!k24||k24<=0)throw new Error('Invalid price data');
           const k18el=$('goldK18'),k22el=$('goldK22'),k24el=$('goldK24');
           if(k18el)k18el.value=k18.toFixed(2);
           if(k22el)k22el.value=k22.toFixed(2);
           if(k24el)k24el.value=k24.toFixed(2);
-          statusEl.textContent='✅ 24K: ₹'+k24.toFixed(0)+'/g | 22K: ₹'+k22.toFixed(0)+'/g | 18K: ₹'+k18.toFixed(0)+'/g (USD/INR: '+usdInr.toFixed(1)+')';
+          statusEl.textContent='✅ 24K: ₹'+k24.toFixed(0)+'/g | 22K: ₹'+k22.toFixed(0)+'/g | 18K: ₹'+k18.toFixed(0)+'/g (XAU/INR live)';
           statusEl.style.color='var(--green,#4caf50)';
         }catch(err){
           console.error('Gold rate fetch failed:',err);
           statusEl.textContent='❌ Could not fetch. Enter manually.';
           statusEl.style.color='var(--red,#f44336)';
-          toast('Could not fetch live gold rates. Check your connection or enter manually.',true);
+          toast('Could not fetch live gold rates: '+(err?.message||'Unknown error'),true);
         }finally{btn.disabled=false;}
       };
     };
