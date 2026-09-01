@@ -2572,11 +2572,62 @@ const sector=s(fd.get('sector'))||'Other';
           }
           if(b.dataset.updatePrice){
             const x=await get(STORE,b.dataset.updatePrice);if(!x)return;
-            openModal('Update Current Price — '+esc(x.stockName),`<form class="grid"><label>Current Market Price<input name="price" type="number" step="0.01" min="0" required value="${n(x.currentPrice)}"></label><div class="actions"><button class="btn primary">Update</button></div></form>`,async fd=>{
+            openModal('Update Current Price — '+esc(x.stockName),`
+              <div class="muted" style="font-size:12px;margin-bottom:10px;padding:8px 10px;background:rgba(255,193,7,.1);border-left:3px solid #ffc107;border-radius:4px">
+                🌐 <b>Fetch Live Price</b> requires an internet connection. The app will go online only for this request.
+              </div>
+              <form class="grid" id="stockPriceForm">
+                <label>NSE / BSE Symbol (e.g. RELIANCE, TCS)<input name="symbol" placeholder="Leave blank to skip fetch" value="${esc(x.ticker||x.symbol||x.stockName||'')}"></label>
+                <label>Current Market Price <span class="req-star">*</span><input name="price" id="livePriceInput" type="number" step="0.01" min="0" required value="${n(x.currentPrice)}"></label>
+                <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap">
+                  <button type="button" class="btn" id="fetchLivePriceBtn">🌐 Fetch Live Price</button>
+                  <span id="fetchPriceStatus" class="muted" style="font-size:12px;align-self:center"></span>
+                </div>
+                <div class="actions" style="grid-column:1/-1"><button class="btn primary">Update</button></div>
+              </form>`,async fd=>{
               const price=n(fd.get('price'));if(price<0){toast('Enter a valid price',true);return;}
+              const sym=String(fd.get('symbol')||'').trim();if(sym)x.ticker=sym;
               x.currentPrice=price;x.currentValue=n(x.quantity)*price;x.updatedAt=new Date().toISOString();
               await put(STORE,x);closeModal();toast('Price updated');await renderInvestments();
-            });return;
+            });
+            const fetchBtn=document.getElementById('fetchLivePriceBtn');
+            if(fetchBtn)fetchBtn.onclick=async()=>{
+              const sym=String(document.querySelector('#stockPriceForm [name="symbol"]')?.value||'').trim().toUpperCase();
+              const statusEl=document.getElementById('fetchPriceStatus');
+              const priceEl=document.getElementById('livePriceInput');
+              if(!sym){toast('Enter a stock symbol first (e.g. RELIANCE)',true);return;}
+              if(!navigator.onLine){toast('📵 No internet connection. Please enter the price manually.',true);return;}
+              fetchBtn.disabled=true;statusEl.textContent='⏳ Fetching…';
+              try{
+                const proxyUrl='https://corsproxy.io/?'+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'.NS?interval=1d&range=1d');
+                const res=await fetch(proxyUrl,{signal:AbortSignal.timeout(10000)});
+                if(!res.ok)throw new Error('HTTP '+res.status);
+                const json=await res.json();
+                const price=json?.chart?.result?.[0]?.meta?.regularMarketPrice;
+                if(!price||price<=0)throw new Error('Price not available');
+                if(priceEl){priceEl.value=price.toFixed(2);priceEl.dispatchEvent(new Event('input'));}
+                statusEl.textContent='✅ ₹'+price.toFixed(2)+' (NSE live)';
+                statusEl.style.color='var(--green,#4caf50)';
+              }catch(err){
+                console.warn('NSE fetch failed, trying BSE:',err);
+                try{
+                  const proxyUrl2='https://corsproxy.io/?'+encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'.BO?interval=1d&range=1d');
+                  const res2=await fetch(proxyUrl2,{signal:AbortSignal.timeout(10000)});
+                  if(!res2.ok)throw new Error('HTTP '+res2.status);
+                  const json2=await res2.json();
+                  const price2=json2?.chart?.result?.[0]?.meta?.regularMarketPrice;
+                  if(!price2||price2<=0)throw new Error('Price not available on BSE either');
+                  if(priceEl){priceEl.value=price2.toFixed(2);priceEl.dispatchEvent(new Event('input'));}
+                  statusEl.textContent='✅ ₹'+price2.toFixed(2)+' (BSE live)';
+                  statusEl.style.color='var(--green,#4caf50)';
+                }catch(err2){
+                  statusEl.textContent='❌ Could not fetch. Enter manually.';
+                  statusEl.style.color='var(--red,#f44336)';
+                  toast('Could not fetch price for '+sym+'. Check the symbol or enter manually.',true);
+                }
+              }finally{fetchBtn.disabled=false;}
+            };
+            return;
           }
           if(b.dataset.addLot){
             const x=await get(STORE,b.dataset.addLot);if(!x)return;
@@ -2874,7 +2925,7 @@ const sector=s(fd.get('sector'))||'Other';
   function renderGold(gold,rates){
     const latest=(rates||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0]||{};
     const total=gold.reduce((a,g)=>a+goldValues(g,rates).current,0),purchase=gold.reduce((a,g)=>a+goldValues(g,rates).purchase,0),totalGrams=gold.reduce((a,g)=>a+n(g.weight),0);
-    $('gold').innerHTML=`<div class="card"><h3>GoldVault 🪙</h3><div class="stats"><div class="stat">Purchase Value<b>${money(purchase)}</b></div><div class="stat">Current Value<b>${money(total)}</b></div><div class="stat">Gain/Loss<b class="${total-purchase>=0?'green':'red'}">${money(total-purchase)}</b></div><div class="stat">Holdings<b>${totalGrams.toFixed(3)} g</b></div></div></div><div class="card"><h3>Gold Holdings</h3><div class="actions" style="justify-content:flex-start;gap:8px"><button type="button" class="btn primary" id="toggleAddGoldForm">+ Add Gold</button><button type="button" class="btn" id="togglePriceForm">📊 Update Price</button></div><div id="addGoldFormContainer" style="display:none;margin-top:12px"><form id="goldAddForm" class="grid"><label >Name <span class="req-star">*</span><input name="name" required></label><label>Purity<select name="purity"><option>18K</option><option selected>22K</option><option>24K</option></select></label><label >Quantity / Weight (g) <span class="req-star">*</span><input name="weight" type="number" min="0" step="0.001" required></label><label >Purchase Rate / g <span class="req-star">*</span><input name="purchaseRate" type="number" min="0" step="0.01" required></label><label >Purchase Date <span class="req-star">*</span><input name="date" type="date" value="${today()}" required></label><label>Note<input name="note"></label><div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Gold</button></div></form></div><div id="priceFormContainer" style="display:none;margin-top:12px"><form id="goldRateForm" class="grid"><label >Date <span class="req-star">*</span><input name="date" type="date" value="${today()}" required></label><label>18K / g<input name="K18" type="number" min="0" step="0.01" value="${n(latest.K18)}"></label><label>22K / g<input name="K22" type="number" min="0" step="0.01" value="${n(latest.K22)}"></label><label>24K / g<input name="K24" type="number" min="0" step="0.01" value="${n(latest.K24)}"></label><div class="actions" style="grid-column:1/-1"><button class="btn primary">Update Price</button></div></form></div><div class="list" style="margin-top:12px">${gold.length?gold.map(g=>{const v=goldValues(g,rates);return `<div class="item"><div><div class="title">${esc(g.name||'Gold')} • ${esc(g.purity||'22K')}</div><div class="sub">${n(g.weight)} g • Purchase ${money(v.purchase)}</div></div><b class="${v.current>=v.purchase?'green':'red'}">${money(v.current)}</b><div class="actions"><button type="button" class="btn btn-icon" data-edit-gold="${g.id}" title="Edit">✏️</button><button type="button" class="btn btn-icon" data-delete-gold="${g.id}" title="Delete">🗑️</button></div></div>`}).join(''):'<div class="empty">No gold holdings. Add one to get started.</div>'}</div></div>`;
+    $('gold').innerHTML=`<div class="card"><h3>GoldVault 🪙</h3><div class="stats"><div class="stat">Purchase Value<b>${money(purchase)}</b></div><div class="stat">Current Value<b>${money(total)}</b></div><div class="stat">Gain/Loss<b class="${total-purchase>=0?'green':'red'}">${money(total-purchase)}</b></div><div class="stat">Holdings<b>${totalGrams.toFixed(3)} g</b></div></div></div><div class="card"><h3>Gold Holdings</h3><div class="actions" style="justify-content:flex-start;gap:8px"><button type="button" class="btn primary" id="toggleAddGoldForm">+ Add Gold</button><button type="button" class="btn" id="togglePriceForm">📊 Update Price</button></div><div id="addGoldFormContainer" style="display:none;margin-top:12px"><form id="goldAddForm" class="grid"><label >Name <span class="req-star">*</span><input name="name" required></label><label>Purity<select name="purity"><option>18K</option><option selected>22K</option><option>24K</option></select></label><label >Quantity / Weight (g) <span class="req-star">*</span><input name="weight" type="number" min="0" step="0.001" required></label><label >Purchase Rate / g <span class="req-star">*</span><input name="purchaseRate" type="number" min="0" step="0.01" required></label><label >Purchase Date <span class="req-star">*</span><input name="date" type="date" value="${today()}" required></label><label>Note<input name="note"></label><div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Gold</button></div></form></div><div id="priceFormContainer" style="display:none;margin-top:12px"><div class="muted" style="font-size:12px;margin-bottom:10px;padding:8px 10px;background:rgba(255,193,7,.1);border-left:3px solid #ffc107;border-radius:4px">🌐 <b>Fetch Live Rates</b> requires an internet connection. The app will go online only for this request. Rates are fetched in USD and converted to INR.</div><form id="goldRateForm" class="grid"><label >Date <span class="req-star">*</span><input name="date" type="date" value="${today()}" required></label><label>18K / g<input name="K18" id="goldK18" type="number" min="0" step="0.01" value="${n(latest.K18)}"></label><label>22K / g<input name="K22" id="goldK22" type="number" min="0" step="0.01" value="${n(latest.K22)}"></label><label>24K / g<input name="K24" id="goldK24" type="number" min="0" step="0.01" value="${n(latest.K24)}"></label><div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button type="button" class="btn" id="fetchGoldRateBtn">🌐 Fetch Live Rates</button><span id="fetchGoldStatus" class="muted" style="font-size:12px"></span></div><div class="actions" style="grid-column:1/-1"><button class="btn primary">Update Price</button></div></form></div><div class="list" style="margin-top:12px">${gold.length?gold.map(g=>{const v=goldValues(g,rates);return `<div class="item"><div><div class="title">${esc(g.name||'Gold')} • ${esc(g.purity||'22K')}</div><div class="sub">${n(g.weight)} g • Purchase ${money(v.purchase)}</div></div><b class="${v.current>=v.purchase?'green':'red'}">${money(v.current)}</b><div class="actions"><button type="button" class="btn btn-icon" data-edit-gold="${g.id}" title="Edit">✏️</button><button type="button" class="btn btn-icon" data-delete-gold="${g.id}" title="Delete">🗑️</button></div></div>`}).join(''):'<div class="empty">No gold holdings. Add one to get started.</div>'}</div></div>`;
     $('toggleAddGoldForm').onclick=()=>{
       const container=$('addGoldFormContainer');
       container.style.display=container.style.display==='none'?'block':'none';
@@ -2887,6 +2938,46 @@ const sector=s(fd.get('sector'))||'Other';
       $('toggleAddGoldForm').textContent='+ Add Gold';
       $('addGoldFormContainer').style.display='none';
     };
+    const _wireGoldFetch=()=>{
+      const btn=$('fetchGoldRateBtn');if(!btn||btn._wired)return;btn._wired=true;
+      btn.onclick=async()=>{
+        const statusEl=$('fetchGoldStatus');
+        if(!navigator.onLine){toast('📵 No internet connection. Please enter rates manually.',true);return;}
+        btn.disabled=true;statusEl.textContent='⏳ Fetching…';statusEl.style.color='';
+        try{
+          // Fetch spot gold price (USD/troy oz) + USD/INR rate
+          const [goldRes,fxRes]=await Promise.all([
+            fetch('https://corsproxy.io/?'+encodeURIComponent('https://api.metals.live/v1/spot/gold'),{signal:AbortSignal.timeout(10000)}),
+            fetch('https://corsproxy.io/?'+encodeURIComponent('https://api.frankfurter.app/latest?from=USD&to=INR'),{signal:AbortSignal.timeout(10000)})
+          ]);
+          if(!goldRes.ok)throw new Error('Gold API error '+goldRes.status);
+          const goldJson=await goldRes.json();
+          // metals.live returns [{gold: priceUSD}] or {price: priceUSD}
+          const goldUsdOz=Array.isArray(goldJson)?goldJson[0]?.gold:goldJson?.price||goldJson?.gold;
+          if(!goldUsdOz||goldUsdOz<=0)throw new Error('Invalid gold price response');
+          let usdInr=84.5;// fallback
+          try{if(fxRes.ok){const fx=await fxRes.json();usdInr=fx?.rates?.INR||usdInr;}}catch(_){}
+          // Convert: USD/troy oz -> INR/gram (1 troy oz = 31.1035 g)
+          const goldInrGram=goldUsdOz*usdInr/31.1035;
+          // Purity ratios: 24K=pure, 22K=22/24, 18K=18/24
+          const k24=goldInrGram,k22=goldInrGram*(22/24),k18=goldInrGram*(18/24);
+          const k18el=$('goldK18'),k22el=$('goldK22'),k24el=$('goldK24');
+          if(k18el)k18el.value=k18.toFixed(2);
+          if(k22el)k22el.value=k22.toFixed(2);
+          if(k24el)k24el.value=k24.toFixed(2);
+          statusEl.textContent='✅ 24K: ₹'+k24.toFixed(0)+'/g | 22K: ₹'+k22.toFixed(0)+'/g | 18K: ₹'+k18.toFixed(0)+'/g (USD/INR: '+usdInr.toFixed(1)+')';
+          statusEl.style.color='var(--green,#4caf50)';
+        }catch(err){
+          console.error('Gold rate fetch failed:',err);
+          statusEl.textContent='❌ Could not fetch. Enter manually.';
+          statusEl.style.color='var(--red,#f44336)';
+          toast('Could not fetch live gold rates. Check your connection or enter manually.',true);
+        }finally{btn.disabled=false;}
+      };
+    };
+    $('togglePriceForm')._origOnclick=$('togglePriceForm').onclick;
+    const _origToggle=$('togglePriceForm').onclick;
+    $('togglePriceForm').onclick=()=>{_origToggle();_wireGoldFetch();};
     $('goldAddForm').onsubmit=async e=>{e.preventDefault();try{const fd=new FormData(e.currentTarget),o={id:uid(),name:s(fd.get('name')),purity:s(fd.get('purity'))||'22K',weight:n(fd.get('weight')),purchaseRate:n(fd.get('purchaseRate')),date:s(fd.get('date'))||today(),note:s(fd.get('note')),purchaseValue:n(fd.get('weight'))*n(fd.get('purchaseRate')),createdAt:new Date().toISOString()};if(!o.name||o.weight<=0||o.purchaseRate<0){toast('Please enter valid gold details',true);return}await put('gold',o);try{await log('Finance','Gold holding saved')}catch(logErr){console.warn('Gold activity log failed:',logErr)}toast('Gold saved successfully');await refresh();}catch(err){console.error('Gold save failed',err);toast('Gold could not be saved.',true)}};
     $('goldRateForm').onsubmit=async e=>{
       e.preventDefault();
