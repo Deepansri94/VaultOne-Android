@@ -16,6 +16,14 @@ const BUDGET_SUBCATS = {
   'Other':['Miscellaneous','Subscriptions','Clothing','Home Maintenance']
 };
 
+function budgetCategoryTotal(categories, category) {
+  const direct = Number(categories?.[category]);
+  const subTotal = Object.entries(categories || {})
+    .filter(([key]) => key.startsWith(category + '.'))
+    .reduce((total, [, value]) => total + (Number(value) || 0), 0);
+  return subTotal > 0 ? subTotal : (Number.isFinite(direct) ? direct : 0);
+}
+
 let state = { settings: { id:'settings', name:'', currency:'INR' } };
 let _currentSV = 'overview';
 let _budgetMonth = new Date().toISOString().slice(0,7);
@@ -146,7 +154,7 @@ async function renderOverview() {
 
   // Budget bar
   const budRec = bud.find(b => b.month === month);
-  const bt = budRec ? Object.values(budRec.categories || {}).reduce((a,b) => a + N(b), 0) : 0;
+  const bt = budRec ? BUDGET_CATS.reduce((total, category) => total + budgetCategoryTotal(budRec.categories, category), 0) : 0;
   $('budgetTotal').textContent = money(bt, state.settings.currency);
   $('budgetBar').style.width = bt ? Math.min(100, mExp / bt * 100) + '%' : '0%';
   $('budgetInfo').textContent = bt
@@ -516,12 +524,12 @@ async function renderBudget() {
   const mExp = exp.filter(x => (x.date || '').startsWith(month));
   const actuals = {};
   BUDGET_CATS.forEach(c => { actuals[c] = mExp.filter(x => x.category === c).reduce((a, b) => a + Number(b.amount || 0), 0); });
-  const bt = Object.values(cats).filter((_, i, a) => !String(Object.keys(cats)[i]).includes('.')).reduce((a, b) => a + Number(b || 0), 0);
+  const bt = BUDGET_CATS.reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
 
   if (bt > 0 || mExp.length) {
     $('budgetActualsCard').style.display = 'block';
     const rows = BUDGET_CATS.map(c => {
-      const budgeted = Number(cats[c] || 0);
+      const budgeted = budgetCategoryTotal(cats, c);
       const actual = actuals[c] || 0;
       const diff = budgeted - actual;
       const cls = diff >= 0 ? 'good' : 'bad';
