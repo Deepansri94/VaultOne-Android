@@ -1,22 +1,22 @@
+# Test & build reports
+reports/
+QA/selenium/reports/
+
 # Python
 __pycache__/
 *.pyc
-*.pyo
 .pytest_cache/
 
-# Test reports
-QA/selenium/reports/
-
-# Backup / export files
-*.json.bak
-VaultOne_Backup_*.json
-
-# Misc
-*.log
-.DS_Store
-Thumbs.db
+# Node / Electron build output
+node_modules/
+dist/
+release/
 
 # Android build output
-build/
-*.apk
-*.aab
+app/build/
+.gradle/
+local.properties
+
+# OS
+.DS_Store
+Thumbs.db

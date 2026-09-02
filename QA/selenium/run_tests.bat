@@ -1,11 +1,19 @@
 @echo off
 echo ============================================
-echo  VaultOne Automated Test Suite
+echo  VaultOne Selenium Test Suite
 echo ============================================
+
 cd /d "%~dp0"
-python -m pytest -v --html=reports/VaultOne_TestReport.html --self-contained-html
+
+if not exist reports mkdir reports
+
+echo Installing dependencies...
+pip install -r requirements.txt --quiet
+
 echo.
-echo Report saved to: reports\VaultOne_TestReport.html
-echo Opening report...
-start reports\VaultOne_TestReport.html
+echo Running all tests...
+pytest --html=reports/report.html --self-contained-html -v
+
+echo.
+echo Done. Report saved to reports\report.html
 pause

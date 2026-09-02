@@ -1,567 +1,475 @@
-"""
-iVault — UI Flow Tests
-Correct flow: Bank Account must exist before Income, Expense, FD, RD can be linked.
-
-TC-OVW-001  iVault stats elements present
-TC-OVW-002  All 9 sub-tabs clickable without SEVERE errors
-TC-BNK-001  Add Bank Account via UI — stored in IndexedDB banks store
-TC-BNK-002  Account number leading zeros preserved in display
-TC-BNK-003  Edit Account modal pre-populates fields
-TC-BNK-004  Archive/Deactivate Account — status set to Inactive in IndexedDB
-TC-INC-001  Add Income via UI linked to bank account — stored in IndexedDB
-TC-INC-002  Income amount reflected in mIncome stat
-TC-EXP-001  Add Expense via UI linked to bank account — stored in IndexedDB
-TC-EXP-002  Expense amount reflected in mExpense stat
-TC-BUD-001  Budget section renders without errors
-TC-BUD-002  Save Budget for current month — stored in IndexedDB
-TC-TXN-001  Transactions section renders after income/expense added
-TC-TXN-002  Transaction record created automatically when income is saved
-TC-LNS-001  Add Loan via UI — stored in IndexedDB loans store
-TC-LNS-002  Loan outstanding shown in loans list
-TC-LNS-003  Settled loan status stored correctly
-"""
+"""iVault Selenium Tests — modular architecture (v1.9 split)."""
 import time
+import datetime
 import pytest
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from conftest import IVAULT_URL, click, fill, set_date, get_toast, clear_idb, open_settings
 
-from conftest import (
-    nav_to, nav_sub, reload_app, get_severe_errors,
-    sheet_is_open, idb_get_all, idb_clear, idb_put,
-)
 
-# ── Shared helpers ─────────────────────────────────────────────────────────────
+@pytest.fixture(autouse=True)
+def fresh_db(driver):
+    driver.get(IVAULT_URL)
+    time.sleep(0.5)
+    clear_idb(driver, 'iVaultDB')
+    driver.get(IVAULT_URL)
+    time.sleep(1)
 
-def _close_modal(driver):
-    driver.execute_script(
-        "var b=document.getElementById('modalClose'); if(b) b.click();"
-    )
+
+# ── TC-IV-001  Page load ───────────────────────────────────────────────────
+def test_page_loads(driver):
+    """iVault page loads with correct title and h1."""
+    assert 'iVault' in driver.title
+    assert 'iVault' in driver.find_element(By.TAG_NAME, 'h1').text
+
+
+# ── TC-IV-002  Overview stats start at zero ───────────────────────────────
+def test_overview_stats_zero(driver):
+    """All overview stats show zero on fresh DB."""
+    for stat_id in ('statNetWorth', 'statIncome', 'statExpense', 'statSavings'):
+        assert '0' in driver.find_element(By.ID, stat_id).text
+
+
+# ── TC-IV-003  Nav tabs switch sub-views ──────────────────────────────────
+def test_nav_tabs(driver):
+    """All 6 nav tabs activate the correct sub-view."""
+    for tab in ('income', 'expenses', 'budget', 'investments', 'loans'):
+        click(driver, By.CSS_SELECTOR, f'[data-sv="{tab}"]')
+        time.sleep(0.3)
+        sv = driver.find_element(By.ID, f'sv-{tab}')
+        assert 'active' in sv.get_attribute('class'), f'sv-{tab} not active'
+
+
+# ── TC-IV-004  Add income ─────────────────────────────────────────────────
+def test_add_income(driver):
+    """User can add an income record; it appears in history."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="income"]')
     time.sleep(0.3)
+    Select(driver.find_element(By.CSS_SELECTOR, '#incomeForm select[name="type"]')).select_by_visible_text('Salary')
+    fill(driver, By.CSS_SELECTOR, '#incomeForm input[name="amount"]', '50000')
+    set_date(driver, By.CSS_SELECTOR, '#incomeForm input[name="date"]', '2025-01-15')
+    driver.find_element(By.CSS_SELECTOR, '#incomeForm button[type="submit"]').click()
+    time.sleep(0.6)
+    list_text = driver.find_element(By.ID, 'incomeList').text
+    assert 'Salary' in list_text
+    assert '50,000' in list_text or '50000' in list_text
 
 
-def _click_submit_btn(driver, form_selector):
-    """Click the primary submit button inside a form."""
-    driver.execute_script(f"""
-        var form = document.querySelector('{form_selector}');
-        if(!form) return;
-        var btn = form.querySelector('button[type="submit"], button.primary, button.btn.primary');
-        if(btn) btn.click();
-    """)
-    time.sleep(0.9)
+# ── TC-IV-005  Income updates overview ────────────────────────────────────
+def test_income_updates_overview(driver):
+    """Adding income updates the monthly income stat."""
+    today = datetime.date.today().strftime('%Y-%m-%d')
+    click(driver, By.CSS_SELECTOR, '[data-sv="income"]')
+    time.sleep(0.3)
+    fill(driver, By.CSS_SELECTOR, '#incomeForm input[name="amount"]', '30000')
+    set_date(driver, By.CSS_SELECTOR, '#incomeForm input[name="date"]', today)
+    driver.find_element(By.CSS_SELECTOR, '#incomeForm button[type="submit"]').click()
+    time.sleep(0.5)
+    click(driver, By.CSS_SELECTOR, '[data-sv="overview"]')
+    time.sleep(0.5)
+    stat = driver.find_element(By.ID, 'statIncome').text
+    assert '30' in stat or '₹0' not in stat
 
 
-def _wait_form(driver, form_id, timeout=8):
-    """Wait for a dynamically-rendered inline form to appear in the DOM."""
-    WebDriverWait(driver, timeout).until(
-        lambda d: d.execute_script(
-            f"return !!document.getElementById('{form_id}');"
-        )
-    )
-    time.sleep(0.2)
+# ── TC-IV-006  Delete income ──────────────────────────────────────────────
+def test_delete_income(driver):
+    """User can delete an income record."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="income"]')
+    time.sleep(0.3)
+    fill(driver, By.CSS_SELECTOR, '#incomeForm input[name="amount"]', '1000')
+    set_date(driver, By.CSS_SELECTOR, '#incomeForm input[name="date"]', '2025-02-01')
+    driver.find_element(By.CSS_SELECTOR, '#incomeForm button[type="submit"]').click()
+    time.sleep(0.5)
+    driver.execute_script('window.confirm = () => true;')
+    driver.find_element(By.CSS_SELECTOR, '[data-idel]').click()
+    time.sleep(0.5)
+    assert 'No income' in driver.find_element(By.ID, 'incomeList').text
 
 
-def _add_bank_account(driver, name='QA Savings Bank', account_number='000012345678',
-                      account_type='Savings', initial_balance=500000):
-    """Add a bank account via the UI form in Banks & Accounts tab."""
-    nav_to(driver, 'ivault')
-    nav_sub(driver, 'banks')
+# ── TC-IV-007  Add expense with sub-category select ───────────────────────
+def test_add_expense_with_subcat(driver):
+    """Expense form shows sub-category dropdown; record saved and shown in history."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="expenses"]')
+    time.sleep(0.4)
+    cat_sel = driver.find_element(By.CSS_SELECTOR, '#expenseForm select[name="category"]')
+    Select(cat_sel).select_by_visible_text('Household')
+    time.sleep(0.4)
+    # Sub-category select should be visible and populated
+    subcat_sel = driver.find_element(By.ID, 'expSubcatSelect')
+    assert subcat_sel.is_displayed()
+    Select(subcat_sel).select_by_visible_text('Rent')
+    fill(driver, By.CSS_SELECTOR, '#expenseForm input[name="amount"]', '15000')
+    set_date(driver, By.CSS_SELECTOR, '#expenseForm input[name="date"]', '2025-01-01')
+    driver.find_element(By.CSS_SELECTOR, '#expenseForm button[type="submit"]').click()
+    time.sleep(0.6)
+    list_text = driver.find_element(By.ID, 'expenseList').text
+    assert 'Household' in list_text
+    assert 'Rent' in list_text
+
+
+# ── TC-IV-008  Expense history loads correctly ────────────────────────────
+def test_expense_history_loads(driver):
+    """Expense history shows all saved records."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="expenses"]')
+    time.sleep(0.4)
+    today = datetime.date.today().strftime('%Y-%m-%d')
+    for amount, cat in [('5000', 'Transport'), ('3000', 'Food & Personal')]:
+        Select(driver.find_element(By.CSS_SELECTOR, '#expenseForm select[name="category"]')).select_by_visible_text(cat)
+        time.sleep(0.3)
+        fill(driver, By.CSS_SELECTOR, '#expenseForm input[name="amount"]', amount)
+        set_date(driver, By.CSS_SELECTOR, '#expenseForm input[name="date"]', today)
+        driver.find_element(By.CSS_SELECTOR, '#expenseForm button[type="submit"]').click()
+        time.sleep(0.5)
+    list_text = driver.find_element(By.ID, 'expenseList').text
+    assert 'Transport' in list_text
+    assert 'Food' in list_text
+
+
+# ── TC-IV-009  Expense updates overview ───────────────────────────────────
+def test_expense_updates_overview(driver):
+    """Adding expense updates the monthly expense stat."""
+    today = datetime.date.today().strftime('%Y-%m-%d')
+    click(driver, By.CSS_SELECTOR, '[data-sv="expenses"]')
+    time.sleep(0.3)
+    fill(driver, By.CSS_SELECTOR, '#expenseForm input[name="amount"]', '5000')
+    set_date(driver, By.CSS_SELECTOR, '#expenseForm input[name="date"]', today)
+    driver.find_element(By.CSS_SELECTOR, '#expenseForm button[type="submit"]').click()
+    time.sleep(0.5)
+    click(driver, By.CSS_SELECTOR, '[data-sv="overview"]')
+    time.sleep(0.5)
+    stat = driver.find_element(By.ID, 'statExpense').text
+    assert '5' in stat or '₹0' not in stat
+
+
+# ── TC-IV-010  Expense linked to loan ────────────────────────────────────
+def test_expense_linked_to_loan(driver):
+    """Loans & Financial category shows loan picker; EMI reduces outstanding."""
+    # Add a loan first
+    click(driver, By.CSS_SELECTOR, '[data-sv="loans"]')
+    time.sleep(0.3)
+    click(driver, By.ID, 'addLoanBtn')
+    time.sleep(0.3)
+    Select(driver.find_element(By.CSS_SELECTOR, 'select[name="loanType"]')).select_by_visible_text('Personal Loan')
+    fill(driver, By.CSS_SELECTOR, 'input[name="name"]', 'Test Loan')
+    fill(driver, By.CSS_SELECTOR, 'input[name="principal"]', '100000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="outstanding"]', '100000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="emi"]', '5000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="interestRate"]', '12')
+    driver.find_element(By.CSS_SELECTOR, '#modalBody .btn.primary').click()
+    time.sleep(0.5)
+
+    # Add expense linked to loan
+    click(driver, By.CSS_SELECTOR, '[data-sv="expenses"]')
+    time.sleep(0.4)
+    Select(driver.find_element(By.CSS_SELECTOR, '#expenseForm select[name="category"]')).select_by_visible_text('Loans & Financial')
+    time.sleep(0.4)
+    # Linked select should appear
+    linked_sel = driver.find_element(By.ID, 'expLinkedSelect')
+    assert linked_sel.is_displayed()
+    Select(linked_sel).select_by_index(1)
+    fill(driver, By.CSS_SELECTOR, '#expenseForm input[name="amount"]', '5000')
+    set_date(driver, By.CSS_SELECTOR, '#expenseForm input[name="date"]', '2025-02-01')
+    driver.find_element(By.CSS_SELECTOR, '#expenseForm button[type="submit"]').click()
+    time.sleep(0.7)
+    # Paid info should appear
+    paid_info = driver.find_element(By.ID, 'expPaidInfo')
+    assert paid_info.is_displayed()
+    assert 'Test Loan' in paid_info.text or 'Paid' in paid_info.text
+
+
+# ── TC-IV-011  Loan payment history ──────────────────────────────────────
+def test_loan_payment_history(driver):
+    """After EMI payment, loan card shows Payment History section."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="loans"]')
+    time.sleep(0.3)
+    click(driver, By.ID, 'addLoanBtn')
+    time.sleep(0.3)
+    fill(driver, By.CSS_SELECTOR, 'input[name="name"]', 'History Loan')
+    fill(driver, By.CSS_SELECTOR, 'input[name="principal"]', '50000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="outstanding"]', '50000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="emi"]', '2000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="interestRate"]', '10')
+    driver.find_element(By.CSS_SELECTOR, '#modalBody .btn.primary').click()
+    time.sleep(0.5)
+
+    click(driver, By.CSS_SELECTOR, '[data-sv="expenses"]')
+    time.sleep(0.4)
+    Select(driver.find_element(By.CSS_SELECTOR, '#expenseForm select[name="category"]')).select_by_visible_text('Loans & Financial')
+    time.sleep(0.4)
+    Select(driver.find_element(By.ID, 'expLinkedSelect')).select_by_index(1)
+    fill(driver, By.CSS_SELECTOR, '#expenseForm input[name="amount"]', '2000')
+    set_date(driver, By.CSS_SELECTOR, '#expenseForm input[name="date"]', '2025-03-01')
+    driver.find_element(By.CSS_SELECTOR, '#expenseForm button[type="submit"]').click()
+    time.sleep(0.6)
+
+    click(driver, By.CSS_SELECTOR, '[data-sv="loans"]')
+    time.sleep(0.5)
+    loan_text = driver.find_element(By.ID, 'loanList').text
+    assert 'Payment History' in loan_text
+
+
+# ── TC-IV-012  Budget save and lock ──────────────────────────────────────
+def test_budget_save_and_lock(driver):
+    """Budget form locks after save; Edit button unlocks it."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="budget"]')
+    time.sleep(0.5)
+    # Fill Household budget
+    h_input = driver.find_element(By.CSS_SELECTOR, 'input[name="cat_Household"]')
+    h_input.clear()
+    h_input.send_keys('20000')
+    click(driver, By.ID, 'budgetSaveBtn')
+    time.sleep(0.5)
+    assert 'saved' in get_toast(driver).lower()
+
+    # Inputs should now be disabled
+    h_input_after = driver.find_element(By.CSS_SELECTOR, 'input[name="cat_Household"]')
+    assert not h_input_after.is_enabled(), 'Budget input should be disabled after save'
+
+    # Edit button should be visible
+    edit_btn = driver.find_element(By.ID, 'budgetEditBtn')
+    assert edit_btn.is_displayed()
+
+    # Click Edit — inputs should re-enable
+    edit_btn.click()
+    time.sleep(0.3)
+    h_input_unlocked = driver.find_element(By.CSS_SELECTOR, 'input[name="cat_Household"]')
+    assert h_input_unlocked.is_enabled(), 'Budget input should be enabled after Edit'
+
+
+# ── TC-IV-013  Budget month navigation unlocks form ───────────────────────
+def test_budget_month_navigation(driver):
+    """Prev/Next month navigation works and unlocks the form."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="budget"]')
+    time.sleep(0.5)
+    # Save to lock
+    click(driver, By.ID, 'budgetSaveBtn')
+    time.sleep(0.4)
+    initial_label = driver.find_element(By.ID, 'budgetMonthLabel').text
+
+    click(driver, By.ID, 'budgetPrev')
+    time.sleep(0.3)
+    prev_label = driver.find_element(By.ID, 'budgetMonthLabel').text
+    assert prev_label != initial_label
+    # Form should be unlocked after navigation
+    assert driver.find_element(By.CSS_SELECTOR, 'input[name="cat_Household"]').is_enabled()
+
+    click(driver, By.ID, 'budgetNext')
+    time.sleep(0.3)
+    assert driver.find_element(By.ID, 'budgetMonthLabel').text == initial_label
+
+
+# ── TC-IV-014  Budget sub-categories shown ───────────────────────────────
+def test_budget_subcategories_shown(driver):
+    """Budget form shows sub-category rows under each main category."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="budget"]')
+    time.sleep(0.5)
+    fields_html = driver.find_element(By.ID, 'budgetCategoryFields').text
+    # Check a few known sub-cats are present
+    assert 'Rent' in fields_html
+    assert 'Fuel / Petrol' in fields_html
+    assert 'Groceries' in fields_html
+
+
+# ── TC-IV-015  Add budget sub-category ───────────────────────────────────
+def test_add_budget_subcategory(driver):
+    """User can add a custom sub-category to a budget category."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="budget"]')
+    time.sleep(0.5)
+    # Click '+ Add Sub-category' for Household
+    add_btn = driver.find_element(By.CSS_SELECTOR, '[data-addsubcat="Household"]')
+    add_btn.click()
+    time.sleep(0.3)
+    fill(driver, By.CSS_SELECTOR, 'input[name="subname"]', 'Society Fee')
+    driver.find_element(By.CSS_SELECTOR, '#modalBody .btn.primary').click()
+    time.sleep(0.5)
+    assert 'Society Fee' in driver.find_element(By.ID, 'budgetCategoryFields').text
+
+
+# ── TC-IV-016  Budget vs Actual table ────────────────────────────────────
+def test_budget_actuals_shown(driver):
+    """Budget vs Actual table appears after saving budget with expenses."""
+    today = datetime.date.today().strftime('%Y-%m-%d')
+    click(driver, By.CSS_SELECTOR, '[data-sv="expenses"]')
+    time.sleep(0.3)
+    Select(driver.find_element(By.CSS_SELECTOR, '#expenseForm select[name="category"]')).select_by_visible_text('Transport')
+    time.sleep(0.3)
+    fill(driver, By.CSS_SELECTOR, '#expenseForm input[name="amount"]', '3000')
+    fill(driver, By.CSS_SELECTOR, '#expenseForm input[name="date"]', today)
+    driver.find_element(By.CSS_SELECTOR, '#expenseForm button[type="submit"]').click()
     time.sleep(0.4)
 
-    driver.execute_script(
-        "var b=document.getElementById('addBankAccountBtn'); if(b) b.click();"
-    )
-    WebDriverWait(driver, 5).until(lambda d: sheet_is_open(d))
+    click(driver, By.CSS_SELECTOR, '[data-sv="budget"]')
+    time.sleep(0.4)
+    t_input = driver.find_element(By.CSS_SELECTOR, 'input[name="cat_Transport"]')
+    t_input.clear()
+    t_input.send_keys('5000')
+    click(driver, By.ID, 'budgetSaveBtn')
+    time.sleep(0.5)
+    assert driver.find_element(By.ID, 'budgetActualsCard').is_displayed()
+
+
+# ── TC-IV-017  Add investment ─────────────────────────────────────────────
+def test_add_investment(driver):
+    """User can add an investment; it appears in the list."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="investments"]')
     time.sleep(0.3)
-
-    # Fill the form inside the modal (modal wraps a .sheet div)
-    driver.execute_script("""
-        var form = document.querySelector('#modalBody form');
-        if(!form) form = document.querySelector('.sheet form');
-        if(!form) return;
-        var set = function(name, val){
-            var el = form.querySelector('[name="' + name + '"]');
-            if(el){ el.value = val; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
-        };
-        set('name',           arguments[0]);
-        set('accountNumber',  arguments[1]);
-        set('accountType',    arguments[2]);
-        set('initialBalance', arguments[3]);
-        set('status',         'Active');
-    """, name, account_number, account_type, str(initial_balance))
-
-    # Click the submit button (triggers openModal's onSubmit handler)
-    _click_submit_btn(driver, '#modalBody form, .sheet form')
-
-
-def _get_first_bank_id(driver):
-    records = idb_get_all(driver, 'banks')
-    for r in records:
-        if isinstance(r, dict) and r.get('id'):
-            return r['id']
-    return None
-
-
-# ── Overview ───────────────────────────────────────────────────────────────────
-
-class TestOverview:
-
-    def test_TC_OVW_001_stats_elements_present(self, driver):
-        """netWorth, mIncome, mExpense, mSavings all present in iVault."""
-        nav_to(driver, 'ivault')
-        for el_id in ['netWorth', 'mIncome', 'mExpense', 'mSavings']:
-            assert driver.find_element(By.ID, el_id), f'#{el_id} missing'
-
-    def test_TC_OVW_002_all_subtabs_clickable(self, driver):
-        """All 9 iVault sub-tabs are clickable without SEVERE console errors."""
-        nav_to(driver, 'ivault')
-        subtabs = ['financeDashboard', 'income', 'expenses', 'budget',
-                   'investments', 'gold', 'loans', 'banks', 'transactions']
-        for sub in subtabs:
-            btn = driver.find_element(By.CSS_SELECTOR, f'[data-sub="{sub}"]')
-            assert btn.is_displayed(), f'Sub-tab "{sub}" not visible'
-            btn.click()
-            time.sleep(0.3)
-            assert len(get_severe_errors(driver)) == 0, \
-                f'SEVERE error after clicking sub-tab "{sub}"'
-
-
-# ── Banks & Accounts ───────────────────────────────────────────────────────────
-
-class TestBanks:
-
-    def test_TC_BNK_001_add_bank_account_via_ui(self, driver):
-        """Add Bank Account via UI — record stored in IndexedDB banks store."""
-        idb_clear(driver, 'banks')
-        _add_bank_account(driver, name='QA Savings Bank',
-                          account_number='000012345678', initial_balance=500000)
-        records = idb_get_all(driver, 'banks')
-        names = [r.get('name', '') for r in records if isinstance(r, dict)]
-        assert 'QA Savings Bank' in names, \
-            f'Bank account not found in IndexedDB. Got: {names}'
-
-    def test_TC_BNK_002_leading_zeros_preserved(self, driver):
-        """Account number 000012345678 is displayed without stripping leading zeros."""
-        idb_clear(driver, 'banks')
-        _add_bank_account(driver, account_number='000012345678')
-        reload_app(driver)
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'banks')
-        time.sleep(0.5)
-        assert '000012345678' in driver.page_source, \
-            'Leading zeros stripped from account number display'
-
-    def test_TC_BNK_003_edit_account_modal_prepopulates(self, driver):
-        """Edit button opens modal with account name pre-filled."""
-        idb_clear(driver, 'banks')
-        _add_bank_account(driver, name='QA Edit Bank')
-        reload_app(driver)
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'banks')
-        time.sleep(0.5)
-
-        driver.execute_script(
-            "var b=document.querySelector('[data-edit-bank-account]'); if(b) b.click();"
-        )
-        time.sleep(0.5)
-        name_val = driver.execute_script(
-            "var inp=document.querySelector('#modalBody form input[name=\"name\"]');"
-            "return inp ? inp.value : '';"
-        )
-        assert name_val == 'QA Edit Bank', \
-            f'Edit modal name not pre-populated. Got: "{name_val}"'
-        _close_modal(driver)
-
-    def test_TC_BNK_004_archive_account_sets_inactive(self, driver):
-        """Archive/Deactivate Account — edit account and set status to Inactive."""
-        idb_clear(driver, 'banks')
-        _add_bank_account(driver, name='QA Archive Bank')
-        reload_app(driver)
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'banks')
-        time.sleep(0.5)
-
-        # Open edit modal
-        driver.execute_script(
-            "var b=document.querySelector('[data-edit-bank-account]'); if(b) b.click();"
-        )
-        WebDriverWait(driver, 5).until(lambda d: sheet_is_open(d))
-        time.sleep(0.3)
-
-        # Set status to Inactive
-        driver.execute_script("""
-            var form = document.querySelector('#modalBody form');
-            if(!form) form = document.querySelector('.sheet form');
-            if(!form) return;
-            var sel = form.querySelector('[name="status"]');
-            if(sel){ sel.value = 'Inactive'; sel.dispatchEvent(new Event('change')); }
-        """)
-        _click_submit_btn(driver, '#modalBody form, .sheet form')
-
-        reload_app(driver)
-        records = idb_get_all(driver, 'banks')
-        archived = [r for r in records
-                    if isinstance(r, dict) and r.get('status') == 'Inactive']
-        assert len(archived) >= 1, \
-            'No Inactive bank account found after archiving'
-
-
-# ── Income ─────────────────────────────────────────────────────────────────────
-
-class TestIncome:
-
-    def test_TC_INC_001_add_income_linked_to_bank(self, driver):
-        """Add Income via UI with bank account selected — stored in IndexedDB."""
-        idb_clear(driver, 'banks')
-        idb_clear(driver, 'income')
-        _add_bank_account(driver, name='QA Income Bank', initial_balance=100000)
-        reload_app(driver)
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'income')
-        _wait_form(driver, 'incomeFinalForm')
-
-        driver.execute_script("""
-            var form = document.getElementById('incomeFinalForm');
-            var set = function(name, val){
-                var el = form.querySelector('[name="' + name + '"]');
-                if(el){ el.value = val; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
-            };
-            set('amount', '50000');
-            set('date',   '2026-08-01');
-            var sel = form.querySelector('select[name="accountId"]');
-            if(sel && sel.options.length > 1) sel.selectedIndex = 1;
-        """)
-        # Click the Save Income button (not dispatchEvent — triggers real handler)
-        _click_submit_btn(driver, '#incomeFinalForm')
-
-        records = idb_get_all(driver, 'income')
-        amounts = [r.get('amount', 0) for r in records if isinstance(r, dict)]
-        assert 50000 in amounts, \
-            f'Income 50000 not found in IndexedDB. Got: {amounts}'
-
-    def test_TC_INC_002_income_linked_to_account(self, driver):
-        """Income record has accountId set (linked to bank account)."""
-        idb_clear(driver, 'banks')
-        idb_clear(driver, 'income')
-        _add_bank_account(driver, name='QA Income Bank 2', initial_balance=100000)
-        reload_app(driver)
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'income')
-        _wait_form(driver, 'incomeFinalForm')
-
-        driver.execute_script("""
-            var form = document.getElementById('incomeFinalForm');
-            var set = function(name, val){
-                var el = form.querySelector('[name="' + name + '"]');
-                if(el){ el.value = val; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
-            };
-            set('amount', '30000');
-            set('date',   '2026-08-01');
-            var sel = form.querySelector('select[name="accountId"]');
-            if(sel && sel.options.length > 1) sel.selectedIndex = 1;
-        """)
-        _click_submit_btn(driver, '#incomeFinalForm')
-
-        records = idb_get_all(driver, 'income')
-        linked = [r for r in records if isinstance(r, dict) and r.get('accountId')]
-        assert len(linked) >= 1, \
-            'No income record has accountId set — bank account not linked'
-
-
-# ── Expenses ───────────────────────────────────────────────────────────────────
-
-class TestExpenses:
-
-    def test_TC_EXP_001_add_expense_linked_to_bank(self, driver):
-        """Add Expense via UI — expense tab opens a direct inline form (no Add button)."""
-        idb_clear(driver, 'banks')
-        idb_clear(driver, 'expenses')
-        _add_bank_account(driver, name='QA Expense Bank', initial_balance=100000)
-        reload_app(driver)
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'expenses')
-        _wait_form(driver, 'expenseFinalForm')
-
-        driver.execute_script("""
-            var form = document.getElementById('expenseFinalForm');
-            var set = function(name, val){
-                var el = form.querySelector('[name="' + name + '"]');
-                if(el){ el.value = val; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
-            };
-            set('amount', '5000');
-            set('date',   '2026-08-01');
-            var sel = form.querySelector('select[name="accountId"]');
-            if(sel && sel.options.length > 1) sel.selectedIndex = 1;
-        """)
-        _click_submit_btn(driver, '#expenseFinalForm')
-
-        records = idb_get_all(driver, 'expenses')
-        amounts = [r.get('amount', 0) for r in records if isinstance(r, dict)]
-        assert 5000 in amounts, \
-            f'Expense 5000 not found in IndexedDB. Got: {amounts}'
-
-    def test_TC_EXP_002_expense_linked_to_account(self, driver):
-        """Expense record has accountId set (linked to bank account)."""
-        idb_clear(driver, 'banks')
-        idb_clear(driver, 'expenses')
-        _add_bank_account(driver, name='QA Expense Bank 2', initial_balance=100000)
-        reload_app(driver)
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'expenses')
-        _wait_form(driver, 'expenseFinalForm')
-
-        driver.execute_script("""
-            var form = document.getElementById('expenseFinalForm');
-            var set = function(name, val){
-                var el = form.querySelector('[name="' + name + '"]');
-                if(el){ el.value = val; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
-            };
-            set('amount', '2000');
-            set('date',   '2026-08-01');
-            var sel = form.querySelector('select[name="accountId"]');
-            if(sel && sel.options.length > 1) sel.selectedIndex = 1;
-        """)
-        _click_submit_btn(driver, '#expenseFinalForm')
-
-        records = idb_get_all(driver, 'expenses')
-        linked = [r for r in records if isinstance(r, dict) and r.get('accountId')]
-        assert len(linked) >= 1, \
-            'No expense record has accountId set — bank account not linked'
-
-
-# ── Budget ─────────────────────────────────────────────────────────────────────
-
-class TestBudget:
-
-    def test_TC_BUD_001_section_renders(self, driver):
-        """Budget section renders without SEVERE errors."""
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'budget')
-        time.sleep(0.5)
-        assert driver.find_element(By.ID, 'budget')
-        assert len(get_severe_errors(driver)) == 0
-
-    def test_TC_BUD_002_save_budget_stored_in_idb(self, driver):
-        """Save Budget for current month — record stored in IndexedDB budgets store."""
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'budget')
-        time.sleep(0.5)
-
-        driver.execute_script("""
-            var form = document.getElementById('budgetPlanner');
-            if(!form) return;
-            var inp = form.querySelector('input[name="cat_Household"]');
-            if(inp){ inp.value = '15000'; inp.dispatchEvent(new Event('input')); }
-        """)
-        _click_submit_btn(driver, '#budgetPlanner')
-
-        records = idb_get_all(driver, 'budgets')
-        assert len(records) >= 1, 'No budget record found in IndexedDB after save'
-        for r in records:
-            if isinstance(r, dict) and r.get('month'):
-                m = r['month']
-                assert len(m) == 7 and m[4] == '-', f'Bad month format: {m}'
-
-
-# ── Transactions ───────────────────────────────────────────────────────────────
-
-class TestTransactions:
-
-    def test_TC_TXN_001_section_renders(self, driver):
-        """Transactions section renders without SEVERE errors."""
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'transactions')
-        time.sleep(0.4)
-        assert driver.find_element(By.ID, 'transactions')
-        assert len(get_severe_errors(driver)) == 0
-
-    def test_TC_TXN_002_transaction_created_with_income(self, driver):
-        """Saving income with a bank account auto-creates a transaction record."""
-        idb_clear(driver, 'banks')
-        idb_clear(driver, 'income')
-        idb_clear(driver, 'transactions')
-        _add_bank_account(driver, name='QA TXN Bank', initial_balance=100000)
-        reload_app(driver)
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'income')
-        _wait_form(driver, 'incomeFinalForm')
-
-        driver.execute_script("""
-            var form = document.getElementById('incomeFinalForm');
-            var set = function(name, val){
-                var el = form.querySelector('[name="' + name + '"]');
-                if(el){ el.value = val; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
-            };
-            set('amount', '40000');
-            set('date',   '2026-08-01');
-            var sel = form.querySelector('select[name="accountId"]');
-            if(sel && sel.options.length > 1) sel.selectedIndex = 1;
-        """)
-        _click_submit_btn(driver, '#incomeFinalForm')
-
-        txns = idb_get_all(driver, 'transactions')
-        assert len(txns) >= 1, \
-            'No transaction record created after saving income with bank account'
-
-    def test_TC_TXN_004_transaction_created_with_expense(self, driver):
-        """Saving expense with a bank account auto-creates a transaction record."""
-        idb_clear(driver, 'banks')
-        idb_clear(driver, 'expenses')
-        idb_clear(driver, 'transactions')
-        _add_bank_account(driver, name='QA EXP TXN Bank', initial_balance=100000)
-        reload_app(driver)
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'expenses')
-        _wait_form(driver, 'expenseFinalForm')
-
-        driver.execute_script("""
-            var form = document.getElementById('expenseFinalForm');
-            var set = function(name, val){
-                var el = form.querySelector('[name="' + name + '"]');
-                if(el){ el.value = val; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
-            };
-            set('amount', '3000');
-            set('date',   '2026-08-01');
-            var sel = form.querySelector('select[name="accountId"]');
-            if(sel && sel.options.length > 1) sel.selectedIndex = 1;
-        """)
-        _click_submit_btn(driver, '#expenseFinalForm')
-
-        txns = idb_get_all(driver, 'transactions')
-        assert len(txns) >= 1, \
-            'No transaction record created after saving expense with bank account'
-
-    def test_TC_TXN_005_transaction_created_with_fd(self, driver):
-        """Saving FD with paidFromAccountId auto-creates a transaction record."""
-        from conftest import idb_put
-        idb_clear(driver, 'banks')
-        idb_clear(driver, 'investments')
-        idb_clear(driver, 'transactions')
-        _add_bank_account(driver, name='QA FD TXN Bank', initial_balance=500000)
-        reload_app(driver)
-
-        # Import investment helpers inline
-        from test_investments import (
-            _open_add_investment_form, _set_investment_field,
-            _select_first_account, _submit_investment_form,
-        )
-        _open_add_investment_form(driver, 'fd')
-        _set_investment_field(driver, 'bankName', 'QA FD TXN Bank')
-        _set_investment_field(driver, 'principal', '25000')
-        _set_investment_field(driver, 'interestRate', '7')
-        _set_investment_field(driver, 'tenureMonths', '12')
-        _set_investment_field(driver, 'startDate', '2026-01-01')
-        _select_first_account(driver, 'paidFromAccountId')
-        _submit_investment_form(driver)
-
-        txns = idb_get_all(driver, 'transactions')
-        assert len(txns) >= 1, \
-            'No transaction record created after saving FD with paidFromAccountId'
-
-    def test_TC_TXN_003_csv_export_button_present(self, driver):
-        """Download CSV button is present in Transactions tab."""
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'transactions')
-        time.sleep(0.4)
-        has_csv = driver.execute_script("""
-            var btns = Array.from(document.querySelectorAll('button'));
-            return btns.some(b => b.textContent.toLowerCase().includes('csv'));
-        """)
-        assert has_csv, 'Download CSV button not found in Transactions tab'
-
-
-# ── Loans ──────────────────────────────────────────────────────────────────────
-
-class TestLoans:
-
-    def test_TC_LNS_001_add_loan_via_ui(self, driver):
-        """Add Loan via UI — record stored in IndexedDB loans store."""
-        idb_clear(driver, 'loans')
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'loans')
-        time.sleep(0.4)
-
-        driver.execute_script(
-            "var b=document.getElementById('addLoanV1Btn'); if(b) b.click();"
-        )
-        WebDriverWait(driver, 5).until(lambda d: sheet_is_open(d))
-        time.sleep(0.3)
-
-        driver.execute_script("""
-            var form = document.getElementById('loanV1Form');
-            if(!form) return;
-            var set = function(name, val){
-                var el = form.querySelector('[name="' + name + '"]');
-                if(el){ el.value = val; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
-            };
-            set('lender',    'QA Test Bank');
-            set('principal', '200000');
-            set('interest',  '10.5');
-            set('emi',       '4500');
-            set('tenure',    '60');
-            set('emisPaid',  '0');
-        """)
-        _click_submit_btn(driver, '#loanV1Form')
-
-        records = idb_get_all(driver, 'loans')
-        lenders = [r.get('lender', '') for r in records if isinstance(r, dict)]
-        assert 'QA Test Bank' in lenders, \
-            f'Loan not found in IndexedDB. Got lenders: {lenders}'
-
-    def test_TC_LNS_002_loan_outstanding_shown(self, driver):
-        """Loans list renders loan name after adding — list renders x.name field."""
-        idb_clear(driver, 'loans')
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'loans')
-        time.sleep(0.4)
-
-        driver.execute_script(
-            "var b=document.getElementById('addLoanV1Btn'); if(b) b.click();"
-        )
-        WebDriverWait(driver, 5).until(lambda d: sheet_is_open(d))
-        time.sleep(0.3)
-
-        driver.execute_script("""
-            var form = document.getElementById('loanV1Form');
-            if(!form) return;
-            var set = function(name, val){
-                var el = form.querySelector('[name="' + name + '"]');
-                if(el){ el.value = val; el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
-            };
-            set('name',      'QA Home Loan');  // loan list renders x.name, not x.lender
-            set('lender',    'QA Outstanding Bank');
-            set('principal', '100000');
-            set('interest',  '9');
-            set('emi',       '2000');
-            set('tenure',    '60');
-            set('emisPaid',  '5');
-        """)
-        _click_submit_btn(driver, '#loanV1Form')
-
-        nav_to(driver, 'ivault')
-        nav_sub(driver, 'loans')
-        time.sleep(0.5)
-        assert 'QA Home Loan' in driver.page_source, \
-            'Loan name not visible in loans list — list renders x.name field'
-
-    def test_TC_LNS_003_settled_loan_status(self, driver):
-        """Loan with status Settled stored correctly in IndexedDB."""
-        idb_put(driver, 'loans', {
-            'id': 'qa-loan-settled-001',
-            'loanType': 'Personal Loan',
-            'lender': 'QA Settled Bank',
-            'principal': 100000,
-            'interest': 9,
-            'emi': 2000,
-            'tenure': 60,
-            'emisPaid': 60,
-            'status': 'Settled',
-            'createdAt': '2024-01-01T00:00:00.000Z',
-            'updatedAt': '2024-01-01T00:00:00.000Z',
-        })
-        reload_app(driver)
-        records = idb_get_all(driver, 'loans')
-        settled = next(
-            (r for r in records if isinstance(r, dict) and r.get('status') == 'Settled'),
-            None
-        )
-        assert settled is not None, 'No Settled loan found in IndexedDB'
+    click(driver, By.ID, 'addInvBtn')
+    time.sleep(0.3)
+    Select(driver.find_element(By.CSS_SELECTOR, '#modalBody select[name="type"]')).select_by_visible_text('FD')
+    fill(driver, By.CSS_SELECTOR, '#modalBody input[name="name"]', 'SBI FD')
+    fill(driver, By.CSS_SELECTOR, '#modalBody input[name="provider"]', 'SBI')
+    fill(driver, By.CSS_SELECTOR, '#modalBody input[name="currentValue"]', '100000')
+    fill(driver, By.CSS_SELECTOR, '#modalBody input[name="interestRate"]', '7')
+    driver.find_element(By.CSS_SELECTOR, '#modalBody .btn.primary').click()
+    time.sleep(0.5)
+    assert 'SBI FD' in driver.find_element(By.ID, 'invList').text
+
+
+# ── TC-IV-018  Investment linked to expense ───────────────────────────────
+def test_expense_linked_to_investment(driver):
+    """Savings & Investments category shows investment picker; top-up applied."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="investments"]')
+    time.sleep(0.3)
+    click(driver, By.ID, 'addInvBtn')
+    time.sleep(0.3)
+    Select(driver.find_element(By.CSS_SELECTOR, '#modalBody select[name="type"]')).select_by_visible_text('RD')
+    fill(driver, By.CSS_SELECTOR, '#modalBody input[name="name"]', 'My RD')
+    fill(driver, By.CSS_SELECTOR, '#modalBody input[name="currentValue"]', '10000')
+    driver.find_element(By.CSS_SELECTOR, '#modalBody .btn.primary').click()
+    time.sleep(0.5)
+
+    click(driver, By.CSS_SELECTOR, '[data-sv="expenses"]')
+    time.sleep(0.4)
+    Select(driver.find_element(By.CSS_SELECTOR, '#expenseForm select[name="category"]')).select_by_visible_text('Savings & Investments')
+    time.sleep(0.4)
+    linked_sel = driver.find_element(By.ID, 'expLinkedSelect')
+    assert linked_sel.is_displayed()
+    Select(linked_sel).select_by_index(1)
+    fill(driver, By.CSS_SELECTOR, '#expenseForm input[name="amount"]', '2000')
+    set_date(driver, By.CSS_SELECTOR, '#expenseForm input[name="date"]', '2025-04-01')
+    driver.find_element(By.CSS_SELECTOR, '#expenseForm button[type="submit"]').click()
+    time.sleep(0.6)
+    paid_info = driver.find_element(By.ID, 'expPaidInfo')
+    assert paid_info.is_displayed()
+    assert 'My RD' in paid_info.text or 'Added' in paid_info.text
+
+
+# ── TC-IV-019  Add loan ───────────────────────────────────────────────────
+def test_add_loan(driver):
+    """User can add a loan; it appears in the list."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="loans"]')
+    time.sleep(0.3)
+    click(driver, By.ID, 'addLoanBtn')
+    time.sleep(0.3)
+    Select(driver.find_element(By.CSS_SELECTOR, 'select[name="loanType"]')).select_by_visible_text('Personal Loan')
+    fill(driver, By.CSS_SELECTOR, 'input[name="name"]', 'HDFC Loan')
+    fill(driver, By.CSS_SELECTOR, 'input[name="principal"]', '200000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="interestRate"]', '12')
+    fill(driver, By.CSS_SELECTOR, 'input[name="outstanding"]', '180000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="emi"]', '5000')
+    driver.find_element(By.CSS_SELECTOR, '#modalBody .btn.primary').click()
+    time.sleep(0.5)
+    assert 'HDFC Loan' in driver.find_element(By.ID, 'loanList').text
+
+
+# ── TC-IV-020  Net worth reflects investments minus loans ─────────────────
+def test_net_worth_calculation(driver):
+    """Net worth = investments + cash savings - loan liabilities."""
+    # Add investment
+    click(driver, By.CSS_SELECTOR, '[data-sv="investments"]')
+    time.sleep(0.3)
+    click(driver, By.ID, 'addInvBtn')
+    time.sleep(0.3)
+    Select(driver.find_element(By.CSS_SELECTOR, '#modalBody select[name="type"]')).select_by_visible_text('PPF')
+    fill(driver, By.CSS_SELECTOR, '#modalBody input[name="name"]', 'PPF')
+    fill(driver, By.CSS_SELECTOR, '#modalBody input[name="currentValue"]', '500000')
+    driver.find_element(By.CSS_SELECTOR, '#modalBody .btn.primary').click()
+    time.sleep(0.5)
+    # Add loan
+    click(driver, By.CSS_SELECTOR, '[data-sv="loans"]')
+    time.sleep(0.3)
+    click(driver, By.ID, 'addLoanBtn')
+    time.sleep(0.3)
+    fill(driver, By.CSS_SELECTOR, 'input[name="name"]', 'Car Loan')
+    fill(driver, By.CSS_SELECTOR, 'input[name="principal"]', '300000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="outstanding"]', '200000')
+    driver.find_element(By.CSS_SELECTOR, '#modalBody .btn.primary').click()
+    time.sleep(0.5)
+    click(driver, By.CSS_SELECTOR, '[data-sv="overview"]')
+    time.sleep(0.5)
+    nw_text = driver.find_element(By.ID, 'statNetWorth').text
+    # Net worth should be positive (500000 - 200000 = 300000)
+    assert '0' not in nw_text or '3,00,000' in nw_text or '300' in nw_text
+
+
+# ── TC-IV-021  Settings panel opens and saves ─────────────────────────────
+def test_settings_panel(driver):
+    """Settings panel opens, name can be saved."""
+    open_settings(driver)
+    time.sleep(0.3)
+    panel = driver.find_element(By.ID, 'settingsPanel')
+    assert 'open' in panel.get_attribute('class')
+    name_input = driver.find_element(By.ID, 'spName')
+    name_input.clear()
+    name_input.send_keys('Finance User')
+    driver.find_element(By.ID, 'spSave').click()
+    time.sleep(0.5)
+    assert 'saved' in get_toast(driver).lower()
+
+
+# ── TC-IV-022  Export JSON via settings panel ─────────────────────────────
+def test_export_json(driver):
+    """Export JSON via settings panel does not produce an error toast."""
+    open_settings(driver)
+    time.sleep(0.3)
+    driver.find_element(By.ID, 'spIvExportBtn').click()
+    time.sleep(1)
+    assert 'failed' not in get_toast(driver).lower()
+
+
+# ── TC-IV-023  Reminder add from bell panel ───────────────────────────────
+def test_reminder_add(driver):
+    """Reminder can be added from the bell panel."""
+    click(driver, By.ID, 'bellReminderBtn')
+    time.sleep(0.3)
+    click(driver, By.ID, 'floatingAddReminderBtn')
+    fill(driver, By.CSS_SELECTOR, '#bellReminderForm input[name="title"]', 'EMI Due')
+    fill(driver, By.CSS_SELECTOR, '#bellReminderForm input[name="date"]', '2099-03-01')
+    driver.find_element(By.CSS_SELECTOR, '#bellReminderForm button[type="submit"]').click()
+    time.sleep(0.5)
+    assert 'EMI Due' in driver.find_element(By.ID, 'bellRemList').text
+
+
+# ── TC-IV-024  Loan auto-reminder created ────────────────────────────────
+def test_loan_auto_reminder(driver):
+    """Adding a loan with a due date auto-creates a reminder."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="loans"]')
+    time.sleep(0.3)
+    click(driver, By.ID, 'addLoanBtn')
+    time.sleep(0.3)
+    fill(driver, By.CSS_SELECTOR, 'input[name="name"]', 'Reminder Loan')
+    fill(driver, By.CSS_SELECTOR, 'input[name="principal"]', '50000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="outstanding"]', '50000')
+    fill(driver, By.CSS_SELECTOR, 'input[name="dueDate"]', '2099-05-01')
+    driver.find_element(By.CSS_SELECTOR, '#modalBody .btn.primary').click()
+    time.sleep(0.5)
+    # Bell badge should show at least 1
+    badge = driver.find_element(By.ID, 'bellReminderBadge')
+    assert badge.is_displayed()
+    assert int(badge.text or '0') >= 1
+
+
+# ── TC-IV-025  Money values are rounded (no decimals) ────────────────────
+def test_money_rounded(driver):
+    """All displayed money values are whole numbers (no .xx decimals)."""
+    click(driver, By.CSS_SELECTOR, '[data-sv="income"]')
+    time.sleep(0.3)
+    fill(driver, By.CSS_SELECTOR, '#incomeForm input[name="amount"]', '12345')
+    set_date(driver, By.CSS_SELECTOR, '#incomeForm input[name="date"]', '2025-01-01')
+    driver.find_element(By.CSS_SELECTOR, '#incomeForm button[type="submit"]').click()
+    time.sleep(0.5)
+    click(driver, By.CSS_SELECTOR, '[data-sv="overview"]')
+    time.sleep(0.4)
+    income_text = driver.find_element(By.ID, 'statIncome').text
+    assert '.' not in income_text, f'Expected no decimal in: {income_text}'
