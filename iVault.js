@@ -21,6 +21,7 @@ let _currentSV = 'overview';
 let _budgetMonth = new Date().toISOString().slice(0,7);
 
 let _budgetLocked = false;
+let _budgetEditMode = false; // true only when user explicitly clicks Edit
 
 /* ===== Boot ===== */
 (async () => {
@@ -258,74 +259,82 @@ async function populateExpLinked(category) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Wire category change on expense form
-  const catSel = document.querySelector('#expenseForm [name="category"]');
-  catSel?.addEventListener('change', () => populateExpLinked(catSel.value));
 
-  $('budgetEditBtn')?.addEventListener('click', () => {
-    _budgetLocked = false;
-    $('budgetEditBtn').style.display = 'none';
-    renderBudget();
-  });
+// Wire directly -- script runs at end of body so DOM is already parsed
+const _expCatSel = document.querySelector('#expenseForm [name="category"]');
+_expCatSel?.addEventListener('change', () => populateExpLinked(_expCatSel.value));
+if (_expCatSel) populateExpLinked(_expCatSel.value);
 
-  $('incomeForm')?.addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const amount = Number(fd.get('amount'));
-    if (amount <= 0) { toast('Enter a valid amount', true); return; }
-    await putOne('income', { id: uid(), type: fd.get('type'), amount, date: fd.get('date') || today(), note: fd.get('note') || '', createdAt: new Date().toISOString() });
-    await logActivity('Income','Income saved');
-    toast('Income saved'); e.currentTarget.reset();
-    await renderIncome(); await renderOverview();
-  });
-
-  $('expenseForm')?.addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const amount = Number(fd.get('amount'));
-    if (amount <= 0) { toast('Enter a valid amount', true); return; }
-    const category = fd.get('category') || '';
-    const linkedId = fd.get('linkedId') || '';
-    const date = fd.get('date') || today();
-    let subcategory = fd.get('subcategory') || '';
-    let paidMsg = '';
-    if (category === 'Loans & Financial' && linkedId) {
-      const loan = await getOne('loans', linkedId);
-      if (loan) {
-        subcategory = loan.name || loan.loanType;
-        await reduceLoanOutstanding(loan, amount, date);
-        paidMsg = `Paid ${money(amount, state.settings.currency)} toward "${subcategory}" on ${date}`;
-      }
-    } else if (category === 'Savings & Investments' && linkedId) {
-      const inv = await getOne('investments', linkedId);
-      if (inv) {
-        subcategory = inv.name || inv.type;
-        inv.currentValue = (Number(inv.currentValue) || 0) + amount;
-        await putOne('investments', inv);
-        await logActivity('Investment', `Top-up: ${money(amount, state.settings.currency)} added to ${inv.name}`);
-        paidMsg = `Added ${money(amount, state.settings.currency)} to "${subcategory}" on ${date}`;
-      }
-    }
-
-    await putOne('expenses', { id: uid(), category, subcategory, amount, date, note: fd.get('note') || '', createdAt: new Date().toISOString() });
-    await logActivity('Expense', 'Expense saved');
-
-    if (paidMsg) {
-      const info = $('expPaidInfo');
-      if (info) { info.textContent = '✅ ' + paidMsg; info.style.display = ''; }
-      toast(paidMsg);
-    } else {
-      toast('Expense saved');
-    }
-
-    e.currentTarget.reset();
-    $('expSubcatLabel').style.display = '';
-    $('expLinkedLabel').style.display = 'none';
-    await populateExpLinked('Household'); // reset subcats to default category
-    await renderExpenses(); await renderOverview();
-  });
+$('budgetEditBtn').addEventListener('click', () => {
+  _budgetLocked = false;
+  _budgetEditMode = true;
+  $('budgetEditBtn').style.display = 'none';
+  renderBudget();
 });
+
+$('incomeForm').onsubmit = async e => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const fd = new FormData(form);
+  const amount = Number(fd.get('amount'));
+  if (amount <= 0) { toast('Enter a valid amount', true); return; }
+  await putOne('income', { id: uid(), type: fd.get('type'), amount, date: fd.get('date') || today(), note: fd.get('note') || '', createdAt: new Date().toISOString() });
+  await logActivity('Income', 'Income saved');
+  toast('Income saved');
+  form.querySelector('[name="amount"]').value = '';
+  form.querySelector('[name="note"]').value = '';
+  form.querySelector('[name="date"]').value = today();
+  await renderIncome(); await renderOverview();
+};
+
+$('expenseForm').onsubmit = async e => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const fd = new FormData(form);
+  const amount = Number(fd.get('amount'));
+  if (amount <= 0) { toast('Enter a valid amount', true); return; }
+  const category = fd.get('category') || '';
+  const linkedId = fd.get('linkedId') || '';
+  const date = fd.get('date') || today();
+  let subcategory = fd.get('subcategory') || '';
+  let paidMsg = '';
+  if (category === 'Loans & Financial' && linkedId) {
+    const loan = await getOne('loans', linkedId);
+    if (loan) {
+      subcategory = loan.name || loan.loanType;
+      await reduceLoanOutstanding(loan, amount, date);
+      paidMsg = `Paid ${money(amount, state.settings.currency)} toward "${subcategory}" on ${date}`;
+    }
+  } else if (category === 'Savings & Investments' && linkedId) {
+    const inv = await getOne('investments', linkedId);
+    if (inv) {
+      subcategory = inv.name || inv.type;
+      inv.currentValue = (Number(inv.currentValue) || 0) + amount;
+      await putOne('investments', inv);
+      await logActivity('Investment', `Top-up: ${money(amount, state.settings.currency)} added to ${inv.name}`);
+      paidMsg = `Added ${money(amount, state.settings.currency)} to "${subcategory}" on ${date}`;
+    }
+  }
+  await putOne('expenses', { id: uid(), category, subcategory, amount, date, note: fd.get('note') || '', createdAt: new Date().toISOString() });
+  await logActivity('Expense', 'Expense saved');
+  if (paidMsg) {
+    const info = $('expPaidInfo');
+    if (info) { info.textContent = '✅ ' + paidMsg; info.style.display = ''; }
+    toast(paidMsg);
+  } else {
+    toast('Expense saved');
+  }
+  form.querySelector('[name="amount"]').value = '';
+  form.querySelector('[name="note"]').value = '';
+  form.querySelector('[name="date"]').value = today();
+  $('expSubcatLabel').style.display = '';
+  $('expLinkedLabel').style.display = 'none';
+  const _ec2 = form.querySelector('[name="category"]');
+  if (_ec2) { _ec2.value = 'Household'; await populateExpLinked('Household'); }
+  await renderExpenses(); await renderOverview();
+};
+
+
 
 async function reduceLoanOutstanding(loan, emiAmount, date) {
   const N = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
@@ -393,6 +402,10 @@ async function renderBudget() {
   const rec = bud.find(b => b.month === month);
   const cats = rec?.categories || {};
 
+  // Lock if a saved record exists and user hasn't explicitly clicked Edit
+  if (rec && !_budgetEditMode) _budgetLocked = true;
+  else if (!rec) _budgetLocked = false;
+
   $('budgetCategoryFields').innerHTML = BUDGET_CATS.map(c => {
     const safeId = c.replace(/[^a-z0-9]/gi, '_');
     const subs = getSubcats(c);
@@ -431,6 +444,9 @@ async function renderBudget() {
     $('budgetCategoryFields').querySelectorAll('button').forEach(el => el.disabled = true);
     if (budgetEditBtn) budgetEditBtn.style.display = 'inline-flex';
   } else {
+    $('budgetForm').querySelectorAll('input[type="number"]').forEach(el => el.disabled = false);
+    $('budgetForm').querySelector('button[type="submit"]').disabled = false;
+    $('budgetCategoryFields').querySelectorAll('button').forEach(el => el.disabled = false);
     if (budgetEditBtn) budgetEditBtn.style.display = 'none';
   }
 
@@ -526,6 +542,7 @@ $('budgetForm').onsubmit = async e => {
   await logActivity('Budget', 'Budget saved for ' + month);
   toast('Budget saved');
   _budgetLocked = true;
+  _budgetEditMode = false;
   await renderBudget(); await renderOverview();
 };
 
@@ -534,6 +551,7 @@ $('budgetPrev').onclick = () => {
   d.setMonth(d.getMonth() - 1);
   _budgetMonth = d.toISOString().slice(0, 7);
   _budgetLocked = false;
+  _budgetEditMode = false;
   renderBudget();
 };
 $('budgetNext').onclick = () => {
@@ -541,6 +559,7 @@ $('budgetNext').onclick = () => {
   d.setMonth(d.getMonth() + 1);
   _budgetMonth = d.toISOString().slice(0, 7);
   _budgetLocked = false;
+  _budgetEditMode = false;
   renderBudget();
 };
 

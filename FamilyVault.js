@@ -99,7 +99,7 @@ async function refreshFamily() {
       const panel = $('familySubPanel');
       const wasActive = tile.classList.contains('active');
       document.querySelectorAll('.family-tile').forEach(t => t.classList.remove('active'));
-      if (wasActive) { panel.style.display = 'none'; _activeTile = null; return; }
+      if (wasActive) { tile.classList.add('active'); panel.style.display = 'block'; showTileContent(type); return; }
       tile.classList.add('active');
       panel.style.display = 'block';
       _activeTile = type;

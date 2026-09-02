@@ -31,60 +31,42 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      # 3. FIND VAULTONE.HTML
-      - name: Find VaultOne HTML
-        id: find-html
+      # 3. VALIDATE MODULAR APP FILES
+      - name: Validate modular app files
         shell: bash
         run: |
           set -e
-          HTML_FILE=""
-          if [ -f "./VaultOne.html" ]; then
-            HTML_FILE="VaultOne.html"
-          else
-            HTML_FILE=$(find . \
-              -type f -name "VaultOne.html" \
-              -not -path "./.git/*" \
-              -not -path "./node_modules/*" \
-              -not -path "./dist/*" \
-              | head -n 1 || true)
-            HTML_FILE="${HTML_FILE#./}"
-          fi
-          if [ -z "$HTML_FILE" ]; then
-            echo "ERROR: VaultOne.html not found."
-            find . -type f \( -iname "*.html" -o -iname "*.htm" \) \
-              -not -path "./.git/*" -not -path "./node_modules/*" -print || true
-            exit 1
-          fi
-          echo "Found: $HTML_FILE"
-          echo "html_file=$HTML_FILE" >> "$GITHUB_OUTPUT"
+          for f in index.html shared.js shared.css \
+                    sw.js VaultOne.png \
+                    iVault.html iVault.js \
+                    FamilyVault.html FamilyVault.js \
+                    PasswordVault.html PasswordVault.js; do
+            if [ ! -f "$f" ]; then
+              echo "ERROR: Required file missing: $f"
+              exit 1
+            fi
+            echo "OK: $f ($(wc -c < "$f") bytes)"
+          done
 
-      # 4. VALIDATE VAULTONE.HTML
-      - name: Validate VaultOne HTML
-        shell: bash
-        run: |
-          set -e
-          HTML_FILE="${{ steps.find-html.outputs.html_file }}"
-          FILE_SIZE=$(wc -c < "$HTML_FILE")
-          echo "HTML size: ${FILE_SIZE} bytes"
-          if [ "$FILE_SIZE" -lt 100 ]; then
-            echo "ERROR: VaultOne.html appears empty or invalid."
-            exit 1
-          fi
-
-      # 5. CREATE ELECTRON PROJECT STRUCTURE
+      # 4. CREATE ELECTRON PROJECT STRUCTURE
       - name: Create Electron project structure
         shell: bash
         run: mkdir -p assets build
 
-      # 6. COPY VAULTONE.HTML INTO ASSETS
+      # 5. COPY ALL MODULAR APP FILES INTO ASSETS
       - name: Copy VaultOne web application
         shell: bash
         run: |
           set -e
-          cp "${{ steps.find-html.outputs.html_file }}" "assets/VaultOne.html"
+          cp index.html shared.js shared.css \
+             sw.js VaultOne.png \
+             iVault.html iVault.js \
+             FamilyVault.html FamilyVault.js \
+             PasswordVault.html PasswordVault.js \
+             assets/
           ls -lh assets/
 
-      # 7. PREPARE APP ICON
+      # 6. PREPARE APP ICON
       - name: Prepare app icon
         shell: bash
         run: |
@@ -108,7 +90,7 @@ jobs:
           $json = @'
           {
             "name": "vaultone-desktop",
-            "version": "1.0.0",
+            "version": "2.0.0",
             "description": "VaultOne - Offline personal vault desktop app",
             "main": "main.js",
             "private": true,
@@ -229,7 +211,7 @@ jobs:
             });
 
             mainWindow.setMenuBarVisibility(false);
-            mainWindow.loadURL('app://vaultone/VaultOne.html');
+            mainWindow.loadURL('app://vaultone/index.html');
 
             mainWindow.on('closed', () => {
               mainWindow = null;
@@ -300,7 +282,7 @@ jobs:
           const { contextBridge, ipcRenderer } = require('electron');
 
           /*
-           * Exposed as window.VaultOneBridge inside VaultOne.html's renderer.
+           * Exposed as window.VaultOneBridge inside the renderer pages.
            * VaultOne's bridge detection looks for this exact global, so Export,
            * Import, and Link JSON work natively with no HTML changes needed.
            */

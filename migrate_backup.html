@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VaultOne Backup Migrator</title>
+<style>
+  body { font-family: sans-serif; background: #07111f; color: #e2e8f0; max-width: 560px; margin: 60px auto; padding: 0 20px; }
+  h2 { color: #a78bfa; }
+  .card { background: #0e1a2c; border: 1px solid #1e3a5f; border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+  label { display: block; margin-bottom: 14px; font-size: 14px; color: #94a3b8; }
+  input[type=file] { display: block; margin-top: 6px; color: #e2e8f0; }
+  button { background: #5b5fef; color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-size: 14px; cursor: pointer; margin-right: 8px; margin-top: 8px; }
+  button:disabled { opacity: .4; cursor: default; }
+  .status { margin-top: 16px; font-size: 13px; line-height: 1.7; }
+  .ok  { color: #4ade80; }
+  .err { color: #f87171; }
+  .dl  { color: #60a5fa; }
+</style>
+</head>
+<body>
+<h2>🔐 VaultOne Backup Migrator</h2>
+<p style="color:#94a3b8;font-size:14px">Converts an old single-file VaultOne backup into the 3 separate backups needed by the new modular app (iVault, FamilyVault, PasswordVault).</p>
+
+<div class="card">
+  <label>Select your old backup JSON file
+    <input type="file" id="fileInput" accept=".json">
+  </label>
+  <button id="migrateBtn" disabled>Convert &amp; Download</button>
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const migrateBtn = document.getElementById('migrateBtn');
+const statusEl = document.getElementById('status');
+
+fileInput.onchange = () => { migrateBtn.disabled = !fileInput.files.length; statusEl.innerHTML = ''; };
+
+migrateBtn.onclick = async () => {
+  statusEl.innerHTML = '';
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+  } catch (e) {
+    statusEl.innerHTML = `<span class="err">❌ Could not parse JSON: ${e.message}</span>`;
+    return;
+  }
+
+  const log = (msg, cls = '') => { statusEl.innerHTML += `<div class="${cls}">${msg}</div>`; };
+
+  log('✅ File loaded: ' + file.name, 'ok');
+  log(`Schema version: ${data.schemaVersion ?? data.version ?? '?'}`);
+
+  // Helper: wrap a plain object as a single-element array for importJSON
+  const toMetaArr = obj => {
+    if (Array.isArray(obj)) return obj;
+    if (obj && Object.keys(obj).length) return [{ id: 'settings', ...obj }];
+    return [];
+  };
+  const metaRec = data.meta ?? data.settings ?? {};
+  const metaArr = toMetaArr(metaRec);
+
+  // ── iVault backup ──────────────────────────────────────────────────────────
+  // IV_STORES = ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes']
+  const iVault = { app: 'iVault', exportedAt: new Date().toISOString() };
+  iVault.meta        = metaArr;
+  iVault.income      = Array.isArray(data.income)      ? data.income      : [];
+  iVault.expenses    = Array.isArray(data.expenses)    ? data.expenses    : [];
+  iVault.budgets     = Array.isArray(data.budgets)     ? data.budgets     : [];
+  iVault.investments = Array.isArray(data.investments) ? data.investments : [];
+  iVault.loans       = Array.isArray(data.loans)       ? data.loans       : [];
+  iVault.reminders   = Array.isArray(data.reminders)   ? data.reminders   : [];
+  iVault.activity    = Array.isArray(data.activity)    ? data.activity    : [];
+  iVault.notes       = [];
+  const iCount = Object.values(iVault).filter(Array.isArray).reduce((a,b) => a + b.length, 0);
+  log(`iVault: ${iCount} records (income/expenses/budgets/investments/loans/reminders/activity)`);
+  // Note: gold, goldRates, banks, transactions from old backup are not in iVaultDB — skipped
+  const skipped = ['gold','goldRates','banks','transactions'].filter(s => Array.isArray(data[s]) && data[s].length);
+  if (skipped.length) log(`⚠️ Skipped (no store in new app): ${skipped.map(s => s + '(' + data[s].length + ')').join(', ')}`, 'err');
+
+  // ── FamilyVault backup ─────────────────────────────────────────────────────
+  // FV_STORES = ['meta','persons','households','vehicles','documents','reminders','activity','notes']
+  const familyVault = { app: 'FamilyVault', exportedAt: new Date().toISOString() };
+  familyVault.meta       = [];
+  familyVault.persons    = Array.isArray(data.persons)    ? data.persons    : [];
+  familyVault.households = Array.isArray(data.households) ? data.households : [];
+  familyVault.vehicles   = Array.isArray(data.vehicles)   ? data.vehicles   : [];
+  familyVault.documents  = Array.isArray(data.documents)  ? data.documents  : [];
+  familyVault.reminders  = [];
+  familyVault.activity   = [];
+  familyVault.notes      = [];
+  const fCount = Object.values(familyVault).filter(Array.isArray).reduce((a,b) => a + b.length, 0);
+  log(`FamilyVault: ${fCount} records (persons/households/vehicles/documents)`);
+  // insurances from old backup not in FamilyVaultDB — skipped
+  if (Array.isArray(data.insurances) && data.insurances.length)
+    log(`⚠️ Skipped: insurances(${data.insurances.length}) — no store in new FamilyVaultDB`, 'err');
+
+  // ── PasswordVault backup ───────────────────────────────────────────────────
+  // PV_STORES = ['meta','passwords','reminders','activity','notes']
+  const passwordVault = { app: 'PasswordVault', exportedAt: new Date().toISOString() };
+  passwordVault.meta      = metaArr;   // PIN hash lives in meta.pinHash
+  passwordVault.passwords = Array.isArray(data.passwords) ? data.passwords : [];
+  passwordVault.reminders = [];
+  passwordVault.activity  = [];
+  passwordVault.notes     = [];
+  log(`PasswordVault: ${passwordVault.passwords.length} encrypted entries`);
+
+  // ── Download all 3 ────────────────────────────────────────────────────────
+  const date = new Date().toISOString().slice(0, 10);
+  const dl = (obj, name) => {
+    const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  dl(iVault,        `iVault_Backup_${date}.json`);
+  dl(familyVault,   `FamilyVault_Backup_${date}.json`);
+  dl(passwordVault, `PasswordVault_Backup_${date}.json`);
+
+  log('', '');
+  log('📥 3 files downloaded:', 'dl');
+  log(`&nbsp;&nbsp;• iVault_Backup_${date}.json`, 'dl');
+  log(`&nbsp;&nbsp;• FamilyVault_Backup_${date}.json`, 'dl');
+  log(`&nbsp;&nbsp;• PasswordVault_Backup_${date}.json`, 'dl');
+  log('', '');
+  log('✅ Done! Import each file into the matching module in the new app.', 'ok');
+};
+</script>
+</body>
+</html>

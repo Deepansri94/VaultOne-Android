@@ -76,6 +76,7 @@ jobs:
           set -e
           MISSING=""
           for f in index.html shared.js shared.css \
+                   sw.js VaultOne.png \
                    iVault.html iVault.js \
                    FamilyVault.html FamilyVault.js \
                    PasswordVault.html PasswordVault.js; do
@@ -88,7 +89,7 @@ jobs:
             exit 1
           fi
           echo "All modular app files present."
-          ls -lh index.html shared.js shared.css \
+           ls -lh index.html shared.js shared.css sw.js VaultOne.png \
                  iVault.html iVault.js \
                  FamilyVault.html FamilyVault.js \
                  PasswordVault.html PasswordVault.js
@@ -137,6 +138,8 @@ jobs:
           cp index.html          app/src/main/assets/index.html
           cp shared.js           app/src/main/assets/shared.js
           cp shared.css          app/src/main/assets/shared.css
+          cp sw.js              app/src/main/assets/sw.js
+          cp VaultOne.png       app/src/main/assets/VaultOne.png
           cp iVault.html         app/src/main/assets/iVault.html
           cp iVault.js           app/src/main/assets/iVault.js
           cp FamilyVault.html    app/src/main/assets/FamilyVault.html
