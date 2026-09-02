@@ -86,7 +86,11 @@ async function openDB(dbName, version, stores) {
       const d = e.target.result;
       stores.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); });
     };
-    r.onsuccess = () => { db = r.result; resolve(); };
+    r.onsuccess = () => {
+      db = r.result;
+      db.onversionchange = () => db.close();
+      resolve();
+    };
     r.onerror = () => reject(r.error);
   });
 }
