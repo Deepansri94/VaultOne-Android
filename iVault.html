@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<title>iVault 💰</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.nav { grid-template-columns: repeat(6, 1fr); }
+.sub-view { display: none; }
+.sub-view.active { display: block; }
+.budget-bar-wrap { margin-top: 8px; }
+.comparison { width: 100%; border-collapse: collapse; font-size: 13px; }
+.comparison th, .comparison td { padding: 9px; border-bottom: 1px solid #ffffff10; text-align: left; }
+.comparison th { color: #aebbd0; }
+.good { color: var(--green); }
+.warn { color: var(--gold); }
+.bad { color: var(--red); }
+.inv-section-head { margin: 18px 0 8px; font-size: 13px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; padding-top: 14px; border-top: 1px solid #ffffff10; }
+.inv-section-head:first-of-type { margin-top: 0; padding-top: 0; border-top: 0; }
+.loan-item { padding: 14px; border: 1px solid #ffffff10; background: #0a1525; border-radius: 18px; margin-bottom: 10px; }
+.loan-item .title { font-weight: 800; }
+.loan-item .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.loan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="top">
+  <div class="brand">
+    <div class="brand-left">
+      <a class="home-btn" href="index.html" title="VaultOne Home">🏠</a>
+      <div><h1>iVault 💰</h1><small id="profileLine">Personal Finance · Offline-first</small></div>
+    </div>
+    <div class="actions">
+      <button class="iconbtn" id="settingsBtn" title="Settings">⚙️</button>
+      <button class="iconbtn" id="bellReminderBtn" title="Reminders">🔔<span id="bellReminderBadge" class="bell-badge"></span></button>
+    </div>
+  </div>
+</header>
+
+<!-- Reminders panel -->
+<div id="reminderFloatingPanel" class="reminder-floating">
+  <div class="reminder-floating-head"><h3>Reminders ⏰</h3><button class="iconbtn" id="reminderFloatingClose">✕</button></div>
+  <div class="actions" style="margin-top:0"><button class="btn primary" id="floatingAddReminderBtn">+ Add Reminder</button></div>
+  <form id="bellReminderForm" class="grid" style="display:none;margin-top:12px;grid-template-columns:1fr">
+    <label>Title <span class="req-star">*</span><input name="title" required placeholder="Reminder title"></label>
+    <label>Date <span class="req-star">*</span><input name="date" type="date" required></label>
+    <label>Time<input name="time" type="time" value="09:00"></label>
+    <label>Priority<select name="priority"><option>Normal</option><option>Medium</option><option>High</option></select></label>
+    <label>Description<textarea name="description" placeholder="Optional details"></textarea></label>
+    <div class="actions" style="margin-top:0">
+      <button type="submit" class="btn primary">Save Reminder</button>
+      <button type="button" class="btn ghost" id="bellReminderCancel">Cancel</button>
+    </div>
+  </form>
+  <div id="bellRemList" class="list" style="margin-top:12px"></div>
+</div>
+
+<main class="content">
+
+  <!-- Overview sub-view -->
+  <div class="sub-view active" id="sv-overview">
+    <div class="stats" style="margin-bottom:14px">
+      <div class="stat">Net Worth<b id="statNetWorth">₹0</b></div>
+      <div class="stat">Income (month)<b class="green" id="statIncome">₹0</b></div>
+      <div class="stat">Expenses (month)<b class="red" id="statExpense">₹0</b></div>
+      <div class="stat">Savings (month)<b class="cyan" id="statSavings">₹0</b></div>
+    </div>
+    <div class="card">
+      <h3>Monthly Budget</h3>
+      <div class="metric" id="budgetTotal">₹0</div>
+      <div class="budget-bar-wrap"><div class="progress"><i id="budgetBar" style="width:0%"></i></div></div>
+      <p class="muted" id="budgetInfo">No budget configured.</p>
+    </div>
+    <div class="card">
+      <h3>Recent Activity</h3>
+      <div id="recentActivity" class="list"></div>
+    </div>
+  </div>
+
+  <!-- Income sub-view -->
+  <div class="sub-view" id="sv-income">
+    <div class="card">
+      <h3>Add Income</h3>
+      <form id="incomeForm" class="grid">
+        <label>Type<select name="type"><option>Salary</option><option>Shift Allowance</option><option>Interest</option><option>Dividend</option><option>Other Income</option></select></label>
+        <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0" step="1" required></label>
+        <label>Date <span class="req-star">*</span><input name="date" type="date" required></label>
+        <label>Note<input name="note" placeholder="Optional note"></label>
+        <div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Save Income</button></div>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Income History</h3>
+      <div id="incomeList"></div>
+    </div>
+  </div>
+
+  <!-- Expenses sub-view -->
+  <div class="sub-view" id="sv-expenses">
+    <div class="card">
+      <h3>Add Expense</h3>
+      <form id="expenseForm" class="grid">
+        <label>Category<select name="category">
+          <option>Household</option><option>Transport</option><option>Food &amp; Personal</option>
+          <option>Health &amp; Emergency</option><option>Loans &amp; Financial</option>
+          <option>Family / Religious / Social</option><option>Savings &amp; Investments</option><option>Other</option>
+        </select></label>
+        <label id="expSubcatLabel">Sub-category
+          <select name="subcategory" id="expSubcatSelect"><option value="">-- select --</option></select>
+        </label>
+        <label id="expLinkedLabel" style="display:none">Link to<select name="linkedId" id="expLinkedSelect"><option value="">— select —</option></select></label>
+        <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0" step="1" required></label>
+        <label>Date <span class="req-star">*</span><input name="date" type="date" required></label>
+        <label>Note<input name="note" placeholder="Optional note"></label>
+        <div id="expPaidInfo" style="grid-column:1/-1;display:none;font-size:13px;color:var(--green);padding:6px 0"></div>
+        <div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Save Expense</button></div>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Expense History</h3>
+      <div id="expenseList"></div>
+    </div>
+  </div>
+
+  <!-- Budget sub-view -->
+  <div class="sub-view" id="sv-budget">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3 style="margin:0">Monthly Budget</h3>
+        <div class="actions" style="margin-top:0;gap:6px">
+          <button class="btn" id="budgetPrev">← Prev</button>
+          <span id="budgetMonthLabel" class="muted" style="padding:0 8px"></span>
+          <button class="btn" id="budgetNext">Next →</button>
+          <button type="button" class="btn" id="budgetEditBtn" style="display:none">✏️ Edit</button>
+        </div>
+      </div>
+      <form id="budgetForm" class="grid" style="margin-top:14px">
+        <input type="hidden" name="month" id="budgetMonthInput">
+        <div id="budgetCategoryFields" style="grid-column:1/-1"></div>
+        <div class="actions" style="grid-column:1/-1"><button class="btn primary" id="budgetSaveBtn">Save Budget</button></div>
+      </form>
+    </div>
+    <div class="card" id="budgetActualsCard" style="display:none">
+      <h3>Budget vs Actual</h3>
+      <div id="budgetActuals"></div>
+    </div>
+  </div>
+
+  <!-- Investments sub-view -->
+  <div class="sub-view" id="sv-investments">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3 style="margin:0">Savings &amp; Investments</h3>
+        <button class="btn primary" id="addInvBtn">+ Add</button>
+      </div>
+      <div id="invList" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- Loans sub-view -->
+  <div class="sub-view" id="sv-loans">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <h3 style="margin:0">Loans</h3>
+        <button class="btn primary" id="addLoanBtn">+ Add Loan</button>
+      </div>
+      <div id="loanList" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- hidden inputs for backup (wired via settings panel) -->
+  <input id="importFile" type="file" accept="application/json" hidden>
+
+</main>
+
+<!-- Bottom nav -->
+<nav class="bottom">
+  <div class="nav">
+    <button type="button" class="active" data-sv="overview"><span>📊</span>Overview</button>
+    <button type="button" data-sv="income"><span>💵</span>Income</button>
+    <button type="button" data-sv="expenses"><span>💸</span>Expenses</button>
+    <button type="button" data-sv="budget"><span>🧮</span>Budget</button>
+    <button type="button" data-sv="investments"><span>📈</span>Invest</button>
+    <button type="button" data-sv="loans"><span>🏦</span>Loans</button>
+  </div>
+</nav>
+
+</div><!-- .app -->
+
+<!-- Notes FAB -->
+<button class="notes-fab" id="notesFab" title="Notes">📝</button>
+<div id="notesPanel" class="notes-panel">
+  <div class="notes-panel-head"><h3>📝 Notes</h3><button class="iconbtn" id="notesPanelClose">✕</button></div>
+  <div class="actions" style="margin-bottom:12px"><button class="btn primary" id="notesAddBtn">+ Add Note</button></div>
+  <form id="notesForm" style="margin-bottom:14px">
+    <div id="notesFormWrap" style="display:none"><div id="notesFormArea"></div></div>
+  </form>
+  <div id="notesList"></div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal">
+  <div class="sheet">
+    <div class="modal-head"><h3 id="modalTitle">iVault</h3><button class="iconbtn" id="modalClose">✕</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="shared.js"></script>
+<script src="iVault.js"></script>
+</body>
+</html>

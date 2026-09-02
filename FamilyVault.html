@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111f">
+<title>FamilyVault 📁</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+.member-card { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; padding:15px; border:1px solid #ffffff10; background:#0a1525; border-radius:18px; }
+.member-meta { color:var(--muted); font-size:13px; margin-top:4px; }
+.member-age { color:var(--cyan); font-weight:800; margin-top:5px; }
+.status-active { color:var(--green); font-weight:700; }
+.status-inactive { color:#94a3b8; font-weight:700; }
+.doc-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+.doc-toolbar input { flex:1; min-width:140px; }
+.doc-toolbar select { flex:0 0 auto; padding:8px 10px; border-radius:8px; border:1px solid #ffffff18; background:#0a1525; color:#fff; font-size:13px; margin-top:0; width:auto; }
+.exp-warn { color:var(--red); }
+@media(max-width:600px){ .member-card { flex-direction:column; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="top">
+  <div class="brand">
+    <div class="brand-left">
+      <a class="home-btn" href="index.html" title="VaultOne Home">🏠</a>
+      <div><h1>FamilyVault 📁</h1><small id="profileLine">Documents · People · Offline-first</small></div>
+    </div>
+    <div class="actions">
+      <button class="iconbtn" id="settingsBtn" title="Settings">⚙️</button>
+      <button class="iconbtn" id="bellReminderBtn" title="Reminders">🔔<span id="bellReminderBadge" class="bell-badge"></span></button>
+    </div>
+  </div>
+</header>
+
+<!-- Reminders panel -->
+<div id="reminderFloatingPanel" class="reminder-floating">
+  <div class="reminder-floating-head"><h3>Reminders ⏰</h3><button class="iconbtn" id="reminderFloatingClose">✕</button></div>
+  <div class="actions" style="margin-top:0"><button class="btn primary" id="floatingAddReminderBtn">+ Add Reminder</button></div>
+  <form id="bellReminderForm" class="grid" style="display:none;margin-top:12px;grid-template-columns:1fr">
+    <label>Title <span class="req-star">*</span><input name="title" required placeholder="Reminder title"></label>
+    <label>Date <span class="req-star">*</span><input name="date" type="date" required></label>
+    <label>Time<input name="time" type="time" value="09:00"></label>
+    <label>Priority<select name="priority"><option>Normal</option><option>Medium</option><option>High</option></select></label>
+    <label>Description<textarea name="description" placeholder="Optional details"></textarea></label>
+    <div class="actions" style="margin-top:0">
+      <button type="submit" class="btn primary">Save Reminder</button>
+      <button type="button" class="btn ghost" id="bellReminderCancel">Cancel</button>
+    </div>
+  </form>
+  <div id="bellRemList" class="list" style="margin-top:12px"></div>
+</div>
+
+<main class="content">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h2>FamilyVault 📁</h2>
+    <p class="muted">People, households, vehicles and documents — stored locally.</p>
+    <div class="actions">
+      <button class="btn" id="addPersonBtn">👤 + Person</button>
+      <button class="btn" id="addHouseBtn">🏠 + Household</button>
+      <button class="btn" id="addVehicleBtn">🚗 + Vehicle</button>
+      <button class="btn" id="addDocBtn">📄 + Document</button>
+    </div>
+  </div>
+
+  <!-- Stats tiles -->
+  <div class="card">
+    <div class="family-tiles">
+      <div class="family-tile" id="tile-people" data-tile="people">
+        <div class="family-tile-icon">👤</div>
+        <div class="family-tile-count" id="cntPeople">0</div>
+        <div class="family-tile-label">People</div>
+      </div>
+      <div class="family-tile" id="tile-households" data-tile="households">
+        <div class="family-tile-icon">🏠</div>
+        <div class="family-tile-count" id="cntHouses">0</div>
+        <div class="family-tile-label">Households</div>
+      </div>
+      <div class="family-tile" id="tile-vehicles" data-tile="vehicles">
+        <div class="family-tile-icon">🚗</div>
+        <div class="family-tile-count" id="cntVehicles">0</div>
+        <div class="family-tile-label">Vehicles</div>
+      </div>
+      <div class="family-tile" id="tile-documents" data-tile="documents">
+        <div class="family-tile-icon">📄</div>
+        <div class="family-tile-count" id="cntDocs">0</div>
+        <div class="family-tile-label">Documents</div>
+      </div>
+    </div>
+    <!-- Sub-panel -->
+    <div id="familySubPanel" style="display:none;margin-top:14px">
+      <div class="doc-toolbar" id="docToolbar" style="display:none">
+        <input id="docSearch" placeholder="Search documents...">
+        <select id="docTypeFilter">
+          <option value="">All Types</option>
+          <option>Aadhaar</option><option>PAN</option><option>Passport</option>
+          <option>Driving Licence</option><option>Ration Card</option><option>Insurance</option>
+          <option>Education</option><option>Employment</option><option>Property</option>
+          <option>Vehicle</option><option>Certificate</option><option>Other</option>
+        </select>
+      </div>
+      <div id="familyList" class="list"></div>
+    </div>
+  </div>
+
+  <!-- hidden input for backup (wired via settings panel) -->
+  <input id="importFile" type="file" accept="application/json" hidden>
+
+</main>
+
+
+
+</div><!-- .app -->
+
+<!-- Notes FAB -->
+<button class="notes-fab" id="notesFab" title="Notes">📝</button>
+<div id="notesPanel" class="notes-panel">
+  <div class="notes-panel-head"><h3>📝 Notes</h3><button class="iconbtn" id="notesPanelClose">✕</button></div>
+  <div class="actions" style="margin-bottom:12px"><button class="btn primary" id="notesAddBtn">+ Add Note</button></div>
+  <form id="notesForm" style="margin-bottom:14px">
+    <div id="notesFormWrap" style="display:none"><div id="notesFormArea"></div></div>
+  </form>
+  <div id="notesList"></div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="modal">
+  <div class="sheet">
+    <div class="modal-head"><h3 id="modalTitle">FamilyVault</h3><button class="iconbtn" id="modalClose">✕</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="shared.js"></script>
+<script src="FamilyVault.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# Data exports / backups — not source code
+VaultOne_*.json
+vaultone_seed.json
+
+# Test & build reports
+reports/
+QA/selenium/reports/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / Electron build output
+node_modules/
+dist/
+release/
+
+# Android build output
+app/build/
+.gradle/
+local.properties
+
+# OS
+.DS_Store
+Thumbs.db
