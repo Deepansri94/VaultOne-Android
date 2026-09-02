@@ -260,6 +260,7 @@ jobs:
                   android:label="VaultOne"
                   android:icon="@mipmap/ic_launcher"
                   android:roundIcon="@mipmap/ic_launcher"
+                  android:hardwareAccelerated="true"
                   android:resizeableActivity="true"
                   android:supportsRtl="true"
                   android:theme="@style/AppTheme">
@@ -289,13 +290,12 @@ jobs:
           cat > app/src/main/res/values/styles.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
-                  <item name="android:fontFamily">sans</item>
-                  <item name="android:windowActionModeOverlay">true</item>
-                  <item name="android:colorAccent">#5B5FEF</item>
+              <!-- Must use Theme.AppCompat parent because MainActivity extends AppCompatActivity -->
+              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
                   <item name="android:navigationBarColor">#080D18</item>
                   <item name="android:statusBarColor">#080D18</item>
                   <item name="android:windowLightStatusBar">false</item>
+                  <item name="colorAccent">#5B5FEF</item>
               </style>
           </resources>
           EOF
@@ -355,7 +355,6 @@ jobs:
               private ActivityResultLauncher<Intent> filePickerLauncher;
 
               private static final String REMINDER_CHANNEL_ID = "vaultone_reminders";
-              private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 48213;
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
@@ -437,7 +436,7 @@ jobs:
                       }
                   });
 
-                  webView.addJavascriptInterface(new VaultOneAndroidBridge(), "VaultOneAndroid");
+                  webView.addJavascriptInterface(new VaultOneAndroidBridge(this), "VaultOneAndroid");
                   setContentView(webView);
 
                   // Load the modular entry point
@@ -456,7 +455,11 @@ jobs:
                   });
               }
 
+              private boolean seedInjected = false;
+
               private void injectSeedData() {
+                  if (seedInjected) return;
+                  seedInjected = true;
                   try {
                       java.io.InputStream is = getAssets().open("vaultone_seed.json");
                       byte[] buffer = new byte[is.available()];
@@ -472,7 +475,15 @@ jobs:
                   }
               }
 
-              private class VaultOneAndroidBridge {
+              private static class VaultOneAndroidBridge {
+
+                  private final Context context;
+                  private final Activity activity;
+
+                  VaultOneAndroidBridge(Activity activity) {
+                      this.activity = activity;
+                      this.context = activity.getApplicationContext();
+                  }
 
                   @JavascriptInterface
                   public boolean saveExport(String json, String fileName) {
@@ -482,17 +493,17 @@ jobs:
                               values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
                               values.put(MediaStore.Downloads.MIME_TYPE, "application/json");
                               values.put(MediaStore.Downloads.IS_PENDING, 1);
-                              Uri itemUri = getContentResolver().insert(
+                              Uri itemUri = context.getContentResolver().insert(
                                       MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
                               if (itemUri == null) return false;
                               try (OutputStream out =
-                                           getContentResolver().openOutputStream(itemUri)) {
+                                           context.getContentResolver().openOutputStream(itemUri)) {
                                   if (out == null) return false;
                                   out.write(json.getBytes("UTF-8"));
                               }
                               values.clear();
                               values.put(MediaStore.Downloads.IS_PENDING, 0);
-                              getContentResolver().update(itemUri, values, null, null);
+                              context.getContentResolver().update(itemUri, values, null, null);
                           } else {
                               java.io.File dir = Environment.getExternalStoragePublicDirectory(
                                       Environment.DIRECTORY_DOWNLOADS);
@@ -502,7 +513,7 @@ jobs:
                                   fos.write(json.getBytes("UTF-8"));
                               }
                           }
-                          runOnUiThread(() -> Toast.makeText(MainActivity.this,
+                          activity.runOnUiThread(() -> Toast.makeText(context,
                                   "Saved to Downloads: " + fileName,
                                   Toast.LENGTH_LONG).show());
                           return true;
@@ -514,20 +525,20 @@ jobs:
                   @JavascriptInterface
                   public boolean hasNotificationPermission() {
                       if (Build.VERSION.SDK_INT >= 33) {
-                          return ContextCompat.checkSelfPermission(MainActivity.this,
+                          return ContextCompat.checkSelfPermission(context,
                                   android.Manifest.permission.POST_NOTIFICATIONS)
                                   == PackageManager.PERMISSION_GRANTED;
                       }
-                      return NotificationManagerCompat.from(MainActivity.this)
+                      return NotificationManagerCompat.from(context)
                               .areNotificationsEnabled();
                   }
 
                   @JavascriptInterface
                   public void requestNotificationPermission() {
                       if (Build.VERSION.SDK_INT >= 33) {
-                          runOnUiThread(() -> requestPermissions(
+                          activity.runOnUiThread(() -> activity.requestPermissions(
                                   new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
-                                  NOTIFICATION_PERMISSION_REQUEST_CODE));
+                                  48213));
                       }
                   }
 
@@ -538,14 +549,14 @@ jobs:
                           long when = Long.parseLong(triggerAtMillis);
                           if (when <= System.currentTimeMillis()) return false;
                           int requestCode = stableRequestCode(id);
-                          Intent intent = new Intent(MainActivity.this, ReminderReceiver.class);
+                          Intent intent = new Intent(context, ReminderReceiver.class);
                           intent.putExtra("notificationId", requestCode);
                           intent.putExtra("title", title);
                           intent.putExtra("body", body);
                           PendingIntent pi = PendingIntent.getBroadcast(
-                                  MainActivity.this, requestCode, intent,
+                                  context, requestCode, intent,
                                   PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-                          AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                          AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
                           if (am == null) return false;
                           try {
                               if (Build.VERSION.SDK_INT >= 31 && !am.canScheduleExactAlarms()) {
@@ -566,14 +577,14 @@ jobs:
                   public boolean cancelReminderNotification(String id) {
                       try {
                           int requestCode = stableRequestCode(id);
-                          Intent intent = new Intent(MainActivity.this, ReminderReceiver.class);
+                          Intent intent = new Intent(context, ReminderReceiver.class);
                           PendingIntent pi = PendingIntent.getBroadcast(
-                                  MainActivity.this, requestCode, intent,
+                                  context, requestCode, intent,
                                   PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-                          AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                          AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
                           if (am != null) am.cancel(pi);
                           pi.cancel();
-                          NotificationManagerCompat.from(MainActivity.this).cancel(requestCode);
+                          NotificationManagerCompat.from(context).cancel(requestCode);
                           return true;
                       } catch (Exception e) {
                           return false;
@@ -582,9 +593,9 @@ jobs:
 
                   @JavascriptInterface
                   public boolean isIgnoringBatteryOptimizations() {
-                      PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                      PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
                       if (pm == null) return false;
-                      return pm.isIgnoringBatteryOptimizations(getPackageName());
+                      return pm.isIgnoringBatteryOptimizations(context.getPackageName());
                   }
 
                   @JavascriptInterface
@@ -592,9 +603,9 @@ jobs:
                       try {
                           Intent intent = new Intent(
                                   Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                          intent.setData(Uri.parse("package:" + getPackageName()));
+                          intent.setData(Uri.parse("package:" + context.getPackageName()));
                           intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                          startActivity(intent);
+                          context.startActivity(intent);
                       } catch (Exception e) {
                           // OEM does not support this intent
                       }
