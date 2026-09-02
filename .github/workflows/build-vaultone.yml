@@ -976,29 +976,31 @@ jobs:
           TAG="build-${VERSION_CODE}"
           RELEASE_NAME="VaultOne ${VERSION_NAME}"
 
-          # Create the release
-          RELEASE_RESPONSE=$(curl --fail-with-body -sS -X POST \
+          # Create release and parse upload_url with python3
+          RELEASE_RESPONSE=$(curl -sS -X POST \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" \
-            -d "{
-              \"tag_name\": \"${TAG}\",
-              \"name\": \"${RELEASE_NAME}\",
-              \"body\": \"Automated build from commit ${GITHUB_SHA}\",
-              \"draft\": false,
-              \"prerelease\": false
-            }")
+            -d "{\"tag_name\":\"${TAG}\",\"name\":\"${RELEASE_NAME}\",\"body\":\"Automated build from commit ${GITHUB_SHA}\",\"draft\":false,\"prerelease\":false}")
 
-                    UPLOAD_URL=$(echo "$RELEASE_RESPONSE" | grep -o '"upload_url":"[^"]*"' | cut -d'"' -f4 | sed 's/{?name,label}//')
-                    if [ -z "$UPLOAD_URL" ]; then
-                        echo "ERROR: GitHub did not return a release upload URL."
-                        exit 1
-                    fi
+          echo "Release API response: $RELEASE_RESPONSE"
+
+          UPLOAD_URL=$(echo "$RELEASE_RESPONSE" | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          url = data.get('upload_url','')
+          print(url.split('{')[0])
+          ")
+
+          if [ -z "$UPLOAD_URL" ]; then
+            echo "ERROR: Could not extract upload_url from release response."
+            exit 1
+          fi
           echo "Upload URL: $UPLOAD_URL"
 
           # Upload APK asset
-                    curl --fail-with-body -sS -X POST \
+          curl -sS -X POST \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -H "Content-Type: application/vnd.android.package-archive" \
