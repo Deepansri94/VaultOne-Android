@@ -8,7 +8,9 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
+  pages: write
+  id-token: write
 
 env:
   JAVA_VERSION: '17'
@@ -17,6 +19,8 @@ env:
   ANDROID_API: '35'
   BUILD_TOOLS_VERSION: '35.0.0'
   APP_ID: 'com.vaultone.app'
+  VERSION_CODE: ${{ github.run_number }}
+  VERSION_NAME: '2.${{ github.run_number }}'
 
 jobs:
 
@@ -202,7 +206,7 @@ jobs:
       - name: Create app build.gradle
         shell: bash
         run: |
-          cat > app/build.gradle <<'EOF'
+          cat > app/build.gradle <<EOF
           plugins {
               id 'com.android.application'
           }
@@ -213,8 +217,8 @@ jobs:
                   applicationId 'com.vaultone.app'
                   minSdk 24
                   targetSdk 35
-                  versionCode 1
-                  versionName '2.0'
+                  versionCode ${VERSION_CODE}
+                  versionName '${VERSION_NAME}'
               }
               buildTypes {
                   debug {
@@ -257,6 +261,8 @@ jobs:
               <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
               <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
               <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
               <application
                   android:allowBackup="false"
@@ -282,8 +288,30 @@ jobs:
                       android:name=".ReminderReceiver"
                       android:exported="false" />
 
+                  <provider
+                      android:name="androidx.core.content.FileProvider"
+                      android:authorities="com.vaultone.app.fileprovider"
+                      android:exported="false"
+                      android:grantUriPermissions="true">
+                      <meta-data
+                          android:name="android.support.FILE_PROVIDER_PATHS"
+                          android:resource="@xml/file_paths" />
+                  </provider>
+
               </application>
           </manifest>
+          EOF
+
+      # 14b. CREATE FILE PROVIDER PATHS
+      - name: Create FileProvider paths XML
+        shell: bash
+        run: |
+          mkdir -p app/src/main/res/xml
+          cat > app/src/main/res/xml/file_paths.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <paths>
+              <cache-path name="apk_cache" path="apk/" />
+          </paths>
           EOF
 
       # 15. CREATE THEME
@@ -348,7 +376,12 @@ jobs:
           import androidx.core.content.ContextCompat;
           import androidx.webkit.WebViewAssetLoader;
 
+          import java.io.File;
+          import java.io.FileOutputStream;
+          import java.io.InputStream;
           import java.io.OutputStream;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
 
           public class MainActivity extends AppCompatActivity {
 
@@ -445,6 +478,9 @@ jobs:
                   // Load the modular entry point
                   webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
 
+                  // Check for update in background
+                  checkForUpdate();
+
                   getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
                       @Override
                       public void handleOnBackPressed() {
@@ -457,6 +493,110 @@ jobs:
                       }
                   });
               }
+
+              // ── Auto-update ──────────────────────────────────────────────
+              private static final String VERSION_URL =
+                  "https://deepansri94.github.io/VaultOne-Android/version.json";
+              private static final String APK_URL =
+                  "https://deepansri94.github.io/VaultOne-Android/VaultOne.apk";
+              private static final int CURRENT_VERSION_CODE = BuildConfig.VERSION_CODE;
+
+              private void checkForUpdate() {
+                  new Thread(() -> {
+                      try {
+                          HttpURLConnection conn =
+                              (HttpURLConnection) new URL(VERSION_URL).openConnection();
+                          conn.setConnectTimeout(5000);
+                          conn.setReadTimeout(5000);
+                          java.io.BufferedReader br = new java.io.BufferedReader(
+                              new java.io.InputStreamReader(conn.getInputStream()));
+                          StringBuilder sb = new StringBuilder();
+                          String line;
+                          while ((line = br.readLine()) != null) sb.append(line);
+                          br.close();
+                          conn.disconnect();
+                          // Parse versionCode from JSON manually (no Gson dependency)
+                          String json = sb.toString();
+                          int remoteCode = parseIntField(json, "versionCode");
+                          String remoteName = parseStringField(json, "versionName");
+                          if (remoteCode > CURRENT_VERSION_CODE) {
+                              runOnUiThread(() -> showUpdateDialog(remoteName));
+                          }
+                      } catch (Exception e) {
+                          // No network or server unreachable — silently skip
+                      }
+                  }).start();
+              }
+
+              private void showUpdateDialog(String versionName) {
+                  new android.app.AlertDialog.Builder(this)
+                      .setTitle("Update Available")
+                      .setMessage("VaultOne " + versionName + " is available. Install now?")
+                      .setPositiveButton("Update", (d, w) -> downloadAndInstall())
+                      .setNegativeButton("Later", null)
+                      .show();
+              }
+
+              private void downloadAndInstall() {
+                  Toast.makeText(this, "Downloading update...", Toast.LENGTH_SHORT).show();
+                  new Thread(() -> {
+                      try {
+                          File cacheDir = new File(getCacheDir(), "apk");
+                          cacheDir.mkdirs();
+                          File apkFile = new File(cacheDir, "VaultOne_update.apk");
+                          HttpURLConnection conn =
+                              (HttpURLConnection) new URL(APK_URL).openConnection();
+                          conn.setConnectTimeout(15000);
+                          conn.setReadTimeout(60000);
+                          try (InputStream in = conn.getInputStream();
+                               FileOutputStream out = new FileOutputStream(apkFile)) {
+                              byte[] buf = new byte[8192];
+                              int n;
+                              while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+                          }
+                          conn.disconnect();
+                          runOnUiThread(() -> installApk(apkFile));
+                      } catch (Exception e) {
+                          runOnUiThread(() -> Toast.makeText(this,
+                              "Download failed: " + e.getMessage(),
+                              Toast.LENGTH_LONG).show());
+                      }
+                  }).start();
+              }
+
+              private void installApk(File apkFile) {
+                  Uri apkUri = androidx.core.content.FileProvider.getUriForFile(
+                      this, "com.vaultone.app.fileprovider", apkFile);
+                  Intent intent = new Intent(Intent.ACTION_VIEW);
+                  intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
+                  intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                  intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                  startActivity(intent);
+              }
+
+              private int parseIntField(String json, String key) {
+                  try {
+                      String pattern = "\"" + key + "\"";
+                      int idx = json.indexOf(pattern);
+                      if (idx < 0) return -1;
+                      String rest = json.substring(idx + pattern.length());
+                      rest = rest.replaceAll("[^0-9]", " ").trim();
+                      return Integer.parseInt(rest.split("\\s+")[0]);
+                  } catch (Exception e) { return -1; }
+              }
+
+              private String parseStringField(String json, String key) {
+                  try {
+                      String pattern = "\"" + key + "\"";
+                      int idx = json.indexOf(pattern);
+                      if (idx < 0) return "";
+                      String rest = json.substring(idx + pattern.length());
+                      int q1 = rest.indexOf('"');
+                      int q2 = rest.indexOf('"', q1 + 1);
+                      return rest.substring(q1 + 1, q2);
+                  } catch (Exception e) { return ""; }
+              }
+              // ── End auto-update ──────────────────────────────────────────
 
               private boolean seedInjected = false;
 
@@ -803,3 +943,40 @@ jobs:
             app/build/reports/**
             app/build/outputs/logs/**
           if-no-files-found: ignore
+
+      # 28. PUBLISH TO GITHUB PAGES (version.json + APK for auto-update)
+      - name: Publish update manifest and APK to GitHub Pages
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          # Write version manifest
+          cat > release/version.json <<EOF
+          {
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "buildTime": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${GITHUB_SHA}"
+          }
+          EOF
+
+          # Clone / init gh-pages branch
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+
+          git fetch origin gh-pages 2>/dev/null || true
+          if git show-ref --quiet refs/remotes/origin/gh-pages; then
+            git worktree add gh-pages-dir origin/gh-pages
+          else
+            git worktree add --orphan -b gh-pages gh-pages-dir
+          fi
+
+          cp release/VaultOne.apk  gh-pages-dir/VaultOne.apk
+          cp release/version.json  gh-pages-dir/version.json
+
+          cd gh-pages-dir
+          git add VaultOne.apk version.json
+          git diff --cached --quiet || git commit -m "release: v${VERSION_NAME} (build ${VERSION_CODE})"
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+          cd ..
