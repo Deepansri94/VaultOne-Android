@@ -1,7 +1,3 @@
-# Data exports / backups — not source code
-VaultOne_*.json
-vaultone_seed.json
-
 # Test & build reports
 reports/
 QA/selenium/reports/

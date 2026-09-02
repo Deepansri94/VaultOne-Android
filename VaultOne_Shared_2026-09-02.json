@@ -1,0 +1,804 @@
+{
+  "app": "VaultOne",
+  "version": 8,
+  "schemaVersion": 8,
+  "exportedAt": "2026-09-02T07:33:04.090Z",
+  "settings": {
+    "id": "settings",
+    "currency": "INR",
+    "name": "Deepanchakkaravarthi G",
+    "pinHash": "G8MgGp8kov5I9jT5DUBqr2y/XjbikocOy6mNdLBl7hs=",
+    "autoLock": 5
+  },
+  "reminders": [
+    {
+      "id": "1281dc47-8646-4f94-a03e-bd42ec38a762",
+      "title": "Jovitha School Fees Maturity",
+      "date": "2026-10-01",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Investment maturity reminder",
+      "completed": false,
+      "source": "fdMaturity",
+      "referenceId": "661b7757-6e79-422a-ba85-2e4fd0fc514c",
+      "createdAt": "2026-08-23T15:26:44.773Z",
+      "updatedAt": "2026-08-23T15:26:44.773Z"
+    },
+    {
+      "id": "58818aa9-aefa-419e-bb5e-9122d25cb0a4",
+      "title": "🎉 Happy Birthday, Gopalakrishnan K! 🎂",
+      "date": "2026-10-07",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Wishing you a wonderful day filled with joy and celebration, Gopalakrishnan K! 🎈🎁",
+      "completed": false,
+      "repeat": "yearly",
+      "source": "birthday",
+      "personId": "4d97fd28-80eb-410f-9c78-8200d47934a3",
+      "createdAt": "2026-08-28T02:15:22.745Z"
+    },
+    {
+      "id": "6c1986bb-9c18-433e-840c-246b188b2ff7",
+      "title": "Gold Loan Due",
+      "date": "2026-12-12",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Gold Loan due reminder",
+      "completed": false,
+      "source": "goldLoan",
+      "referenceId": "f6de104c-e43a-4e11-8b22-c06dd506f8c5",
+      "createdAt": "2026-08-24T04:06:24.226Z",
+      "updatedAt": "2026-08-24T04:07:20.083Z"
+    },
+    {
+      "id": "6cdc51c8-0485-4dbe-ac04-e705ed4ecaf2",
+      "title": "Deepanchakkaravarthi G Insurance Renewal",
+      "date": "2065-04-30",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Insurance renewal reminder",
+      "completed": false,
+      "source": "insurance",
+      "referenceId": "219306d3-52a0-4278-99c9-f61100b80cf2",
+      "createdAt": "2026-08-23T14:36:43.354Z",
+      "updatedAt": "2026-08-23T14:37:49.254Z"
+    },
+    {
+      "id": "78006cb2-1923-43b6-9682-af7057b33973",
+      "title": "Loan EMI Due",
+      "date": "2026-09-05",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Loan EMI due reminder",
+      "completed": false,
+      "source": "loan",
+      "referenceId": "584dd8ed-4ae7-43e8-bd10-88feeed86601",
+      "createdAt": "2026-08-24T04:12:16.402Z",
+      "updatedAt": "2026-08-24T04:12:16.402Z"
+    },
+    {
+      "id": "79002824-e435-410d-beff-8ca5ce7a038c",
+      "title": "My SCOOTY Insurance Renewal",
+      "date": "2028-01-15",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Insurance renewal reminder",
+      "completed": false,
+      "source": "insurance",
+      "referenceId": "2919be8b-740f-486b-ae17-4601917f30cd",
+      "createdAt": "2026-08-23T14:48:17.456Z",
+      "updatedAt": "2026-08-23T14:48:17.456Z"
+    },
+    {
+      "id": "80e7485a-2818-460a-a5cc-d1e4e5301ecf",
+      "title": "🎉 Happy Birthday, Jaswin D! 🎂",
+      "date": "2027-07-27",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Wishing you a wonderful day filled with joy and celebration, Jaswin D! 🎈🎁",
+      "completed": false,
+      "repeat": "yearly",
+      "source": "birthday",
+      "personId": "aaee9284-839e-4ffa-ad71-ba7c3702c55d",
+      "createdAt": "2026-08-23T15:21:40.185Z"
+    },
+    {
+      "id": "9201a4fe-2649-4e7a-b7ac-644473fcdd93",
+      "title": "Jovitha School Fees Maturity",
+      "date": "2027-05-02",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Investment maturity reminder",
+      "completed": false,
+      "source": "rdMaturity",
+      "referenceId": "ff875740-c865-4e83-8762-afde8f19bf20",
+      "createdAt": "2026-08-23T15:32:14.915Z",
+      "updatedAt": "2026-08-23T15:32:14.915Z"
+    },
+    {
+      "id": "9736aa90-073f-4372-9ec6-1e4daa81a58e",
+      "title": "🎉 Happy Birthday, Indrani G! 🎂",
+      "date": "2027-03-28",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Wishing you a wonderful day filled with joy and celebration, Indrani G! 🎈🎁",
+      "completed": false,
+      "repeat": "yearly",
+      "source": "birthday",
+      "personId": "520a64bb-4cc2-4bde-b836-a3940e3638e5",
+      "createdAt": "2026-08-29T10:46:38.652Z"
+    },
+    {
+      "id": "badeaec8-a5ed-472f-b8e3-65d47ff1628b",
+      "title": "🎉 Happy Birthday, Jovitha D! 🎂",
+      "date": "2027-02-27",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Wishing you a wonderful day filled with joy and celebration, Jovitha D! 🎈🎁",
+      "completed": false,
+      "repeat": "yearly",
+      "source": "birthday",
+      "personId": "9c0c5709-3353-41bd-afae-ec9ffa159323",
+      "createdAt": "2026-08-23T15:19:05.089Z"
+    },
+    {
+      "id": "c63c6329-2f5c-4a46-abc0-452cf02e984b",
+      "title": "🎉 Happy Birthday, Srivenkatrani N! 🎂",
+      "date": "2027-07-23",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Wishing you a wonderful day filled with joy and celebration, Srivenkatrani N! 🎈🎁",
+      "completed": false,
+      "repeat": "yearly",
+      "source": "birthday",
+      "personId": "7437da26-3672-4d94-b0ac-caee2a2a868d",
+      "createdAt": "2026-08-23T14:37:37.033Z"
+    },
+    {
+      "id": "fa3c7309-9c74-4ddb-9e4c-4614786ea1a3",
+      "title": "🎉 Happy Birthday, Deepanchakkaravarthi G! 🎂",
+      "date": "2026-11-11",
+      "time": "09:00",
+      "priority": "Normal",
+      "description": "Wishing you a wonderful day filled with joy and celebration, Deepanchakkaravarthi G! 🎈🎁",
+      "completed": false,
+      "repeat": "yearly",
+      "source": "birthday",
+      "personId": "d1af5ab1-2c21-4e42-a6d8-39a201e50a06",
+      "createdAt": "2026-08-17T08:45:38.432Z"
+    }
+  ],
+  "activity": [
+    {
+      "id": "040d85ec-55d0-4933-b25d-66be275dff34",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-09-01T05:27:28.169Z"
+    },
+    {
+      "id": "08131420-5a5f-407f-aff7-98277fd5850d",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:14:44.243Z"
+    },
+    {
+      "id": "0adb410a-9f4a-4e14-affd-383cf6a8665e",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:23:27.720Z"
+    },
+    {
+      "id": "0d4562e0-8af0-4d18-8288-e1ac707c7585",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:19:31.605Z"
+    },
+    {
+      "id": "10301a87-9efd-4857-a4b6-5566e8d9e79f",
+      "type": "Finance",
+      "text": "Account updated",
+      "createdAt": "2026-09-01T05:29:32.156Z"
+    },
+    {
+      "id": "11dcf660-3f49-4708-bd34-f9677ef6dfc2",
+      "type": "Finance",
+      "text": "Gold market price updated for 2026-08-28",
+      "createdAt": "2026-08-28T14:19:31.683Z"
+    },
+    {
+      "id": "11f7d282-c1fa-4de5-99b4-55f29874014e",
+      "type": "Password",
+      "text": "Password added",
+      "createdAt": "2026-08-24T02:47:04.139Z"
+    },
+    {
+      "id": "1b8d81dc-393b-4bbf-acb6-9656945eb6e0",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-23T15:26:44.776Z"
+    },
+    {
+      "id": "1def50c7-4010-4281-817d-5c73d9f72371",
+      "type": "Family",
+      "text": "Household added: Gopalakrishnan Family",
+      "createdAt": "2026-08-24T05:26:25.839Z"
+    },
+    {
+      "id": "1dffb62e-d291-4eda-b5c9-43b083813a97",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-01T14:27:14.054Z"
+    },
+    {
+      "id": "1e3862ca-2afd-483e-8eaa-5968eea0eaa8",
+      "type": "Family",
+      "text": "Household updated: Gopalakrishnan Family",
+      "createdAt": "2026-08-24T16:19:00.601Z"
+    },
+    {
+      "id": "1f2fce41-9e11-4e75-bb2f-91061e3bf8f3",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-01T14:25:56.899Z"
+    },
+    {
+      "id": "237b4f44-0d07-4905-b111-b5d34d3e4bff",
+      "type": "Finance",
+      "text": "Account updated",
+      "createdAt": "2026-09-01T05:28:38.807Z"
+    },
+    {
+      "id": "24327b41-1596-412b-bb7d-17b895d4b875",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:26:59.482Z"
+    },
+    {
+      "id": "2468ce69-ffeb-4d89-a68a-1340c6a80abc",
+      "type": "Finance",
+      "text": "Transaction deleted",
+      "createdAt": "2026-09-01T05:26:33.570Z"
+    },
+    {
+      "id": "26ef8d79-7ccb-4594-a923-da3c355a962f",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:17:58.338Z"
+    },
+    {
+      "id": "287a343d-3fc7-40fa-8194-d9e755ca8c82",
+      "type": "Finance",
+      "text": "Income saved",
+      "createdAt": "2026-08-31T10:22:34.324Z"
+    },
+    {
+      "id": "2d475d5a-82a3-4d3b-8ff2-ee1d852d9009",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-01T14:39:01.292Z"
+    },
+    {
+      "id": "2fbb7767-b611-4ee7-98c7-af7f3a67c9fd",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:15:34.068Z"
+    },
+    {
+      "id": "30c6653c-bf2a-498d-8014-5351c574b4b2",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:25:20.607Z"
+    },
+    {
+      "id": "32fc65ff-88d3-4e93-bfb8-8b35041f3510",
+      "type": "Finance",
+      "text": "Gold holding saved",
+      "createdAt": "2026-08-25T05:33:19.192Z"
+    },
+    {
+      "id": "3748bbce-44af-45a1-a680-bc1f88e93f95",
+      "type": "Finance",
+      "text": "Gold market price updated for 2026-08-25",
+      "createdAt": "2026-08-25T05:32:53.376Z"
+    },
+    {
+      "id": "39ba2348-952f-48ce-aa00-2b1597038c4d",
+      "type": "Finance",
+      "text": "Stock lot added to ITC LIMITED",
+      "createdAt": "2026-08-24T03:28:20.055Z"
+    },
+    {
+      "id": "3a9e1ebb-1278-41bd-ad66-57719e4daf43",
+      "type": "Finance",
+      "text": "Loan updated",
+      "createdAt": "2026-08-24T04:07:20.084Z"
+    },
+    {
+      "id": "3be9e69c-732e-4f8b-a601-59797615aa03",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-23T15:36:13.679Z"
+    },
+    {
+      "id": "3ce07f0e-d632-43b9-8972-b6c8bc12b298",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-02T01:47:07.993Z"
+    },
+    {
+      "id": "40ec2d28-5e84-463f-b70e-d2a8c79e99c7",
+      "type": "Finance",
+      "text": "Insurance added: Vehicle Insurance",
+      "createdAt": "2026-08-23T14:48:17.459Z"
+    },
+    {
+      "id": "45e9c82c-f2de-49a5-8b51-94b6fd4a4072",
+      "type": "Document",
+      "text": "Document added: Deepan - Aadhar Card",
+      "createdAt": "2026-08-29T11:59:11.920Z"
+    },
+    {
+      "id": "47e34f88-ab00-47b3-b8c1-177727842118",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-01T15:09:10.428Z"
+    },
+    {
+      "id": "49736a7b-8efc-4abf-942f-44237a1f89a5",
+      "type": "Backup",
+      "text": "JSON backup exported",
+      "createdAt": "2026-08-24T07:33:45.279Z"
+    },
+    {
+      "id": "4b8582f2-3613-492f-ba2c-4651bfa24c77",
+      "type": "Finance",
+      "text": "Gold holding saved",
+      "createdAt": "2026-08-27T03:07:37.554Z"
+    },
+    {
+      "id": "4ff8feb0-db76-4650-8add-5a8fbbec0ae9",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:26:01.666Z"
+    },
+    {
+      "id": "50bb704c-07f0-4fe4-bc12-e30f90aa373e",
+      "type": "Password",
+      "text": "Password added",
+      "createdAt": "2026-09-01T08:14:22.367Z"
+    },
+    {
+      "id": "5253121d-030d-4729-a5f9-336d01410e1c",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:12:40.252Z"
+    },
+    {
+      "id": "52892673-a00e-4b38-a541-7b9c00fafadc",
+      "type": "Finance",
+      "text": "Balance adjustment recorded for Deepan",
+      "createdAt": "2026-09-01T05:30:37.656Z"
+    },
+    {
+      "id": "55268ed3-f5c4-4c5d-9f81-2362582e3da9",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:16:17.411Z"
+    },
+    {
+      "id": "5a90794d-689a-4912-a11c-8aa226769830",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-31T12:39:00.126Z"
+    },
+    {
+      "id": "62389771-604a-495b-af5f-4ad6dee61418",
+      "type": "Finance",
+      "text": "Income saved",
+      "createdAt": "2026-09-01T05:35:57.406Z"
+    },
+    {
+      "id": "630bfbbe-2586-44eb-b5c2-edc911173248",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:09:57.574Z"
+    },
+    {
+      "id": "64c77783-cc42-4a85-ad09-0900cdaef9bf",
+      "type": "Finance",
+      "text": "Monthly budget saved for 2026-09",
+      "createdAt": "2026-08-31T13:13:04.216Z"
+    },
+    {
+      "id": "65b3dabd-73ff-4867-8790-0ac0c7bf6412",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:07:02.273Z"
+    },
+    {
+      "id": "6b5445ac-599c-414f-bb0b-69949d71a5b4",
+      "type": "Finance",
+      "text": "Loan saved",
+      "createdAt": "2026-08-24T04:06:24.229Z"
+    },
+    {
+      "id": "6d28533d-277f-4aee-b052-5325883107b1",
+      "type": "Finance",
+      "text": "Account updated",
+      "createdAt": "2026-08-24T04:10:48.407Z"
+    },
+    {
+      "id": "6e5dd3cd-2969-428b-955d-17cf7559509a",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:17:14.711Z"
+    },
+    {
+      "id": "6ec1e325-907a-434b-a2fa-3e33bd5d351b",
+      "type": "Family",
+      "text": "Member added: Indrani G",
+      "createdAt": "2026-08-28T01:38:49.948Z"
+    },
+    {
+      "id": "6fe315ec-a8a2-4937-82de-3b08eb19fdba",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-09-01T03:53:47.275Z"
+    },
+    {
+      "id": "733c84be-317c-489b-b709-6ea9832ec0bc",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-24T05:23:08.384Z"
+    },
+    {
+      "id": "742900a8-acb6-4e2f-8428-25d3dd91cec9",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-24T05:20:34.083Z"
+    },
+    {
+      "id": "7514b53d-f3e7-4b43-9967-490b5a9ca9f8",
+      "type": "Finance",
+      "text": "Cash added into cash account",
+      "createdAt": "2026-09-01T14:38:36.758Z"
+    },
+    {
+      "id": "7569739b-9622-4667-8116-b9ab47422e94",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-23T15:15:40.751Z"
+    },
+    {
+      "id": "78b1c63f-bcd9-4959-888f-8c64b402c526",
+      "type": "Finance",
+      "text": "Account updated",
+      "createdAt": "2026-09-01T05:29:11.236Z"
+    },
+    {
+      "id": "7ffd16c3-eb27-4801-83a1-a967e7aca986",
+      "type": "Family",
+      "text": "Member updated: Gopalakrishnan K",
+      "createdAt": "2026-08-28T02:15:22.747Z"
+    },
+    {
+      "id": "82cffdbc-a2d2-455d-a316-69166b239fa4",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:24:28.783Z"
+    },
+    {
+      "id": "85449332-a81d-44cb-b162-e4140431c596",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-23T12:28:31.809Z"
+    },
+    {
+      "id": "858df47d-96fa-49e8-97a4-f93fadd3080a",
+      "type": "Finance",
+      "text": "Loan saved",
+      "createdAt": "2026-08-24T04:12:16.404Z"
+    },
+    {
+      "id": "85abef82-5c50-4ade-962c-37077cd5f4dc",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:09:01.599Z"
+    },
+    {
+      "id": "85df33be-7832-4c90-bd0e-f41537289e68",
+      "type": "Family",
+      "text": "Member added: Gopalakrishnan K",
+      "createdAt": "2026-08-24T05:27:02.809Z"
+    },
+    {
+      "id": "87b7cefb-a756-46a4-be9c-8a520c8948ee",
+      "type": "Backup",
+      "text": "JSON backup exported",
+      "createdAt": "2026-08-24T05:27:32.263Z"
+    },
+    {
+      "id": "8f3d6d9c-9dd4-43b1-8f61-e6e90cf97dc4",
+      "type": "Finance",
+      "text": "Income saved",
+      "createdAt": "2026-09-01T05:33:43.029Z"
+    },
+    {
+      "id": "907dd8af-9053-4cba-9d35-38f42a1e84cb",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-24T05:21:57.937Z"
+    },
+    {
+      "id": "92400b76-a8ad-43f2-816f-2c7a267a306f",
+      "type": "Finance",
+      "text": "Account updated",
+      "createdAt": "2026-08-23T15:36:42.879Z"
+    },
+    {
+      "id": "9439a3d2-8a27-4a89-9629-d8cc5b1b58d6",
+      "type": "Finance",
+      "text": "Income saved",
+      "createdAt": "2026-08-31T10:22:17.372Z"
+    },
+    {
+      "id": "95dd2f1d-97e3-4170-9bb8-271a53777282",
+      "type": "Family",
+      "text": "Member updated: Indrani G",
+      "createdAt": "2026-08-29T10:47:19.561Z"
+    },
+    {
+      "id": "9898ba8e-5a14-4a3f-afc7-1aaaa7eed5f8",
+      "type": "Finance",
+      "text": "Gold holding saved",
+      "createdAt": "2026-08-25T05:33:47.848Z"
+    },
+    {
+      "id": "9c6d30db-b96b-4fc5-8604-9e6496ad68d3",
+      "type": "Family",
+      "text": "Member added: Jaswin D",
+      "createdAt": "2026-08-23T15:21:40.187Z"
+    },
+    {
+      "id": "9d7c9125-c204-4f0d-9280-128bb64e2450",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-23T15:25:19.044Z"
+    },
+    {
+      "id": "9d9c9d77-50a8-4d5a-9abd-672e2dc94ce9",
+      "type": "Family",
+      "text": "Vehicle added: My SCOOTY",
+      "createdAt": "2026-08-23T14:44:02.002Z"
+    },
+    {
+      "id": "a04532db-658e-4e1c-abb4-73ae42e02561",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-24T04:04:46.524Z"
+    },
+    {
+      "id": "a24ac3d6-121a-46a2-b88e-36df50d8c7bc",
+      "type": "Finance",
+      "text": "Monthly budget saved for 2026-09",
+      "createdAt": "2026-08-23T12:14:15.340Z"
+    },
+    {
+      "id": "a85d2ac1-62d7-4ed7-acf8-c8ff00a78fb7",
+      "type": "Settings",
+      "text": "Profile updated",
+      "createdAt": "2026-08-23T11:34:08.273Z"
+    },
+    {
+      "id": "abe680cb-f685-4a49-b88f-b8897ed0ce68",
+      "type": "Backup",
+      "text": "JSON backup exported",
+      "createdAt": "2026-08-24T04:17:48.171Z"
+    },
+    {
+      "id": "b19dfc6b-8180-4061-96d0-536a2da72dfd",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-01T14:24:58.368Z"
+    },
+    {
+      "id": "b1c5afd6-a59c-4a9e-b690-dc5f5a354588",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-24T04:08:50.776Z"
+    },
+    {
+      "id": "b4e2f485-f986-4672-9797-efd214636a69",
+      "type": "Finance",
+      "text": "Income record updated",
+      "createdAt": "2026-08-31T13:13:57.861Z"
+    },
+    {
+      "id": "b9646567-2936-4e86-9620-9c728ec45367",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-23T15:38:20.237Z"
+    },
+    {
+      "id": "bc3c070c-47a9-48ec-ab14-85a70612dbf2",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-01T14:39:43.977Z"
+    },
+    {
+      "id": "bd0d1a96-bb2d-4fa8-a651-250fc8950a32",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-23T12:24:51.619Z"
+    },
+    {
+      "id": "c26edefc-3469-4f07-9481-fcefd198d459",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-01T14:23:33.195Z"
+    },
+    {
+      "id": "c2f45847-7c9f-4548-9cc9-c87c6607103b",
+      "type": "Family",
+      "text": "Member updated: Indrani G",
+      "createdAt": "2026-08-29T10:46:38.656Z"
+    },
+    {
+      "id": "c3652412-5604-406b-9474-15833f4cd010",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:08:15.770Z"
+    },
+    {
+      "id": "c5fb0e41-048d-4c95-a7ff-efb5948e0a57",
+      "type": "Finance",
+      "text": "Insurance updated: Term Insurance",
+      "createdAt": "2026-08-23T14:37:49.256Z"
+    },
+    {
+      "id": "d15a3c94-4c36-4684-81fa-383662171d1b",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-24T05:19:08.024Z"
+    },
+    {
+      "id": "d7c81773-c91e-4ec9-bcd1-d9b89717033e",
+      "type": "Finance",
+      "text": "Monthly budget saved for 2026-09",
+      "createdAt": "2026-09-01T03:18:35.945Z"
+    },
+    {
+      "id": "da25d6ed-972b-4241-b023-9151b9daeca8",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-01T14:26:16.447Z"
+    },
+    {
+      "id": "dc5cf1b9-4f90-476a-8c44-e8b3d4df4df1",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-23T15:32:14.921Z"
+    },
+    {
+      "id": "dc724062-5d42-488e-b453-7f2ea1aa435d",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-23T15:30:54.155Z"
+    },
+    {
+      "id": "dd277b97-beef-45d2-866b-8860e9310abd",
+      "type": "Finance",
+      "text": "Balance adjustment recorded for ICICI Bank",
+      "createdAt": "2026-08-24T05:24:18.022Z"
+    },
+    {
+      "id": "e1609696-ab55-4a2c-8aa2-bca4f4fc43df",
+      "type": "Finance",
+      "text": "Income record updated",
+      "createdAt": "2026-08-31T13:14:04.600Z"
+    },
+    {
+      "id": "e274a8be-bced-4b14-9f0f-434ef89546b0",
+      "type": "Finance",
+      "text": "Account updated",
+      "createdAt": "2026-09-01T05:28:56.947Z"
+    },
+    {
+      "id": "e785f4d8-7491-4872-8d1b-a6d3be4732bf",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:22:40.652Z"
+    },
+    {
+      "id": "e9c1be81-0649-4e99-ae0f-7fe48a597e56",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:20:09.824Z"
+    },
+    {
+      "id": "ed0edccc-b364-42e5-a273-b2cdf7dc76ee",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:21:32.447Z"
+    },
+    {
+      "id": "edcd81e5-5e4a-49a4-9add-da7ea2609389",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-01T14:26:33.810Z"
+    },
+    {
+      "id": "ee92c41d-6264-4a45-b711-0a855088f1dd",
+      "type": "Finance",
+      "text": "Insurance added: Term Insurance",
+      "createdAt": "2026-08-23T14:36:43.361Z"
+    },
+    {
+      "id": "ef363661-585f-4223-8270-1d8f51a2ba2b",
+      "type": "Backup",
+      "text": "JSON backup exported",
+      "createdAt": "2026-08-23T12:13:38.538Z"
+    },
+    {
+      "id": "f01aeecd-a170-4c5c-b26d-9bd02acf8c4c",
+      "type": "Finance",
+      "text": "Account transfer recorded",
+      "createdAt": "2026-09-01T05:29:57.551Z"
+    },
+    {
+      "id": "f0c23d6c-0f58-4413-ad64-cbbfa56ca896",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:18:39.633Z"
+    },
+    {
+      "id": "f2dc2bc0-858e-4e97-8f05-84e5367a5383",
+      "type": "Finance",
+      "text": "Account added",
+      "createdAt": "2026-08-23T14:58:12.859Z"
+    },
+    {
+      "id": "f45e10b6-2d9b-431f-a004-46e5fe8e2c05",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:20:52.673Z"
+    },
+    {
+      "id": "f4d7dfd6-8135-46fb-be4b-fb6095f658fc",
+      "type": "Family",
+      "text": "Member added: Jovitha D",
+      "createdAt": "2026-08-23T15:19:05.092Z"
+    },
+    {
+      "id": "f61088e8-9f7e-4f34-a8cb-4284c2bb839e",
+      "type": "Finance",
+      "text": "Expense saved",
+      "createdAt": "2026-09-01T14:25:37.572Z"
+    },
+    {
+      "id": "f6c4a945-cc6d-4b8c-a866-a9a985cf3ebf",
+      "type": "Finance",
+      "text": "Investment record saved",
+      "createdAt": "2026-08-24T03:11:46.328Z"
+    },
+    {
+      "id": "ffae43f5-c072-4932-ab68-a4f8ebcd4f59",
+      "type": "Family",
+      "text": "Member added: Srivenkatrani N",
+      "createdAt": "2026-08-23T14:37:37.037Z"
+    }
+  ],
+  "meta": {
+    "settings": {
+      "id": "settings",
+      "currency": "INR",
+      "name": "Deepanchakkaravarthi G",
+      "pinHash": "G8MgGp8kov5I9jT5DUBqr2y/XjbikocOy6mNdLBl7hs=",
+      "autoLock": 5
+    },
+    "schema": {
+      "id": "schema",
+      "version": 8
+    }
+  }
+}
