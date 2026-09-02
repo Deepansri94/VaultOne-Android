@@ -17,8 +17,6 @@ env:
   ANDROID_API: '35'
   BUILD_TOOLS_VERSION: '35.0.0'
   APP_ID: 'com.vaultone.app'
-  APP_NAME: 'VaultOne'
-
 
 jobs:
 
@@ -40,8 +38,6 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       # 3. SETUP GRADLE
-      # gradle/actions/setup-gradle@v3 supports the gradle-version input.
-      # v4 dropped that input so we pin to v3.
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -70,63 +66,34 @@ jobs:
           java -version
           gradle --version
           echo "ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
-          git --version
 
-      # 6. FIND VAULTONE.HTML
-      - name: Find VaultOne HTML
+      # 6. VALIDATE MODULAR APP FILES
+      # Modular architecture: index.html is the entry point.
+      # All HTML/JS/CSS files must be present.
+      - name: Validate modular app files
         shell: bash
         run: |
           set -e
-          HTML_FILE=""
-          if [ -f "./VaultOne.html" ]; then
-            HTML_FILE="./VaultOne.html"
-          else
-            HTML_FILE=$(find . \
-              -type f \
-              -name "VaultOne.html" \
-              -not -path "./.git/*" \
-              -not -path "./app/build/*" \
-              | head -n 1 || true)
-          fi
-          if [ -z "$HTML_FILE" ]; then
-            echo "ERROR: VaultOne.html not found."
-            find . -type f \( -iname "*.html" -o -iname "*.htm" \) \
-              -not -path "./.git/*" -not -path "./app/build/*" -print || true
+          MISSING=""
+          for f in index.html shared.js shared.css \
+                   iVault.html iVault.js \
+                   FamilyVault.html FamilyVault.js \
+                   PasswordVault.html PasswordVault.js; do
+            if [ ! -f "./$f" ]; then
+              MISSING="$MISSING $f"
+            fi
+          done
+          if [ -n "$MISSING" ]; then
+            echo "ERROR: Missing required files:$MISSING"
             exit 1
           fi
-          HTML_FILE="${HTML_FILE#./}"
-          echo "Found: $HTML_FILE"
-          echo "$HTML_FILE" > vaultone-html-path.txt
+          echo "All modular app files present."
+          ls -lh index.html shared.js shared.css \
+                 iVault.html iVault.js \
+                 FamilyVault.html FamilyVault.js \
+                 PasswordVault.html PasswordVault.js
 
-      # 7. VALIDATE HTML
-      - name: Validate VaultOne HTML
-        shell: bash
-        run: |
-          set -e
-          HTML_FILE=$(cat vaultone-html-path.txt)
-          FILE_SIZE=$(wc -c < "$HTML_FILE")
-          echo "HTML size: ${FILE_SIZE} bytes"
-          if [ "$FILE_SIZE" -lt 100 ]; then
-            echo "ERROR: VaultOne.html appears empty or invalid."
-            exit 1
-          fi
-          head -n 10 "$HTML_FILE" || true
-
-      # 8. OFFLINE DEPENDENCY CHECK (warning only, does not fail build)
-      - name: Check VaultOne offline dependencies
-        shell: bash
-        run: |
-          set +e
-          HTML_FILE=$(cat vaultone-html-path.txt)
-          EXTERNAL_COUNT=$(grep -Eoi 'https?://[^"'"'"' )<>]+' "$HTML_FILE" | sort -u | wc -l)
-          if [ "$EXTERNAL_COUNT" -gt 0 ]; then
-            echo "WARNING: External URLs detected:"
-            grep -Eoi 'https?://[^"'"'"' )<>]+' "$HTML_FILE" | sort -u | head -n 30
-          else
-            echo "No external URLs detected."
-          fi
-
-      # 9. CREATE ANDROID PROJECT STRUCTURE
+      # 7. CREATE ANDROID PROJECT STRUCTURE
       - name: Create Android project structure
         shell: bash
         run: |
@@ -143,7 +110,7 @@ jobs:
             gradle/wrapper
           echo "Android project directories created."
 
-      # 10. COPY APP ICON
+      # 8. COPY APP ICON
       - name: Copy app icon
         shell: bash
         run: |
@@ -160,26 +127,30 @@ jobs:
           convert VaultOne.png -resize 192x192 app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           echo "App icons generated."
 
-      # 11. COPY VAULTONE.HTML AND SEED JSON
-      - name: Copy VaultOne web application
+      # 9. COPY ALL MODULAR APP FILES INTO ASSETS
+      # Entry point: index.html
+      # All pages share shared.js + shared.css
+      - name: Copy modular web application to assets
         shell: bash
         run: |
           set -e
-          HTML_FILE=$(cat vaultone-html-path.txt)
-          cp "$HTML_FILE" "app/src/main/assets/VaultOne.html"
-          if [ ! -f "app/src/main/assets/VaultOne.html" ]; then
-            echo "ERROR: Failed to copy VaultOne.html."
-            exit 1
-          fi
-          if [ -f "./vaultone_seed.json" ]; then
-            cp "./vaultone_seed.json" "app/src/main/assets/vaultone_seed.json"
+          cp index.html          app/src/main/assets/index.html
+          cp shared.js           app/src/main/assets/shared.js
+          cp shared.css          app/src/main/assets/shared.css
+          cp iVault.html         app/src/main/assets/iVault.html
+          cp iVault.js           app/src/main/assets/iVault.js
+          cp FamilyVault.html    app/src/main/assets/FamilyVault.html
+          cp FamilyVault.js      app/src/main/assets/FamilyVault.js
+          cp PasswordVault.html  app/src/main/assets/PasswordVault.html
+          cp PasswordVault.js    app/src/main/assets/PasswordVault.js
+          if [ -f "vaultone_seed.json" ]; then
+            cp vaultone_seed.json app/src/main/assets/vaultone_seed.json
             echo "Seed JSON copied."
-          else
-            echo "WARNING: vaultone_seed.json not found. Skipping."
           fi
+          echo "Assets:"
           ls -lh app/src/main/assets/
 
-      # 12. CREATE SETTINGS.GRADLE
+      # 10. CREATE SETTINGS.GRADLE
       - name: Create settings.gradle
         shell: bash
         run: |
@@ -191,7 +162,6 @@ jobs:
                   gradlePluginPortal()
               }
           }
-
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
               repositories {
@@ -199,13 +169,11 @@ jobs:
                   mavenCentral()
               }
           }
-
           rootProject.name = "VaultOne"
           include(":app")
           EOF
 
-      # 13. CREATE ROOT BUILD.GRADLE
-      # AGP version is taken from the AGP_VERSION env var.
+      # 11. CREATE ROOT BUILD.GRADLE
       - name: Create root build.gradle
         shell: bash
         run: |
@@ -215,7 +183,7 @@ jobs:
           }
           EOF
 
-      # 14. CREATE GRADLE.PROPERTIES
+      # 12. CREATE GRADLE.PROPERTIES
       - name: Create gradle.properties
         shell: bash
         run: |
@@ -227,11 +195,7 @@ jobs:
           android.defaults.buildfeatures.buildconfig=false
           EOF
 
-      # 15. CREATE APP BUILD.GRADLE
-      # androidx.webkit:webkit:1.11.0  — latest stable
-      # androidx.core:core:1.13.0      — latest stable
-      # androidx.appcompat:appcompat:1.7.0 — required for AppCompatActivity
-      # androidx.activity:activity:1.9.0   — required for ActivityResultLauncher + OnBackPressedDispatcher
+      # 13. CREATE APP BUILD.GRADLE
       - name: Create app build.gradle
         shell: bash
         run: |
@@ -239,19 +203,16 @@ jobs:
           plugins {
               id 'com.android.application'
           }
-
           android {
               namespace 'com.vaultone.app'
               compileSdk 35
-
               defaultConfig {
                   applicationId 'com.vaultone.app'
                   minSdk 24
                   targetSdk 35
                   versionCode 1
-                  versionName '1.0'
+                  versionName '2.0'
               }
-
               buildTypes {
                   debug {
                       minifyEnabled false
@@ -262,13 +223,11 @@ jobs:
                       shrinkResources false
                   }
               }
-
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
               }
           }
-
           dependencies {
               implementation 'androidx.webkit:webkit:1.11.0'
               implementation 'androidx.core:core:1.13.0'
@@ -277,8 +236,7 @@ jobs:
           }
           EOF
 
-
-      # 16. CREATE ANDROIDMANIFEST.XML
+      # 14. CREATE ANDROIDMANIFEST.XML
       - name: Create AndroidManifest.xml
         shell: bash
         run: |
@@ -317,7 +275,7 @@ jobs:
           </manifest>
           EOF
 
-      # 17. CREATE THEME
+      # 15. CREATE THEME
       - name: Create Android theme
         shell: bash
         run: |
@@ -335,10 +293,11 @@ jobs:
           </resources>
           EOF
 
-      # 18. CREATE MAINACTIVITY.JAVA
-      # Fixed: onBackPressed() replaced with OnBackPressedDispatcher (API 33+ deprecation)
-      # Fixed: startActivityForResult replaced with ActivityResultLauncher (API 29+ deprecation)
-      # Fixed: setDatabaseEnabled removed (deprecated no-op since API 19)
+
+      # 16. CREATE MAINACTIVITY.JAVA
+      # Entry point loads index.html (modular architecture).
+      # WebViewAssetLoader serves all assets from the same origin
+      # so navigation between index/iVault/FamilyVault/PasswordVault works.
       - name: Create MainActivity.java
         shell: bash
         run: |
@@ -371,6 +330,7 @@ jobs:
           import android.webkit.WebViewClient;
           import android.widget.Toast;
 
+          import androidx.activity.OnBackPressedCallback;
           import androidx.activity.result.ActivityResultLauncher;
           import androidx.activity.result.contract.ActivityResultContracts;
           import androidx.appcompat.app.AppCompatActivity;
@@ -385,17 +345,15 @@ jobs:
               private WebView webView;
               private WebViewAssetLoader assetLoader;
               private ValueCallback<Uri[]> filePathCallback;
+              private ActivityResultLauncher<Intent> filePickerLauncher;
 
               private static final String REMINDER_CHANNEL_ID = "vaultone_reminders";
               private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 48213;
-
-              private ActivityResultLauncher<Intent> filePickerLauncher;
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // Register file picker launcher (replaces deprecated startActivityForResult)
                   filePickerLauncher = registerForActivityResult(
                       new ActivityResultContracts.StartActivityForResult(),
                       result -> {
@@ -422,19 +380,24 @@ jobs:
                   settings.setBuiltInZoomControls(false);
                   settings.setDisplayZoomControls(false);
 
+                  // WebViewAssetLoader serves all modular files from the same
+                  // https://appassets.androidplatform.net/assets/ origin,
+                  // so href="iVault.html", href="shared.js" etc. all resolve correctly.
                   assetLoader = new WebViewAssetLoader.Builder()
                           .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
                           .build();
 
                   webView.setWebViewClient(new WebViewClient() {
                       @Override
-                      public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                      public WebResourceResponse shouldInterceptRequest(
+                              WebView view, WebResourceRequest request) {
                           return assetLoader.shouldInterceptRequest(request.getUrl());
                       }
 
                       @Override
                       @SuppressWarnings("deprecation")
-                      public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+                      public WebResourceResponse shouldInterceptRequest(
+                              WebView view, String url) {
                           return assetLoader.shouldInterceptRequest(Uri.parse(url));
                       }
 
@@ -447,8 +410,8 @@ jobs:
 
                   webView.setWebChromeClient(new WebChromeClient() {
                       @Override
-                      public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback,
-                              FileChooserParams params) {
+                      public boolean onShowFileChooser(WebView view,
+                              ValueCallback<Uri[]> callback, FileChooserParams params) {
                           if (filePathCallback != null) filePathCallback.onReceiveValue(null);
                           filePathCallback = callback;
                           Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -457,7 +420,8 @@ jobs:
                           intent.putExtra(Intent.EXTRA_MIME_TYPES,
                                   new String[]{"application/json", "text/plain"});
                           try {
-                              filePickerLauncher.launch(Intent.createChooser(intent, "Select VaultOne backup JSON"));
+                              filePickerLauncher.launch(
+                                      Intent.createChooser(intent, "Select VaultOne backup JSON"));
                           } catch (Exception e) {
                               filePathCallback = null;
                               return false;
@@ -468,22 +432,21 @@ jobs:
 
                   webView.addJavascriptInterface(new VaultOneAndroidBridge(), "VaultOneAndroid");
                   setContentView(webView);
-                  webView.loadUrl("https://appassets.androidplatform.net/assets/VaultOne.html");
 
-                  // Handle back press using OnBackPressedDispatcher (replaces deprecated onBackPressed)
-                  getOnBackPressedDispatcher().addCallback(this,
-                      new androidx.activity.OnBackPressedCallback(true) {
-                          @Override
-                          public void handleOnBackPressed() {
-                              if (webView != null && webView.canGoBack()) {
-                                  webView.goBack();
-                              } else {
-                                  setEnabled(false);
-                                  getOnBackPressedDispatcher().onBackPressed();
-                              }
+                  // Load the modular entry point
+                  webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+
+                  getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+                      @Override
+                      public void handleOnBackPressed() {
+                          if (webView != null && webView.canGoBack()) {
+                              webView.goBack();
+                          } else {
+                              setEnabled(false);
+                              getOnBackPressedDispatcher().onBackPressed();
                           }
                       }
-                  );
+                  });
               }
 
               private void injectSeedData() {
@@ -495,7 +458,8 @@ jobs:
                       String json = new String(buffer, "UTF-8")
                               .replace("\\", "\\\\")
                               .replace("'", "\\'");
-                      webView.evaluateJavascript("window.__vaultSeedJSON = '" + json + "';", null);
+                      webView.evaluateJavascript(
+                              "window.__vaultSeedJSON = '" + json + "';", null);
                   } catch (Exception e) {
                       // No seed file — fresh install
                   }
@@ -514,7 +478,8 @@ jobs:
                               Uri itemUri = getContentResolver().insert(
                                       MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
                               if (itemUri == null) return false;
-                              try (OutputStream out = getContentResolver().openOutputStream(itemUri)) {
+                              try (OutputStream out =
+                                           getContentResolver().openOutputStream(itemUri)) {
                                   if (out == null) return false;
                                   out.write(json.getBytes("UTF-8"));
                               }
@@ -531,7 +496,8 @@ jobs:
                               }
                           }
                           runOnUiThread(() -> Toast.makeText(MainActivity.this,
-                                  "Saved to Downloads: " + fileName, Toast.LENGTH_LONG).show());
+                                  "Saved to Downloads: " + fileName,
+                                  Toast.LENGTH_LONG).show());
                           return true;
                       } catch (Exception e) {
                           return false;
@@ -545,7 +511,8 @@ jobs:
                                   android.Manifest.permission.POST_NOTIFICATIONS)
                                   == PackageManager.PERMISSION_GRANTED;
                       }
-                      return NotificationManagerCompat.from(MainActivity.this).areNotificationsEnabled();
+                      return NotificationManagerCompat.from(MainActivity.this)
+                              .areNotificationsEnabled();
                   }
 
                   @JavascriptInterface
@@ -568,19 +535,19 @@ jobs:
                           intent.putExtra("notificationId", requestCode);
                           intent.putExtra("title", title);
                           intent.putExtra("body", body);
-                          PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                          PendingIntent pi = PendingIntent.getBroadcast(
                                   MainActivity.this, requestCode, intent,
                                   PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-                          AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                          if (alarmManager == null) return false;
+                          AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                          if (am == null) return false;
                           try {
-                              if (Build.VERSION.SDK_INT >= 31 && !alarmManager.canScheduleExactAlarms()) {
-                                  alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, pendingIntent);
+                              if (Build.VERSION.SDK_INT >= 31 && !am.canScheduleExactAlarms()) {
+                                  am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, pi);
                               } else {
-                                  alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, pendingIntent);
+                                  am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, pi);
                               }
                           } catch (SecurityException se) {
-                              alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, pendingIntent);
+                              am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, when, pi);
                           }
                           return true;
                       } catch (Exception e) {
@@ -593,12 +560,12 @@ jobs:
                       try {
                           int requestCode = stableRequestCode(id);
                           Intent intent = new Intent(MainActivity.this, ReminderReceiver.class);
-                          PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                          PendingIntent pi = PendingIntent.getBroadcast(
                                   MainActivity.this, requestCode, intent,
                                   PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-                          AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                          if (alarmManager != null) alarmManager.cancel(pendingIntent);
-                          pendingIntent.cancel();
+                          AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                          if (am != null) am.cancel(pi);
+                          pi.cancel();
                           NotificationManagerCompat.from(MainActivity.this).cancel(requestCode);
                           return true;
                       } catch (Exception e) {
@@ -616,7 +583,8 @@ jobs:
                   @JavascriptInterface
                   public void requestIgnoreBatteryOptimizations() {
                       try {
-                          Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                          Intent intent = new Intent(
+                                  Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
                           intent.setData(Uri.parse("package:" + getPackageName()));
                           intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                           startActivity(intent);
@@ -655,7 +623,7 @@ jobs:
           }
           EOF
 
-      # 19. CREATE REMINDERRECEIVER.JAVA
+      # 17. CREATE REMINDERRECEIVER.JAVA
       - name: Create ReminderReceiver.java
         shell: bash
         run: |
@@ -699,7 +667,8 @@ jobs:
                   Intent launchIntent = context.getPackageManager()
                           .getLaunchIntentForPackage(context.getPackageName());
                   if (launchIntent != null) {
-                      launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                      launchIntent.setFlags(
+                              Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                       PendingIntent contentIntent = PendingIntent.getActivity(
                               context, notificationId, launchIntent,
                               PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
@@ -709,14 +678,14 @@ jobs:
                   try {
                       NotificationManagerCompat.from(context).notify(notificationId, builder.build());
                   } catch (SecurityException e) {
-                      // POST_NOTIFICATIONS not granted — silently ignore
+                      // POST_NOTIFICATIONS not granted
                   }
               }
 
               private void ensureChannel(Context context) {
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                      NotificationManager manager =
-                              (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                      NotificationManager manager = (NotificationManager)
+                              context.getSystemService(Context.NOTIFICATION_SERVICE);
                       if (manager != null && manager.getNotificationChannel(CHANNEL_ID) == null) {
                           NotificationChannel channel = new NotificationChannel(
                                   CHANNEL_ID, "VaultOne Reminders",
@@ -729,24 +698,22 @@ jobs:
           }
           EOF
 
-      # 20. INSPECT GENERATED PROJECT
+      # 18. INSPECT GENERATED PROJECT
       - name: Inspect generated Android project
         shell: bash
         run: |
-          set -e
           find . -maxdepth 6 -type f \
             \( -name "*.gradle" -o -name "*.xml" -o -name "*.java" \
-               -o -name "VaultOne.html" -o -name "gradle.properties" \) \
+               -o -name "*.html" -o -name "*.js" -o -name "*.css" \
+               -o -name "gradle.properties" \) \
             -not -path "./.git/*" -print | sort
 
-      # 21. VALIDATE GRADLE PROJECT
+      # 19. VALIDATE GRADLE PROJECT
       - name: Validate Gradle project
         shell: bash
-        run: |
-          set -e
-          gradle --no-daemon :app:tasks --stacktrace
+        run: gradle --no-daemon :app:tasks --stacktrace
 
-      # 22. GENERATE GRADLE WRAPPER
+      # 20. GENERATE GRADLE WRAPPER
       - name: Generate Gradle Wrapper
         shell: bash
         run: |
@@ -755,53 +722,49 @@ jobs:
             --gradle-version "${GRADLE_VERSION}" \
             --distribution-type bin
           chmod +x ./gradlew
-          ls -lh ./gradlew ./gradle/wrapper/
 
-      # 23. VERIFY WRAPPER
+      # 21. VERIFY WRAPPER
       - name: Verify Gradle Wrapper
         shell: bash
         run: |
           set -e
-          [ -f "./gradlew" ] || { echo "ERROR: gradlew missing."; exit 1; }
-          [ -f "./gradle/wrapper/gradle-wrapper.properties" ] || { echo "ERROR: wrapper properties missing."; exit 1; }
           chmod +x ./gradlew
           cat ./gradle/wrapper/gradle-wrapper.properties
           ./gradlew --version
 
-      # 24. CLEAN
+      # 22. CLEAN
       - name: Clean Android project
         shell: bash
         run: ./gradlew --no-daemon clean --stacktrace
 
-      # 25. BUILD DEBUG APK
+      # 23. BUILD DEBUG APK
       - name: Build VaultOne Debug APK
         shell: bash
         run: ./gradlew --no-daemon assembleDebug --stacktrace
 
-      # 26. VERIFY APK
+      # 24. VERIFY APK
       - name: Verify APK
         shell: bash
         run: |
           set -e
           DEBUG_APK="./app/build/outputs/apk/debug/app-debug.apk"
           if [ ! -f "$DEBUG_APK" ]; then
-            echo "ERROR: APK not found at $DEBUG_APK"
+            echo "ERROR: APK not found."
             find . -type f -name "*.apk" -not -path "./.git/*" -print || true
             exit 1
           fi
           echo "SUCCESS: APK generated."
           ls -lh "$DEBUG_APK"
 
-      # 27. PREPARE ARTIFACT
+      # 25. PREPARE ARTIFACT
       - name: Prepare VaultOne APK
         shell: bash
         run: |
-          set -e
           mkdir -p release
           cp "./app/build/outputs/apk/debug/app-debug.apk" "./release/VaultOne.apk"
           ls -lh "./release/VaultOne.apk"
 
-      # 28. UPLOAD APK
+      # 26. UPLOAD APK
       - name: Upload VaultOne APK
         uses: actions/upload-artifact@v4
         with:
@@ -809,7 +772,7 @@ jobs:
           path: release/VaultOne.apk
           if-no-files-found: error
 
-      # 29. UPLOAD BUILD REPORTS
+      # 27. UPLOAD BUILD REPORTS
       - name: Upload build reports
         if: always()
         uses: actions/upload-artifact@v4
