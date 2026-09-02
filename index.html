@@ -108,11 +108,32 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 
 /* ===== Quick Add Expense FAB ===== */
 (function(){
-  const CATS = ['Household','Transport','Food & Personal','Health & Emergency','Loans & Financial','Family / Religious / Social','Savings & Investments','Other'];
+  const CATS = {
+    'Household':          ['Rent','Electricity','Water / Maintenance','Internet / Cable','Gas / LPG'],
+    'Transport':          ['Fuel / Petrol','Auto / Cab / Bus','Vehicle EMI','Parking / Toll'],
+    'Food & Personal':    ['Groceries','Vegetables & Fruits','Milk & Dairy','Eating Out / Sweets','Personal Care'],
+    'Health & Emergency': ['Medicine / Pharmacy','Doctor / Hospital','Emergency Fund'],
+    'Loans & Financial':  ['Home Loan EMI','Car / Bike Loan','Personal Loan','Credit Card'],
+    'Family / Religious / Social': ['Festivals / Pooja','Gifts / Events','Donations','School / Tuition'],
+    'Savings & Investments': ['SIP / Mutual Fund','PPF / RD','Insurance Premium','FD'],
+    'Other':              ['Miscellaneous','Subscriptions','Clothing','Home Maintenance']
+  };
+  const catNames = Object.keys(CATS);
+
+  function subcatOpts(cat) {
+    return '<option value="">-- select --</option>' +
+      (CATS[cat] || []).map(s => `<option value="${s}">${s}</option>`).join('');
+  }
+
   document.getElementById('quickExpFab').onclick = () => {
+    const defaultCat = catNames[0];
     openModal('💸 Quick Add Expense', `<form class="grid">
-      <label>Category<select name="category">${CATS.map(c=>`<option>${c}</option>`).join('')}</select></label>
-      <label>Sub-category<input name="subcategory" placeholder="e.g. Rent, Fuel..."></label>
+      <label>Category
+        <select name="category" id="qeCat">${catNames.map(c=>`<option>${c}</option>`).join('')}</select>
+      </label>
+      <label>Sub-category
+        <select name="subcategory" id="qeSubcat">${subcatOpts(defaultCat)}</select>
+      </label>
       <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0" step="0.01" required></label>
       <label>Date <span class="req-star">*</span><input name="date" type="date" required value="${new Date().toISOString().slice(0,10)}"></label>
       <label>Note<input name="note" placeholder="Optional note"></label>
@@ -129,6 +150,14 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
         closeModal(); toast('Expense saved to iVault ✓');
       } catch(e) { toast('Could not save: ' + e.message, true); }
     });
+    // Wire category → subcategory after modal renders
+    setTimeout(() => {
+      const catSel = document.getElementById('qeCat');
+      const subSel = document.getElementById('qeSubcat');
+      if (catSel && subSel) {
+        catSel.addEventListener('change', () => { subSel.innerHTML = subcatOpts(catSel.value); });
+      }
+    }, 0);
   };
 })();
 </script>

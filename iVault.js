@@ -21,6 +21,7 @@ let _currentSV = 'overview';
 let _budgetMonth = new Date().toISOString().slice(0,7);
 
 let _budgetLocked = false;
+let _budgetEditMode = false; // true only when user explicitly clicks Edit
 
 /* ===== Boot ===== */
 (async () => {
@@ -189,6 +190,32 @@ async function renderIncome() {
 }
 
 /* ===== Expenses ===== */
+async function incomeEditModal(id) {
+  const row = await getOne('income', id); if (!row) return;
+  const typeOpts = ['Salary','Shift Allowance','Interest','Dividend','Other Income']
+    .map(type => `<option ${row.type === type ? 'selected' : ''}>${esc(type)}</option>`).join('');
+  openModal('Edit Income', `<form class="grid">
+    <label>Type<select name="type">${typeOpts}</select></label>
+    <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0" step="0.01" required value="${Number(row.amount || 0)}"></label>
+    <label>Date <span class="req-star">*</span><input name="date" type="date" required value="${esc(row.date || '')}"></label>
+    <label>Note<input name="note" value="${esc(row.note || '')}" placeholder="Optional note"></label>
+    <div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Save Changes</button></div>
+  </form>`, async fd => {
+    const amount = Number(fd.get('amount'));
+    if (amount <= 0) { toast('Enter a valid amount', true); return; }
+    row.type = fd.get('type') || 'Income';
+    row.amount = amount;
+    row.date = fd.get('date') || today();
+    row.note = fd.get('note') || '';
+    row.updatedAt = new Date().toISOString();
+    await putOne('income', row);
+    await logActivity('Income', 'Income updated');
+    closeModal(); toast('Income updated');
+    await renderIncome(); await renderOverview();
+  });
+}
+
+/* ===== Expenses ===== */
 async function renderExpenses() {
   const rows = await getAll('expenses');
   const sorted = rows.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
@@ -219,7 +246,7 @@ async function renderExpenses() {
 }
 
 /* ===== Expense form — dynamic sub-category ===== */
-const INV_LINKABLE = ['RD','PPF','SSA','NPS','Other Saving']; // Demat excluded
+const INV_LINKABLE = ['RD','PPF','SSA','NPS','Insurance','Other Saving']; // Demat excluded
 
 // Returns current sub-cats for a category (merges defaults + any user-added ones stored in meta)
 function getSubcats(category) {
@@ -245,8 +272,13 @@ async function populateExpLinked(category) {
     subcatLabel.style.display = 'none';
   } else if (category === 'Savings & Investments') {
     const invs = (await getAll('investments')).filter(x => INV_LINKABLE.includes(x.type));
-    linkedSel.innerHTML = '<option value="">— select investment —</option>' +
-      invs.map(x => `<option value="${x.id}">${esc(x.name || x.type)} (${esc(x.type)}) · ${money(x.currentValue, state.settings.currency)}</option>`).join('');
+    linkedSel.innerHTML = '<option value="">— select investment/insurance —</option>' +
+      invs.map(x => {
+        const label = x.type === 'Insurance'
+          ? `${esc(x.name)} · Premium: ${money(x.premiumAmount || 0, state.settings.currency)} · Due: ${esc(x.premiumDueDate || '—')}`
+          : `${esc(x.name || x.type)} (${esc(x.type)}) · ${money(x.currentValue, state.settings.currency)}`;
+        return `<option value="${x.id}">${label}</option>`;
+      }).join('');
     linkedLabel.style.display = '';
     subcatLabel.style.display = 'none';
   } else {
@@ -258,74 +290,112 @@ async function populateExpLinked(category) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Wire category change on expense form
-  const catSel = document.querySelector('#expenseForm [name="category"]');
-  catSel?.addEventListener('change', () => populateExpLinked(catSel.value));
 
-  $('budgetEditBtn')?.addEventListener('click', () => {
-    _budgetLocked = false;
-    $('budgetEditBtn').style.display = 'none';
-    renderBudget();
-  });
+// Wire directly -- script runs at end of body so DOM is already parsed
+const _expCatSel = document.querySelector('#expenseForm [name="category"]');
+_expCatSel?.addEventListener('change', () => populateExpLinked(_expCatSel.value));
+if (_expCatSel) populateExpLinked(_expCatSel.value);
 
-  $('incomeForm')?.addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const amount = Number(fd.get('amount'));
-    if (amount <= 0) { toast('Enter a valid amount', true); return; }
-    await putOne('income', { id: uid(), type: fd.get('type'), amount, date: fd.get('date') || today(), note: fd.get('note') || '', createdAt: new Date().toISOString() });
-    await logActivity('Income','Income saved');
-    toast('Income saved'); e.currentTarget.reset();
-    await renderIncome(); await renderOverview();
-  });
+$('budgetEditBtn').addEventListener('click', () => {
+  _budgetLocked = false;
+  _budgetEditMode = true;
+  $('budgetEditBtn').style.display = 'none';
+  renderBudget();
+});
 
-  $('expenseForm')?.addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const amount = Number(fd.get('amount'));
-    if (amount <= 0) { toast('Enter a valid amount', true); return; }
-    const category = fd.get('category') || '';
-    const linkedId = fd.get('linkedId') || '';
-    const date = fd.get('date') || today();
-    let subcategory = fd.get('subcategory') || '';
-    let paidMsg = '';
-    if (category === 'Loans & Financial' && linkedId) {
-      const loan = await getOne('loans', linkedId);
-      if (loan) {
-        subcategory = loan.name || loan.loanType;
-        await reduceLoanOutstanding(loan, amount, date);
-        paidMsg = `Paid ${money(amount, state.settings.currency)} toward "${subcategory}" on ${date}`;
-      }
-    } else if (category === 'Savings & Investments' && linkedId) {
-      const inv = await getOne('investments', linkedId);
-      if (inv) {
-        subcategory = inv.name || inv.type;
+$('incomeForm').onsubmit = async e => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const fd = new FormData(form);
+  const amount = Number(fd.get('amount'));
+  if (amount <= 0) { toast('Enter a valid amount', true); return; }
+  await putOne('income', { id: uid(), type: fd.get('type'), amount, date: fd.get('date') || today(), note: fd.get('note') || '', createdAt: new Date().toISOString() });
+  await logActivity('Income', 'Income saved');
+  toast('Income saved');
+  form.querySelector('[name="amount"]').value = '';
+  form.querySelector('[name="note"]').value = '';
+  form.querySelector('[name="date"]').value = today();
+  await renderIncome(); await renderOverview();
+};
+
+$('expenseForm').onsubmit = async e => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const fd = new FormData(form);
+  const amount = Number(fd.get('amount'));
+  if (amount <= 0) { toast('Enter a valid amount', true); return; }
+  const category = fd.get('category') || '';
+  const linkedId = fd.get('linkedId') || '';
+  const date = fd.get('date') || today();
+  let subcategory = fd.get('subcategory') || '';
+  let paidMsg = '';
+  if (category === 'Loans & Financial' && linkedId) {
+    const loan = await getOne('loans', linkedId);
+    if (loan) {
+      subcategory = loan.name || loan.loanType;
+      await reduceLoanOutstanding(loan, amount, date);
+      paidMsg = `Paid ${money(amount, state.settings.currency)} toward "${subcategory}" on ${date}`;
+    }
+  } else if (category === 'Savings & Investments' && linkedId) {
+    const inv = await getOne('investments', linkedId);
+    if (inv) {
+      subcategory = inv.name || inv.type;
+      if (inv.type === 'Insurance') {
+        // Record premium payment and advance due date
+        if (!inv.payments) inv.payments = [];
+        inv.payments.push({ date, amount, note: fd.get('note') || '' });
+        // Advance due date by frequency
+        if (inv.premiumDueDate) {
+          const d = new Date(inv.premiumDueDate + 'T00:00:00');
+          const freq = inv.premiumFrequency || 'Yearly';
+          if (freq === 'Monthly')      d.setMonth(d.getMonth() + 1);
+          else if (freq === 'Quarterly') d.setMonth(d.getMonth() + 3);
+          else if (freq === 'Half-Yearly') d.setMonth(d.getMonth() + 6);
+          else                           d.setFullYear(d.getFullYear() + 1);
+          const pad = n => String(n).padStart(2,'0');
+          inv.premiumDueDate = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+          // Update reminder to next due date
+          await putOne('reminders', {
+            id: 'ins-due-' + inv.id,
+            title: 'Insurance Premium Due: ' + inv.name,
+            date: inv.premiumDueDate, time: '09:00', priority: 'High',
+            description: `Premium: ${money(inv.premiumAmount || amount, state.settings.currency)} · Insurer: ${inv.provider || ''}`,
+            completed: false, source: 'insurance', investmentId: inv.id,
+            createdAt: new Date().toISOString()
+          });
+          renderBellReminders();
+        }
+        await putOne('investments', inv);
+        await logActivity('Insurance', `Premium paid: ${money(amount, state.settings.currency)} for ${inv.name}`);
+        paidMsg = `Premium of ${money(amount, state.settings.currency)} paid for "${subcategory}" on ${date}`;
+      } else {
         inv.currentValue = (Number(inv.currentValue) || 0) + amount;
         await putOne('investments', inv);
         await logActivity('Investment', `Top-up: ${money(amount, state.settings.currency)} added to ${inv.name}`);
         paidMsg = `Added ${money(amount, state.settings.currency)} to "${subcategory}" on ${date}`;
       }
     }
+  }
+  await putOne('expenses', { id: uid(), category, subcategory, amount, date, note: fd.get('note') || '', createdAt: new Date().toISOString() });
+  await logActivity('Expense', 'Expense saved');
+  if (paidMsg) {
+    const info = $('expPaidInfo');
+    if (info) { info.textContent = '✅ ' + paidMsg; info.style.display = ''; }
+    toast(paidMsg);
+  } else {
+    toast('Expense saved');
+  }
+  form.querySelector('[name="amount"]').value = '';
+  form.querySelector('[name="note"]').value = '';
+  form.querySelector('[name="date"]').value = today();
+  $('expSubcatLabel').style.display = '';
+  $('expLinkedLabel').style.display = 'none';
+  const _ec2 = form.querySelector('[name="category"]');
+  if (_ec2) { _ec2.value = 'Household'; await populateExpLinked('Household'); }
+  await renderExpenses(); await renderOverview();
+};
 
-    await putOne('expenses', { id: uid(), category, subcategory, amount, date, note: fd.get('note') || '', createdAt: new Date().toISOString() });
-    await logActivity('Expense', 'Expense saved');
 
-    if (paidMsg) {
-      const info = $('expPaidInfo');
-      if (info) { info.textContent = '✅ ' + paidMsg; info.style.display = ''; }
-      toast(paidMsg);
-    } else {
-      toast('Expense saved');
-    }
-
-    e.currentTarget.reset();
-    $('expSubcatLabel').style.display = '';
-    $('expLinkedLabel').style.display = 'none';
-    await populateExpLinked('Household'); // reset subcats to default category
-    await renderExpenses(); await renderOverview();
-  });
-});
 
 async function reduceLoanOutstanding(loan, emiAmount, date) {
   const N = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
@@ -393,6 +463,10 @@ async function renderBudget() {
   const rec = bud.find(b => b.month === month);
   const cats = rec?.categories || {};
 
+  // Lock if a saved record exists and user hasn't explicitly clicked Edit
+  if (rec && !_budgetEditMode) _budgetLocked = true;
+  else if (!rec) _budgetLocked = false;
+
   $('budgetCategoryFields').innerHTML = BUDGET_CATS.map(c => {
     const safeId = c.replace(/[^a-z0-9]/gi, '_');
     const subs = getSubcats(c);
@@ -431,6 +505,9 @@ async function renderBudget() {
     $('budgetCategoryFields').querySelectorAll('button').forEach(el => el.disabled = true);
     if (budgetEditBtn) budgetEditBtn.style.display = 'inline-flex';
   } else {
+    $('budgetForm').querySelectorAll('input[type="number"]').forEach(el => el.disabled = false);
+    $('budgetForm').querySelector('button[type="submit"]').disabled = false;
+    $('budgetCategoryFields').querySelectorAll('button').forEach(el => el.disabled = false);
     if (budgetEditBtn) budgetEditBtn.style.display = 'none';
   }
 
@@ -526,6 +603,7 @@ $('budgetForm').onsubmit = async e => {
   await logActivity('Budget', 'Budget saved for ' + month);
   toast('Budget saved');
   _budgetLocked = true;
+  _budgetEditMode = false;
   await renderBudget(); await renderOverview();
 };
 
@@ -534,6 +612,7 @@ $('budgetPrev').onclick = () => {
   d.setMonth(d.getMonth() - 1);
   _budgetMonth = d.toISOString().slice(0, 7);
   _budgetLocked = false;
+  _budgetEditMode = false;
   renderBudget();
 };
 $('budgetNext').onclick = () => {
@@ -541,11 +620,12 @@ $('budgetNext').onclick = () => {
   d.setMonth(d.getMonth() + 1);
   _budgetMonth = d.toISOString().slice(0, 7);
   _budgetLocked = false;
+  _budgetEditMode = false;
   renderBudget();
 };
 
 /* ===== Investments (balance trackers only) ===== */
-const INV_TYPES = ['FD','RD','PPF','SSA','NPS','Demat','Gold','Other Saving'];
+const INV_TYPES = ['FD','RD','PPF','SSA','NPS','Demat','Gold','Insurance','Other Saving'];
 
 async function renderInvestments() {
   const rows = await getAll('investments');
@@ -557,17 +637,35 @@ async function renderInvestments() {
   INV_TYPES.forEach(t => {
     if (!grouped[t].length) return;
     html += `<div class="inv-section-head">${esc(t)}</div>`;
-    html += grouped[t].map(x => `<div class="item">
-      <div style="min-width:0;flex:1">
-        <div class="title">${esc(x.name || x.type)}</div>
-        <div class="sub">${esc(x.provider || x.bankName || '')}${x.accountNumber ? ' · A/C: ' + esc(x.accountNumber) : ''}</div>
-        <div class="sub">Current Value: <b>${money(x.currentValue, state.settings.currency)}</b></div>
-      </div>
-      <div class="actions">
-        <button class="btn-icon" data-invedit="${x.id}" title="Edit">✏️</button>
-        <button class="btn-icon danger" data-invdel="${x.id}" title="Delete">🗑️</button>
-      </div>
-    </div>`).join('');
+    html += grouped[t].map(x => {
+      const isIns = x.type === 'Insurance';
+      const payments = (x.payments || []).slice().reverse();
+      const payHtml = isIns && payments.length
+        ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">Premium History (${payments.length})</summary>
+            <div style="margin-top:6px">${payments.map(p =>
+              `<div style="font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid #ffffff08">
+                Paid ${money(p.amount, state.settings.currency)} on ${esc(p.date)}${p.note ? ' · ' + esc(p.note) : ''}
+              </div>`).join('')}
+            </div></details>` : '';
+      const valueRow = isIns
+        ? `<div class="sub">Premium: <b>${money(x.premiumAmount || 0, state.settings.currency)}</b> · ${esc(x.premiumFrequency || 'Yearly')}</div>
+           <div class="sub">Next Due: <b class="${x.premiumDueDate ? 'warn' : 'muted'}">${esc(x.premiumDueDate || '—')}</b></div>`
+        : `<div class="sub">Current Value: <b>${money(x.currentValue, state.settings.currency)}</b></div>`;
+      return `<div class="item" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="min-width:0;flex:1">
+            <div class="title">${esc(x.name || x.type)}</div>
+            <div class="sub">${esc(x.provider || x.bankName || '')}${x.accountNumber ? ' · ' + esc(x.accountNumber) : ''}</div>
+            ${valueRow}
+          </div>
+          <div class="actions">
+            <button class="btn-icon" data-invedit="${x.id}" title="Edit">✏️</button>
+            <button class="btn-icon danger" data-invdel="${x.id}" title="Delete">🗑️</button>
+          </div>
+        </div>
+        ${payHtml}
+      </div>`;
+    }).join('');
   });
   $('invList').innerHTML = html;
   $('invList').querySelectorAll('[data-invedit]').forEach(b => b.onclick = async () => {
@@ -585,35 +683,75 @@ $('addInvBtn').onclick = () => invModal();
 
 function invModal(existing = null) {
   const typeOpts = INV_TYPES.map(t => `<option ${existing?.type === t ? 'selected' : ''}>${t}</option>`).join('');
+  const isIns = existing?.type === 'Insurance';
+  const freqOpts = ['Monthly','Quarterly','Half-Yearly','Yearly'].map(f =>
+    `<option ${(existing?.premiumFrequency || 'Yearly') === f ? 'selected' : ''}>${f}</option>`).join('');
   openModal(existing ? 'Edit Investment' : 'Add Investment', `<form class="grid">
-    <label>Type <span class="req-star">*</span><select name="type" required>${typeOpts}</select></label>
+    <label>Type <span class="req-star">*</span><select name="type" required id="invTypeSelect">${typeOpts}</select></label>
     <label>Name <span class="req-star">*</span><input name="name" required value="${esc(existing?.name || '')}"></label>
-    <label>Provider / Bank<input name="provider" value="${esc(existing?.provider || existing?.bankName || '')}"></label>
-    <label>Account Number<input name="accountNumber" value="${esc(existing?.accountNumber || '')}"></label>
-    <label>Current Value <span class="req-star">*</span><input name="currentValue" type="number" min="0" step="0.01" required value="${Number(existing?.currentValue || 0)}"></label>
+    <label>Provider / Insurer<input name="provider" value="${esc(existing?.provider || existing?.bankName || '')}"></label>
+    <label>Account / Policy Number<input name="accountNumber" value="${esc(existing?.accountNumber || '')}"></label>
+    <label id="invCurrValLabel" ${isIns ? 'style="display:none"' : ''}>Current Value <span class="req-star">*</span><input name="currentValue" type="number" min="0" step="0.01" value="${Number(existing?.currentValue || 0)}"></label>
+    <label id="invPremiumLabel" ${!isIns ? 'style="display:none"' : ''}>Premium Amount <span class="req-star">*</span><input name="premiumAmount" type="number" min="0" step="0.01" value="${Number(existing?.premiumAmount || 0)}"></label>
+    <label id="invFreqLabel" ${!isIns ? 'style="display:none"' : ''}>Premium Frequency<select name="premiumFrequency">${freqOpts}</select></label>
+    <label id="invPremDueLabel" ${!isIns ? 'style="display:none"' : ''}>Next Premium Due Date<input name="premiumDueDate" type="date" value="${esc(existing?.premiumDueDate || '')}"></label>
     <label>Interest Rate (%)<input name="interestRate" type="number" min="0" step="0.01" value="${Number(existing?.interestRate || 0)}"></label>
     <label>Start Date<input name="startDate" type="date" value="${esc(existing?.startDate || '')}"></label>
-    <label>Maturity Date<input name="maturityDate" type="date" value="${esc(existing?.maturityDate || '')}"></label>
+    <label id="invMatLabel" ${isIns ? 'style="display:none"' : ''}>Maturity Date<input name="maturityDate" type="date" value="${esc(existing?.maturityDate || '')}"></label>
     <label style="grid-column:1/-1">Notes<textarea name="notes">${esc(existing?.notes || '')}</textarea></label>
     <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save</button></div>
   </form>`, async fd => {
+    const type = fd.get('type');
+    const isInsurance = type === 'Insurance';
     const record = {
       id: existing?.id || uid(),
-      type: fd.get('type'), name: fd.get('name').trim(),
+      type, name: fd.get('name').trim(),
       provider: fd.get('provider').trim(), bankName: fd.get('provider').trim(),
       accountNumber: fd.get('accountNumber').trim(),
-      currentValue: Number(fd.get('currentValue')),
+      currentValue: isInsurance ? 0 : Number(fd.get('currentValue') || 0),
+      premiumAmount: isInsurance ? Number(fd.get('premiumAmount') || 0) : undefined,
+      premiumFrequency: isInsurance ? fd.get('premiumFrequency') : undefined,
+      premiumDueDate: isInsurance ? (fd.get('premiumDueDate') || '') : undefined,
       interestRate: Number(fd.get('interestRate') || 0),
-      startDate: fd.get('startDate') || '', maturityDate: fd.get('maturityDate') || '',
+      startDate: fd.get('startDate') || '',
+      maturityDate: isInsurance ? '' : (fd.get('maturityDate') || ''),
       notes: fd.get('notes').trim(),
+      payments: existing?.payments || [],
       createdAt: existing?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+    if (isInsurance && record.premiumAmount <= 0) { toast('Enter a valid premium amount', true); return; }
+    if (!isInsurance && record.currentValue < 0) { toast('Enter a valid current value', true); return; }
     await putOne('investments', record);
+    // Auto-create reminder for insurance premium due date
+    if (isInsurance && record.premiumDueDate) {
+      await putOne('reminders', {
+        id: 'ins-due-' + record.id,
+        title: 'Insurance Premium Due: ' + record.name,
+        date: record.premiumDueDate, time: '09:00', priority: 'High',
+        description: `Premium: ${money(record.premiumAmount, state.settings.currency)} · Frequency: ${record.premiumFrequency} · Insurer: ${record.provider}`,
+        completed: false, source: 'insurance', investmentId: record.id,
+        createdAt: new Date().toISOString()
+      });
+      renderBellReminders();
+    }
     await logActivity('Investment', (existing ? 'Investment updated: ' : 'Investment added: ') + record.name);
     closeModal(); toast(existing ? 'Investment updated' : 'Investment saved');
     await renderInvestments(); await renderOverview();
   });
+  // Toggle Insurance-specific fields when type changes
+  setTimeout(() => {
+    const sel = document.getElementById('invTypeSelect');
+    if (!sel) return;
+    sel.addEventListener('change', () => {
+      const ins = sel.value === 'Insurance';
+      document.getElementById('invCurrValLabel').style.display  = ins ? 'none' : '';
+      document.getElementById('invPremiumLabel').style.display  = ins ? '' : 'none';
+      document.getElementById('invFreqLabel').style.display     = ins ? '' : 'none';
+      document.getElementById('invPremDueLabel').style.display  = ins ? '' : 'none';
+      document.getElementById('invMatLabel').style.display      = ins ? 'none' : '';
+    });
+  }, 0);
 }
 
 /* ===== Loans (balance trackers only) ===== */

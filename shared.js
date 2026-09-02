@@ -86,7 +86,11 @@ async function openDB(dbName, version, stores) {
       const d = e.target.result;
       stores.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); });
     };
-    r.onsuccess = () => { db = r.result; resolve(); };
+    r.onsuccess = () => {
+      db = r.result;
+      db.onversionchange = () => db.close();
+      resolve();
+    };
     r.onerror = () => reject(r.error);
   });
 }
@@ -198,6 +202,7 @@ function renderBellReminders() {
       if (!r) return;
       r.completed = true;
       await putOne('reminders', r);
+      swCancelReminder(r);
       await logActivity('Reminder', 'Reminder completed');
       renderBellReminders();
       if (typeof renderHome === 'function') renderHome();
@@ -231,13 +236,15 @@ function reminderModal(existing = null) {
       ${isEdit ? '<button type="button" class="btn danger" id="remDelBtn">Delete</button>' : ''}
     </div>
   </form>`, async fd => {
-    await putOne('reminders', {
+    const _rem = {
       id: existing?.id || uid(),
       title: fd.get('title'), date: fd.get('date'), time: fd.get('time'),
       priority: fd.get('priority'), description: fd.get('description'),
       completed: existing?.completed || false,
       createdAt: existing?.createdAt || new Date().toISOString()
-    });
+    };
+    await putOne('reminders', _rem);
+    swScheduleReminder(_rem);
     await logActivity('Reminder', isEdit ? 'Reminder updated' : 'Reminder added');
     closeModal(); toast('Reminder saved');
     renderBellReminders();
@@ -282,6 +289,7 @@ async function snoozeReminder(reminder, opts) {
   reminder.time = `${pad(target.getHours())}:${pad(target.getMinutes())}`;
   reminder.completed = false;
   await putOne('reminders', reminder);
+  swScheduleReminder(reminder);
   await logActivity('Reminder', 'Reminder snoozed');
   closeModal(); toast('Reminder snoozed');
   renderBellReminders();
@@ -332,6 +340,7 @@ async function snoozeReminder(reminder, opts) {
       const st = document.getElementById('bellNotifStatus');
       if (st) st.textContent = 'Notifications: ' + p;
       toast(p === 'granted' ? 'Notifications enabled' : 'Permission not granted', p !== 'granted');
+      if (p === 'granted') setTimeout(() => window._checkReminders?.(), 500);
     });
   }
   form?.addEventListener('submit', async e => {
@@ -341,13 +350,15 @@ async function snoozeReminder(reminder, opts) {
     const date = String(fd.get('date') || '').trim();
     if (!title) { toast('Enter a reminder title', true); return; }
     if (!date) { toast('Select a date', true); return; }
-    await putOne('reminders', {
+    const _qrem = {
       id: uid(), title, date,
       time: String(fd.get('time') || '09:00'),
       priority: String(fd.get('priority') || 'Normal'),
       description: String(fd.get('description') || ''),
       completed: false, createdAt: new Date().toISOString()
-    });
+    };
+    await putOne('reminders', _qrem);
+    swScheduleReminder(_qrem);
     await logActivity('Reminder', 'Reminder added');
     toast('Reminder saved'); setFormVisible(false);
     renderBellReminders();
@@ -443,15 +454,15 @@ async function snoozeReminder(reminder, opts) {
     const fmt = n.format || 'text';
     const body = n.body || '';
     if (fmt === 'checklist') {
-      const items = body.split('\n').map(line => {
+      const items = body.split('\n').map((line, idx) => {
         const checked = /^\[x\]/i.test(line.trim());
         const text = line.replace(/^\[.\]\s*/i, '').trim();
-        return `<div style="display:flex;align-items:flex-start;gap:7px;padding:3px 0">
-          <span style="font-size:16px;line-height:1.3;flex:0 0 auto">${checked ? '✅' : '⬜'}</span>
-          <span style="${checked ? 'text-decoration:line-through;color:#94a3b8' : ''}">${esc(text)}</span>
+        return `<div style="display:flex;align-items:flex-start;gap:7px;padding:3px 0;cursor:pointer" data-clitem="${idx}" data-noteid="${n.id}">
+          <span style="font-size:16px;line-height:1.3;flex:0 0 auto;pointer-events:none">${checked ? '✅' : '⬜'}</span>
+          <span style="pointer-events:none;${checked ? 'text-decoration:line-through;color:#94a3b8' : ''}">${esc(text)}</span>
         </div>`;
       }).join('');
-      return `<div style="font-size:13px">${items}</div>`;
+      return `<div style="font-size:13px" data-checklist="${n.id}">${items}</div>`;
     }
     if (fmt === 'table') {
       const lines = body.split('\n').filter(l => l.trim());
@@ -483,6 +494,21 @@ async function snoozeReminder(reminder, opts) {
       </div></div>`).join('');
     listEl.querySelectorAll('[data-nedit]').forEach(b => b.onclick = async () => { const n = await getOne('notes', b.dataset.nedit); if (n) showForm(n); });
     listEl.querySelectorAll('[data-ndel]').forEach(b => b.onclick = async () => { if (!confirm('Delete note?')) return; await delOne('notes', b.dataset.ndel); renderNotesList(); toast('Deleted'); });
+    // Checklist item toggle
+    listEl.querySelectorAll('[data-clitem]').forEach(el => el.onclick = async () => {
+      const noteId = el.dataset.noteid;
+      const idx = Number(el.dataset.clitem);
+      const note = await getOne('notes', noteId);
+      if (!note) return;
+      const lines = note.body.split('\n');
+      const line = lines[idx] || '';
+      const checked = /^\[x\]/i.test(line.trim());
+      lines[idx] = checked ? '[ ] ' + line.replace(/^\[.\]\s*/i, '') : '[x] ' + line.replace(/^\[.\]\s*/i, '');
+      note.body = lines.join('\n');
+      note.updatedAt = new Date().toISOString();
+      await putOne('notes', note);
+      renderNotesList();
+    });
   }
   window.renderNotesList = renderNotesList;
 })();
@@ -513,7 +539,7 @@ async function snoozeReminder(reminder, opts) {
       </div>
       <div class="actions" style="margin-top:14px">
         <button class="btn primary" id="spSave">Save Settings</button>
-        <button class="btn" id="spActLogBtn">📜 Activity Log</button>
+        ${'noActLog' in document.body.dataset ? '' : '<button class="btn" id="spActLogBtn">📜 Activity Log</button>'}
       </div>
       <div id="spModuleExtra"></div>`;
     document.body.appendChild(panel);
@@ -530,16 +556,12 @@ async function snoozeReminder(reminder, opts) {
       toast('Settings saved');
       closeSettingsPanel();
     };
-    document.getElementById('spActLogBtn').onclick = () => {
-      if (!db || document.body.dataset.noActLog) { return; }
+    document.getElementById('spActLogBtn')?.addEventListener('click', () => {
+      if (!db) return;
       closeSettingsPanel();
       openModal('\ud83d\udcdc Activity Log', '<div id="spActLogContainer"></div>');
       setTimeout(() => renderActivityLog('spActLogContainer'), 0);
-    };
-    // Hide activity log button on pages that don't have their own activity store
-    if (document.body.dataset.noActLog) {
-      document.getElementById('spActLogBtn').style.display = 'none';
-    }
+    });
     document.addEventListener('click', e => {
       if (!panel.classList.contains('open')) return;
       const btn = document.getElementById('settingsBtn');
@@ -638,3 +660,78 @@ async function enableNotifications() {
   updateNotificationStatus();
   toast(p === 'granted' ? 'Notifications enabled' : 'Permission not granted', p !== 'granted');
 }
+
+/* ===== Service Worker registration & messaging ===== */
+let _swReg = null;
+
+async function _registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    _swReg = await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+  } catch { _swReg = null; }
+}
+
+function _swPost(msg) {
+  if (!_swReg) return;
+  const sw = _swReg.active || _swReg.installing || _swReg.waiting;
+  sw?.postMessage(msg);
+}
+
+// Call after any reminder save/update to push it to the SW
+function swScheduleReminder(r) { _swPost({ type: 'SCHEDULE', reminder: r }); }
+function swCancelReminder(r)   { _swPost({ type: 'CANCEL',   reminder: r }); }
+
+async function swScheduleAll() {
+  if (!db) return;
+  try {
+    const all = await getAll('reminders');
+    const pending = all.filter(r => !r.completed);
+    _swPost({ type: 'SCHEDULE_ALL', reminders: pending });
+  } catch {}
+}
+
+// Register SW and schedule all pending reminders on page load
+_registerSW().then(() => setTimeout(swScheduleAll, 1500));
+
+/* ===== Browser notification scheduler (tab-open fallback) ===== */
+(function () {
+  const FIRED_KEY = 'vaultone_notif_fired';
+  function getFired() { try { return JSON.parse(localStorage.getItem(FIRED_KEY) || '{}'); } catch { return {}; } }
+  function fireKey(r) { return r.id + '|' + r.date + 'T' + (r.time || '09:00'); }
+  function markFired(r) { const f = getFired(); f[fireKey(r)] = Date.now(); localStorage.setItem(FIRED_KEY, JSON.stringify(f)); }
+  function wasFired(r) { return !!getFired()[fireKey(r)]; }
+
+  async function checkReminders() {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!db) return;
+    let rows;
+    try { rows = await getAll('reminders'); } catch { return; }
+    const now = new Date();
+    for (const r of rows) {
+      if (r.completed) continue;
+      const due = new Date(`${r.date}T${r.time || '09:00'}`);
+      if (isNaN(due.getTime())) continue;
+      if (now >= due && !wasFired(r)) {
+        markFired(r);
+        try {
+          new Notification(r.title || 'Reminder', {
+            body: r.description || formatReminderDT(r.date, r.time),
+            icon: 'VaultOne.png',
+            tag: fireKey(r)
+          });
+        } catch {}
+      }
+    }
+    // Purge fired log entries older than 7 days
+    const cutoff = Date.now() - 7 * 86400000;
+    const f = getFired();
+    let changed = false;
+    for (const k of Object.keys(f)) { if (f[k] < cutoff) { delete f[k]; changed = true; } }
+    if (changed) localStorage.setItem(FIRED_KEY, JSON.stringify(f));
+  }
+
+  setInterval(checkReminders, 60000);
+  setTimeout(checkReminders, 2000);
+  window._checkReminders = checkReminders;
+})();

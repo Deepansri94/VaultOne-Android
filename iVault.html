@@ -23,6 +23,7 @@
 .loan-item .title { font-weight: 800; }
 .loan-item .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
 .loan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+#budgetSaveBtn { position: relative; z-index: 31; }
 </style>
 </head>
 <body>
@@ -85,9 +86,9 @@
   <div class="sub-view" id="sv-income">
     <div class="card">
       <h3>Add Income</h3>
-      <form id="incomeForm" class="grid">
+      <form id="incomeForm" class="grid" autocomplete="off">
         <label>Type<select name="type"><option>Salary</option><option>Shift Allowance</option><option>Interest</option><option>Dividend</option><option>Other Income</option></select></label>
-        <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0" step="1" required></label>
+        <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0" step="0.01" required></label>
         <label>Date <span class="req-star">*</span><input name="date" type="date" required></label>
         <label>Note<input name="note" placeholder="Optional note"></label>
         <div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Save Income</button></div>
@@ -103,7 +104,7 @@
   <div class="sub-view" id="sv-expenses">
     <div class="card">
       <h3>Add Expense</h3>
-      <form id="expenseForm" class="grid">
+      <form id="expenseForm" class="grid" autocomplete="off">
         <label>Category<select name="category">
           <option>Household</option><option>Transport</option><option>Food &amp; Personal</option>
           <option>Health &amp; Emergency</option><option>Loans &amp; Financial</option>
@@ -113,7 +114,7 @@
           <select name="subcategory" id="expSubcatSelect"><option value="">-- select --</option></select>
         </label>
         <label id="expLinkedLabel" style="display:none">Link to<select name="linkedId" id="expLinkedSelect"><option value="">— select —</option></select></label>
-        <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0" step="1" required></label>
+        <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0" step="0.01" required></label>
         <label>Date <span class="req-star">*</span><input name="date" type="date" required></label>
         <label>Note<input name="note" placeholder="Optional note"></label>
         <div id="expPaidInfo" style="grid-column:1/-1;display:none;font-size:13px;color:var(--green);padding:6px 0"></div>
@@ -141,7 +142,7 @@
       <form id="budgetForm" class="grid" style="margin-top:14px">
         <input type="hidden" name="month" id="budgetMonthInput">
         <div id="budgetCategoryFields" style="grid-column:1/-1"></div>
-        <div class="actions" style="grid-column:1/-1"><button class="btn primary" id="budgetSaveBtn">Save Budget</button></div>
+        <div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary" id="budgetSaveBtn">Save Budget</button></div>
       </form>
     </div>
     <div class="card" id="budgetActualsCard" style="display:none">
