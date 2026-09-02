@@ -228,8 +228,10 @@ jobs:
           EOF
 
       # 15. CREATE APP BUILD.GRADLE
-      # androidx.webkit:webkit:1.11.0  — latest stable (1.16.0 does not exist)
-      # androidx.core:core:1.13.0      — latest stable (1.13.1 does not exist)
+      # androidx.webkit:webkit:1.11.0  — latest stable
+      # androidx.core:core:1.13.0      — latest stable
+      # androidx.appcompat:appcompat:1.7.0 — required for AppCompatActivity
+      # androidx.activity:activity:1.9.0   — required for ActivityResultLauncher + OnBackPressedDispatcher
       - name: Create app build.gradle
         shell: bash
         run: |
@@ -270,6 +272,8 @@ jobs:
           dependencies {
               implementation 'androidx.webkit:webkit:1.11.0'
               implementation 'androidx.core:core:1.13.0'
+              implementation 'androidx.appcompat:appcompat:1.7.0'
+              implementation 'androidx.activity:activity:1.9.0'
           }
           EOF
 
