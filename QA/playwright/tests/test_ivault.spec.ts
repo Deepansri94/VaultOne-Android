@@ -40,6 +40,33 @@ test('add income record', async ({ page }) => {
   await expect(page.locator('#incomeList')).toContainText(/50,000|50000/);
 });
 
+test('income and expense histories keep entry order on the same date', async ({ page }) => {
+  const entryDate = '2025-01-15';
+  await page.locator('[data-sv="income"]').click();
+  for (const [amount, note] of [['100', 'First income'], ['200', 'Second income']]) {
+    await page.locator('#incomeForm input[name="amount"]').fill(amount);
+    await setDate(page, '#incomeForm input[name="date"]', entryDate);
+    await page.locator('#incomeForm input[name="note"]').fill(note);
+    await page.locator('#incomeForm button[type="submit"]').click();
+    await page.waitForTimeout(20);
+  }
+  const incomeRows = page.locator('#incomeList tbody tr');
+  await expect(incomeRows.nth(0)).toContainText('Second income');
+  await expect(incomeRows.nth(1)).toContainText('First income');
+
+  await page.locator('[data-sv="expenses"]').click();
+  for (const [amount, note] of [['300', 'First expense'], ['400', 'Second expense']]) {
+    await page.locator('#expenseForm input[name="amount"]').fill(amount);
+    await setDate(page, '#expenseForm input[name="date"]', entryDate);
+    await page.locator('#expenseForm input[name="note"]').fill(note);
+    await page.locator('#expenseForm button[type="submit"]').click();
+    await page.waitForTimeout(20);
+  }
+  const expenseRows = page.locator('#expenseList tbody tr');
+  await expect(expenseRows.nth(0)).toContainText('Second expense');
+  await expect(expenseRows.nth(1)).toContainText('First expense');
+});
+
 // TC-IV-005
 test('income updates overview stat', async ({ page }) => {
   const today = new Date().toISOString().slice(0, 10);

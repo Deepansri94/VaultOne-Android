@@ -24,6 +24,12 @@ function budgetCategoryTotal(categories, category) {
   return subTotal > 0 ? subTotal : (Number.isFinite(direct) ? direct : 0);
 }
 
+function historySort(a, b) {
+  return (b.date || '').localeCompare(a.date || '')
+    || (b.createdAt || '').localeCompare(a.createdAt || '')
+    || String(b.id || '').localeCompare(String(a.id || ''));
+}
+
 let state = { settings: { id:'settings', name:'', currency:'INR' } };
 let _currentSV = 'overview';
 let _budgetMonth = new Date().toISOString().slice(0,7);
@@ -175,7 +181,7 @@ async function renderOverview() {
 /* ===== Income ===== */
 async function renderIncome() {
   const rows = await getAll('income');
-  const sorted = rows.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const sorted = rows.slice().sort(historySort);
   _pgRender['income'] = renderIncome;
   const { pageRows, totalPages, page, total } = paginate('income', sorted);
   const st = getPage('income');
@@ -230,7 +236,7 @@ async function incomeEditModal(id) {
 /* ===== Expenses ===== */
 async function renderExpenses() {
   const rows = await getAll('expenses');
-  const sorted = rows.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const sorted = rows.slice().sort(historySort);
   _pgRender['expenses'] = renderExpenses;
   const { pageRows, totalPages, page, total } = paginate('expenses', sorted);
   const st = getPage('expenses');
