@@ -11,14 +11,13 @@ permissions:
     contents: write
 
 env:
-  JAVA_VERSION: '17'
-  GRADLE_VERSION: '8.7'
-  AGP_VERSION: '8.6.1'
-  ANDROID_API: '35'
-  BUILD_TOOLS_VERSION: '35.0.0'
-  APP_ID: 'com.vaultone.app'
-  VERSION_CODE: ${{ github.run_number }}
-  VERSION_NAME: '2.${{ github.run_number }}'
+    JAVA_VERSION: '17'
+    GRADLE_VERSION: '8.7'
+    AGP_VERSION: '8.6.1'
+    ANDROID_API: '35'
+    BUILD_TOOLS_VERSION: '35.0.0'
+    VERSION_CODE: ${{ github.run_number }}
+    VERSION_NAME: '2.${{ github.run_number }}'
 
 jobs:
 
@@ -102,7 +101,7 @@ jobs:
         run: |
           set -e
           mkdir -p \
-            app/src/main/java/com/vaultone/app \
+            app/src/main/java/com/deepansri94/vaultone/app \
             app/src/main/assets \
             app/src/main/res/values \
             app/src/main/res/mipmap-mdpi \
@@ -200,7 +199,7 @@ jobs:
           android.defaults.buildfeatures.buildconfig=true
           EOF
 
-      # 13. CREATE APP BUILD.GRADLE
+      # 13. CREATE APP BUILD.GRADLE (signing config added in step 24 after keystore is generated)
       - name: Create app build.gradle
         shell: bash
         run: |
@@ -209,20 +208,16 @@ jobs:
               id 'com.android.application'
           }
           android {
-              namespace 'com.vaultone.app'
+              namespace 'com.deepansri94.vaultone.app'
               compileSdk 35
               defaultConfig {
-                  applicationId 'com.vaultone.app'
+                  applicationId 'com.deepansri94.vaultone.app'
                   minSdk 24
                   targetSdk 35
                   versionCode ${VERSION_CODE}
                   versionName '${VERSION_NAME}'
               }
               buildTypes {
-                  debug {
-                      minifyEnabled false
-                      shrinkResources false
-                  }
                   release {
                       minifyEnabled false
                       shrinkResources false
@@ -260,7 +255,6 @@ jobs:
               <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
               <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
               <uses-permission android:name="android.permission.INTERNET" />
-              <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
               <application
                   android:allowBackup="false"
@@ -288,7 +282,7 @@ jobs:
 
                   <provider
                       android:name="androidx.core.content.FileProvider"
-                      android:authorities="com.vaultone.app.fileprovider"
+                      android:authorities="com.deepansri94.vaultone.app.fileprovider"
                       android:exported="false"
                       android:grantUriPermissions="true">
                       <meta-data
@@ -337,8 +331,8 @@ jobs:
       - name: Create MainActivity.java
         shell: bash
         run: |
-          cat > app/src/main/java/com/vaultone/app/MainActivity.java <<'EOF'
-          package com.vaultone.app;
+          cat > app/src/main/java/com/deepansri94/vaultone/app/MainActivity.java <<'EOF'
+          package com.deepansri94.vaultone.app;
 
           import android.app.Activity;
           import android.app.AlarmManager;
@@ -612,7 +606,7 @@ jobs:
 
               private void installApk(File apkFile) {
                   Uri apkUri = androidx.core.content.FileProvider.getUriForFile(
-                      this, "com.vaultone.app.fileprovider", apkFile);
+                      this, "com.deepansri94.vaultone.app.fileprovider", apkFile);
                   Intent intent = new Intent(Intent.ACTION_VIEW);
                   intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
                   intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -833,8 +827,8 @@ jobs:
       - name: Create ReminderReceiver.java
         shell: bash
         run: |
-          cat > app/src/main/java/com/vaultone/app/ReminderReceiver.java <<'EOF'
-          package com.vaultone.app;
+          cat > app/src/main/java/com/deepansri94/vaultone/app/ReminderReceiver.java <<'EOF'
+          package com.deepansri94.vaultone.app;
 
           import android.app.NotificationChannel;
           import android.app.NotificationManager;
@@ -943,31 +937,97 @@ jobs:
         shell: bash
         run: ./gradlew --no-daemon clean --stacktrace
 
-      # 23. BUILD DEBUG APK
-      - name: Build VaultOne Debug APK
+      # 23. GENERATE RELEASE KEYSTORE
+      - name: Generate release keystore
         shell: bash
-        run: ./gradlew --no-daemon assembleDebug --stacktrace
+        run: |
+          set -e
+          keytool -genkeypair -v \
+            -keystore vaultone-release.jks \
+            -alias vaultone \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass vaultone123 -keypass vaultone123 \
+            -dname "CN=VaultOne, OU=VaultOne, O=VaultOne, L=IN, S=IN, C=IN"
+          echo "Keystore generated."
 
-      # 24. VERIFY APK
+      # 24. CONFIGURE RELEASE SIGNING IN APP BUILD.GRADLE
+      - name: Add signing config to app build.gradle
+        shell: bash
+        run: |
+          cat > app/build.gradle <<EOF
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.deepansri94.vaultone.app'
+              compileSdk 35
+              defaultConfig {
+                  applicationId 'com.deepansri94.vaultone.app'
+                  minSdk 24
+                  targetSdk 35
+                  versionCode ${VERSION_CODE}
+                  versionName '${VERSION_NAME}'
+              }
+              signingConfigs {
+                  release {
+                      storeFile file('../../vaultone-release.jks')
+                      storePassword 'vaultone123'
+                      keyAlias 'vaultone'
+                      keyPassword 'vaultone123'
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                      minifyEnabled false
+                      shrinkResources false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          configurations.all {
+              resolutionStrategy {
+                  force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+                  force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
+                  force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+              }
+          }
+          dependencies {
+              implementation 'androidx.webkit:webkit:1.11.0'
+              implementation 'androidx.core:core:1.13.0'
+              implementation 'androidx.appcompat:appcompat:1.7.0'
+              implementation 'androidx.activity:activity:1.9.0'
+          }
+          EOF
+
+      # 25. BUILD RELEASE APK
+      - name: Build VaultOne Release APK
+        shell: bash
+        run: ./gradlew --no-daemon assembleRelease --stacktrace
+
+      # 26. VERIFY APK
       - name: Verify APK
         shell: bash
         run: |
           set -e
-          DEBUG_APK="./app/build/outputs/apk/debug/app-debug.apk"
-          if [ ! -f "$DEBUG_APK" ]; then
+          RELEASE_APK="./app/build/outputs/apk/release/app-release.apk"
+          if [ ! -f "$RELEASE_APK" ]; then
             echo "ERROR: APK not found."
             find . -type f -name "*.apk" -not -path "./.git/*" -print || true
             exit 1
           fi
           echo "SUCCESS: APK generated."
-          ls -lh "$DEBUG_APK"
+          ls -lh "$RELEASE_APK"
 
-      # 25. PREPARE ARTIFACT
+      # 27. PREPARE ARTIFACT
       - name: Prepare VaultOne APK
         shell: bash
         run: |
           mkdir -p release
-          cp "./app/build/outputs/apk/debug/app-debug.apk" "./release/VaultOne.apk"
+          cp "./app/build/outputs/apk/release/app-release.apk" "./release/VaultOne.apk"
           ls -lh "./release/VaultOne.apk"
 
       # 26. UPLOAD APK
