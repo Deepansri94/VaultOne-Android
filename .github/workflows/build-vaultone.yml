@@ -946,7 +946,8 @@ jobs:
           set -e
           python3 -c "
           import base64, os
-          data = os.environ['KEYSTORE_BASE64'].strip()
+          data = os.environ['KEYSTORE_BASE64'].strip().replace(' ', '').replace('\n', '').replace('\r', '')
+          data += '=' * (-len(data) % 4)
           with open('vaultone-release.jks', 'wb') as f:
               f.write(base64.b64decode(data))
           "
