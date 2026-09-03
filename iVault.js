@@ -128,44 +128,320 @@ async function switchSV(id) {
   if (id === 'overview') await renderOverview();
   else if (id === 'income') { await renderIncome(); }
   else if (id === 'expenses') { await renderExpenses(); const catSel = document.querySelector('#expenseForm [name="category"]'); if (catSel) await populateExpLinked(catSel.value); }
-  else if (id === 'transactions') await renderTransactions();
+  else if (id === 'transactions') { _txFilter = { fromDate: '', toDate: '', quick: 'last10', page: 1, pageSize: 20, label: '' }; await renderTransactions(); }
   else if (id === 'budget') await renderBudget();
   else if (id === 'investments') await renderInvestments();
   else if (id === 'loans') await renderLoans();
 }
 
+function txDateLabel(dateStr) {
+  if (!dateStr) return 'Unknown';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  const d = new Date(dateStr + 'T00:00:00'); d.setHours(0,0,0,0);
+  if (d.getTime() === today.getTime()) return 'Today';
+  if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' });
+}
+
+let _txFilter = { fromDate: '', toDate: '', quick: 'last10', page: 1, pageSize: 20, label: 'Last 10' };
+
+function _txDateRange(preset) {
+  const d = new Date(), pad = n => String(n).padStart(2,'0');
+  const fmt = dt => `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+  const todayStr = fmt(d);
+  if (preset === 'last30') {
+    const f = new Date(d); f.setDate(d.getDate() - 29);
+    return { fromDate: fmt(f), toDate: todayStr, label: 'Last 30 Days' };
+  }
+  if (preset === 'thismonth') {
+    return { fromDate: `${d.getFullYear()}-${pad(d.getMonth()+1)}-01`, toDate: todayStr, label: 'This Month' };
+  }
+  if (preset === 'lastmonth') {
+    const f = new Date(d.getFullYear(), d.getMonth()-1, 1);
+    const t = new Date(d.getFullYear(), d.getMonth(), 0);
+    return { fromDate: fmt(f), toDate: fmt(t), label: 'Last Month' };
+  }
+  if (preset === 'last3months') {
+    const f = new Date(d); f.setMonth(d.getMonth()-3);
+    return { fromDate: fmt(f), toDate: todayStr, label: 'Last 3 Months' };
+  }
+  return null;
+}
+
 async function renderTransactions() {
   const [income, expenses] = await Promise.all([getAll('income'), getAll('expenses')]);
-  const rows = [
-    ...income.map(row => ({ ...row, transactionType: 'Income', description: row.note || row.type || 'Income' })),
-    ...expenses.map(row => ({ ...row, transactionType: 'Expense', description: row.note || row.subcategory || row.category || 'Expense' }))
+  let allRows = [
+    ...income.map(r => ({ ...r, transactionType: 'Income', description: r.note || r.type || 'Income', category: r.type || 'Income' })),
+    ...expenses.map(r => ({ ...r, transactionType: 'Expense', description: r.note || r.subcategory || r.category || 'Expense' }))
   ].sort((a, b) => historySort(a, b));
-  const body = rows.map(row => `<tr>
-    <td>${esc(row.date || '')}</td>
-    <td><span class="pill">${row.transactionType}</span></td>
-    <td>${esc(row.description)}</td>
-    <td>${esc(row.category || row.type || '')}</td>
-    <td class="${row.transactionType === 'Expense' ? 'red' : 'green'}"><b>${row.transactionType === 'Expense' ? '-' : '+'}${money(row.amount, state.settings.currency)}</b></td>
-    <td><div class="table-actions">
-      <button class="btn-icon" data-txedit="${row.id}" data-txtype="${row.transactionType}" title="Edit">✏️</button>
-      <button class="btn-icon danger" data-txdel="${row.id}" data-txtype="${row.transactionType}" title="Delete">🗑️</button>
-    </div></td>
-  </tr>`).join('');
+
   const el = $('transactionList');
-  el.innerHTML = rows.length
-    ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Category</th><th>Amount</th><th>Actions</th></tr></thead><tbody>${body}</tbody></table></div>`
-    : '<div class="empty">No income or expense transactions yet.</div>';
+  const calActive = _txFilter.fromDate || _txFilter.toDate;
+  const activeLabel = _txFilter.label || '';
+
+  // ── Filter bar HTML ──
+  const filterBar = `
+    <div class="tx-filter-bar">
+      <button class="btn tx-quick-btn${_txFilter.quick === 'last10' ? ' active' : ''}" id="txLast10">Last 10</button>
+      <div class="tx-cal-dropdown" id="txCalDropdown">
+        <button class="btn tx-cal-btn${calActive ? ' active' : ''}" id="txCalBtn" title="Filter by date">📅</button>
+        <div class="tx-cal-panel" id="txCalPanel">
+          <button class="tx-cal-preset" data-preset="last30">Last 30 Days</button>
+          <button class="tx-cal-preset" data-preset="thismonth">This Month</button>
+          <button class="tx-cal-preset" data-preset="lastmonth">Last Month</button>
+          <button class="tx-cal-preset" data-preset="last3months">Last 3 Months</button>
+          <hr class="tx-cal-divider">
+          <div style="font-size:11px;color:#64748b;font-weight:700;padding:0 10px 6px">Custom Range</div>
+          <div class="tx-cal-custom">
+            <label>Start Date<input type="date" id="txCustomFrom" value="${_txFilter.fromDate}"></label>
+            <label>End Date<input type="date" id="txCustomTo" value="${_txFilter.toDate}"></label>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn primary" id="txFetchBtn" style="flex:1;font-size:13px;padding:7px">Fetch</button>
+            <button class="btn" id="txCalClear" style="font-size:13px;padding:7px 12px">Clear</button>
+          </div>
+        </div>
+      </div>
+      ${activeLabel ? `<span class="tx-active-label">${esc(activeLabel)}</span>` : ''}
+      <button class="btn tx-pdf-btn" id="txDownloadPdf" title="Download PDF">⬇️ PDF</button>
+    </div>`;
+
+  // ── Apply filters ──
+  let rows = allRows;
+  if (_txFilter.quick === 'last10') {
+    rows = allRows.slice(0, 10);
+  } else if (_txFilter.fromDate || _txFilter.toDate) {
+    if (_txFilter.fromDate) rows = rows.filter(r => r.date >= _txFilter.fromDate);
+    if (_txFilter.toDate)   rows = rows.filter(r => r.date <= _txFilter.toDate);
+  }
+
+  const total = rows.length;
+
+  if (!total) {
+    el.innerHTML = filterBar + '<div class="empty" style="margin-top:12px">No transactions match the filter.</div>';
+    wireTransactionFilters(allRows);
+    return;
+  }
+
+  // ── Pagination (only when not Last 10) ──
+  const usePages = _txFilter.quick !== 'last10';
+  const pageSize = _txFilter.pageSize;
+  const totalPages = usePages ? Math.ceil(total / pageSize) : 1;
+  _txFilter.page = Math.min(_txFilter.page, totalPages);
+  const pageRows = usePages ? rows.slice((_txFilter.page - 1) * pageSize, _txFilter.page * pageSize) : rows;
+
+  // ── Group by date label ──
+  const groups = [], groupMap = {};
+  pageRows.forEach(row => {
+    const label = txDateLabel(row.date);
+    if (!groupMap[label]) { groupMap[label] = []; groups.push(label); }
+    groupMap[label].push(row);
+  });
+
+  const listHtml = groups.map(label =>
+    `<div class="tx-group"><div class="tx-group-label">${esc(label)}</div>${
+      groupMap[label].map(row => {
+        const isIncome = row.transactionType === 'Income';
+        return `<div class="tx-row">
+          <div class="tx-info">
+            <div class="tx-title">${esc(row.description)}</div>
+            ${row.category ? `<div class="tx-sub">${esc(row.category)}</div>` : ''}
+          </div>
+          <div class="tx-right">
+            <span class="${isIncome ? 'tx-amt-credit' : 'tx-amt-debit'}">${isIncome ? '+' : '-'}${money(row.amount, state.settings.currency)}</span>
+            <button class="tx-edit-btn" data-txedit="${row.id}" data-txtype="${row.transactionType}" title="Edit">✏️</button>
+          </div>
+        </div>`;
+      }).join('')
+    }</div>`
+  ).join('');
+
+  const pagHtml = usePages && totalPages > 1 ? `
+    <div class="tx-pagination">
+      <button class="btn" id="txPrevPage" ${_txFilter.page <= 1 ? 'disabled' : ''}>← Prev</button>
+      <span class="muted" style="font-size:13px">Page ${_txFilter.page} / ${totalPages} · ${total} txns</span>
+      <button class="btn" id="txNextPage" ${_txFilter.page >= totalPages ? 'disabled' : ''}>Next →</button>
+    </div>` : `<div style="text-align:center;font-size:12px;color:#64748b;padding:8px 0">${total} transaction${total !== 1 ? 's' : ''}</div>`;
+
+  el.innerHTML = filterBar + listHtml + pagHtml;
+
   el.querySelectorAll('[data-txedit]').forEach(b => b.onclick = () => {
-    if (b.dataset.txtype === 'Income') incomeEditModal(b.dataset.txedit);
-    else expenseEditModal(b.dataset.txedit);
+    if (b.dataset.txtype === 'Income') incomeEditModal(b.dataset.txedit, true);
+    else expenseEditModal(b.dataset.txedit, true);
   });
-  el.querySelectorAll('[data-txdel]').forEach(b => b.onclick = async () => {
-    const store = b.dataset.txtype === 'Income' ? 'income' : 'expenses';
-    if (!confirm(`Delete this ${b.dataset.txtype.toLowerCase()} record?`)) return;
-    await delOne(store, b.dataset.txdel);
-    await logActivity(b.dataset.txtype, `${b.dataset.txtype} deleted`);
-    await renderTransactions(); await renderOverview();
+
+  wireTransactionFilters(rows);
+}
+
+function wireTransactionFilters(filteredRows) {
+  const el = $('transactionList');
+
+  el.querySelector('#txLast10')?.addEventListener('click', () => {
+    _txFilter = { fromDate: '', toDate: '', quick: 'last10', page: 1, pageSize: 20, label: '' };
+    renderTransactions();
   });
+
+  const calBtn = el.querySelector('#txCalBtn');
+  const calPanel = el.querySelector('#txCalPanel');
+  calBtn?.addEventListener('click', e => { e.stopPropagation(); calPanel.classList.toggle('open'); });
+  document.addEventListener('click', function closeCal(e) {
+    if (!el.querySelector('#txCalDropdown')?.contains(e.target)) {
+      calPanel?.classList.remove('open');
+      document.removeEventListener('click', closeCal);
+    }
+  });
+
+  el.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+    const r = _txDateRange(b.dataset.preset);
+    if (r) { _txFilter = { ...r, quick: '', page: 1, pageSize: 20 }; }
+    calPanel?.classList.remove('open');
+    renderTransactions();
+  }));
+
+  el.querySelector('#txFetchBtn')?.addEventListener('click', () => {
+    const from = el.querySelector('#txCustomFrom')?.value || '';
+    const to   = el.querySelector('#txCustomTo')?.value || '';
+    if (!from && !to) { toast('Select at least one date', true); return; }
+    const label = from && to ? `${from} → ${to}` : from ? `From ${from}` : `Until ${to}`;
+    _txFilter = { fromDate: from, toDate: to, quick: '', page: 1, pageSize: 20, label };
+    calPanel?.classList.remove('open');
+    renderTransactions();
+  });
+
+  el.querySelector('#txCalClear')?.addEventListener('click', () => {
+    _txFilter = { fromDate: '', toDate: '', quick: 'last10', page: 1, pageSize: 20, label: '' };
+    calPanel?.classList.remove('open');
+    renderTransactions();
+  });
+
+  el.querySelector('#txPrevPage')?.addEventListener('click', () => { _txFilter.page--; renderTransactions(); });
+  el.querySelector('#txNextPage')?.addEventListener('click', () => { _txFilter.page++; renderTransactions(); });
+
+  el.querySelector('#txDownloadPdf')?.addEventListener('click', () => downloadTxPdf(filteredRows));
+}
+
+function downloadTxPdf(rows) {
+  if (!rows || !rows.length) { toast('No transactions to export', true); return; }
+
+  const jsPDF = window.jspdf?.jsPDF;
+  if (!jsPDF) { toast('PDF library not loaded. Check your connection.', true); return; }
+
+  const cur = state.settings.currency || 'INR';
+  const sym = cur === 'INR' ? 'Rs.' : cur === 'USD' ? '$' : cur === 'EUR' ? 'EUR ' : cur === 'GBP' ? 'GBP ' : cur + ' ';
+  const fmt = n => sym + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const label = _txFilter.label || (_txFilter.quick === 'last10' ? 'Last 10 Transactions' : 'All Transactions');
+  const name  = state.settings.name || 'VaultOne';
+  const now   = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const totalCredit = rows.filter(r => r.transactionType === 'Income').reduce((s, r) => s + Number(r.amount || 0), 0);
+  const totalDebit  = rows.filter(r => r.transactionType === 'Expense').reduce((s, r) => s + Number(r.amount || 0), 0);
+  const net = totalCredit - totalDebit;
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  let y = 14;
+
+  // ── Header bar ──
+  doc.setFillColor(109, 40, 217);
+  doc.rect(0, 0, W, 22, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+  doc.text('VaultOne - Transaction Statement', margin, 9);
+  doc.setFontSize(8); doc.setFont('helvetica', 'normal');
+  doc.text(name + '  .  ' + label, margin, 15);
+  doc.text('Generated: ' + now, W - margin, 15, { align: 'right' });
+  y = 30;
+
+  // ── Summary boxes ──
+  const boxW = (W - margin * 2 - 8) / 3;
+  const boxes = [
+    { label: 'Total Credits', val: '+' + fmt(totalCredit), color: [5, 150, 105] },
+    { label: 'Total Debits',  val: '-' + fmt(totalDebit),  color: [220, 38, 38] },
+    { label: 'Net Balance',   val: (net >= 0 ? '+' : '') + fmt(net), color: net >= 0 ? [5, 150, 105] : [220, 38, 38] }
+  ];
+  boxes.forEach((b, i) => {
+    const x = margin + i * (boxW + 4);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(x, y, boxW, 16, 3, 3, 'F');
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 116, 139);
+    doc.text(b.label, x + boxW / 2, y + 5.5, { align: 'center' });
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...b.color);
+    doc.text(b.val, x + boxW / 2, y + 12, { align: 'center' });
+  });
+  y += 22;
+
+  // ── Table header ──
+  const cols = { date: margin, desc: margin + 22, cat: margin + 90, amt: W - margin };
+  doc.setFillColor(109, 40, 217);
+  doc.rect(margin, y, W - margin * 2, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+  doc.text('Date',        cols.date, y + 5.5);
+  doc.text('Description', cols.desc, y + 5.5);
+  doc.text('Category',    cols.cat,  y + 5.5);
+  doc.text('Amount',      cols.amt,  y + 5.5, { align: 'right' });
+  y += 10;
+
+  // ── Table rows ──
+  doc.setFont('helvetica', 'normal');
+  rows.forEach((r, i) => {
+    if (y > 270) {
+      doc.addPage();
+      y = 14;
+    }
+    const isInc = r.transactionType === 'Income';
+    if (i % 2 === 0) {
+      doc.setFillColor(248, 250, 252);
+      doc.rect(margin, y - 3, W - margin * 2, 8, 'F');
+    }
+    doc.setTextColor(71, 85, 105);  doc.setFontSize(7.5);
+    doc.text(r.date || '', cols.date, y + 2);
+    const descTrunc = (r.description || '').substring(0, 38);
+    doc.text(descTrunc, cols.desc, y + 2);
+    const catTrunc = (r.category || '').substring(0, 22);
+    doc.text(catTrunc, cols.cat, y + 2);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...(isInc ? [5, 150, 105] : [220, 38, 38]));
+    doc.text((isInc ? '+' : '-') + fmt(r.amount), cols.amt, y + 2, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, y + 4, W - margin, y + 4);
+    y += 8;
+  });
+
+  // ── Net footer ──
+  y += 2;
+  doc.setFillColor(109, 40, 217);
+  doc.rect(margin, y, W - margin * 2, 8, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+  doc.text('Net Balance', cols.date, y + 5.5);
+  doc.text((net >= 0 ? '+' : '') + fmt(net), cols.amt, y + 5.5, { align: 'right' });
+
+  // ── Save ──
+  const fileName = 'VaultOne_Statement_' + (now.replace(/ /g, '_')) + '.pdf';
+
+  // Android bridge — save to Downloads
+  if (window.VaultOneAndroid?.saveExport) {
+    try {
+      const pdfBase64 = doc.output('datauristring');
+      // Extract base64 payload and write via bridge as data URI isn't directly saveable;
+      // fall back to blob URL share instead
+      const blob = doc.output('blob');
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+    } catch(e) { toast('PDF save failed: ' + e.message, true); }
+  } else {
+    doc.save(fileName);
+  }
+  toast('Statement downloaded');
 }
 
 /* ===== Overview ===== */
@@ -349,7 +625,7 @@ async function renderIncome() {
 }
 
 /* ===== Expenses ===== */
-async function incomeEditModal(id) {
+async function incomeEditModal(id, showDelete = false) {
   const row = await getOne('income', id); if (!row) return;
   const typeOpts = ['Salary','Shift Allowance','Interest','Dividend','Other Income']
     .map(type => `<option ${row.type === type ? 'selected' : ''}>${esc(type)}</option>`).join('');
@@ -358,7 +634,10 @@ async function incomeEditModal(id) {
     <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0" step="0.01" required value="${Number(row.amount || 0)}"></label>
     <label>Date <span class="req-star">*</span><input name="date" type="date" required value="${esc(row.date || '')}"></label>
     <label>Note<input name="note" value="${esc(row.note || '')}" placeholder="Optional note"></label>
-    <div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Save Changes</button></div>
+    <div class="actions" style="grid-column:1/-1">
+      <button type="submit" class="btn primary">Save Changes</button>
+      ${showDelete ? `<button type="button" class="btn danger" id="txDelBtn">🗑️ Delete</button>` : ''}
+    </div>
   </form>`, async fd => {
     const amount = Number(fd.get('amount'));
     if (amount <= 0) { toast('Enter a valid amount', true); return; }
@@ -371,7 +650,17 @@ async function incomeEditModal(id) {
     await logActivity('Income', 'Income updated');
     closeModal(); toast('Income updated');
     await renderIncome(); await renderOverview();
+    if (_currentSV === 'transactions') await renderTransactions();
   });
+  if (showDelete) setTimeout(() => {
+    document.getElementById('txDelBtn')?.addEventListener('click', async () => {
+      if (!confirm('Delete this income record?')) return;
+      await delOne('income', id);
+      await logActivity('Income', 'Income deleted');
+      closeModal();
+      await renderTransactions(); await renderOverview();
+    });
+  }, 0);
 }
 
 /* ===== Expenses ===== */
@@ -599,7 +888,7 @@ async function reduceLoanOutstanding(loan, emiAmount, date) {
   renderBellReminders();
 }
 
-async function expenseEditModal(id) {
+async function expenseEditModal(id, showDelete = false) {
   const row = await getOne('expenses', id); if (!row) return;
   const catOpts = BUDGET_CATS.map(c => `<option ${row.category===c?'selected':''}>${esc(c)}</option>`).join('');
   openModal('Edit Expense', `<form class="grid">
@@ -608,7 +897,10 @@ async function expenseEditModal(id) {
     <label>Amount<input name="amount" type="number" min="0" step="0.01" required value="${Number(row.amount)}"></label>
     <label>Date<input name="date" type="date" required value="${esc(row.date||'')}"></label>
     <label>Note<input name="note" value="${esc(row.note||'')}"></label>
-    <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Changes</button></div>
+    <div class="actions" style="grid-column:1/-1">
+      <button class="btn primary">Save Changes</button>
+      ${showDelete ? `<button type="button" class="btn danger" id="txDelBtn">🗑️ Delete</button>` : ''}
+    </div>
   </form>`, async fd => {
     row.category = fd.get('category'); row.subcategory = fd.get('subcategory') || '';
     row.amount = Number(fd.get('amount')); row.date = fd.get('date') || today(); row.note = fd.get('note') || '';
@@ -616,7 +908,17 @@ async function expenseEditModal(id) {
     await logActivity('Expense','Expense updated');
     closeModal(); toast('Expense updated');
     await renderExpenses(); await renderOverview();
+    if (_currentSV === 'transactions') await renderTransactions();
   });
+  if (showDelete) setTimeout(() => {
+    document.getElementById('txDelBtn')?.addEventListener('click', async () => {
+      if (!confirm('Delete this expense?')) return;
+      await delOne('expenses', id);
+      await logActivity('Expense', 'Expense deleted');
+      closeModal();
+      await renderTransactions(); await renderOverview();
+    });
+  }, 0);
 }
 
 /* ===== Budget ===== */

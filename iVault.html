@@ -30,6 +30,36 @@
 .cash-wallet-head h3 { margin: 0; font-size: 18px; }
 .cash-wallet-fab { position: fixed; bottom: 158px; right: 18px; z-index: 35; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #059669, #0e7490); border: none; color: #fff; font-size: 25px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 24px #0008; cursor: pointer; transition: transform .15s; }
 .cash-wallet-fab:active { transform: scale(.93); }
+/* iMobile-style transaction list */
+.tx-group { margin-bottom: 6px; }
+.tx-group-label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .05em; padding: 10px 4px 6px; }
+.tx-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 12px 4px; border-bottom: 1px solid #ffffff0a; }
+.tx-row:last-child { border-bottom: none; }
+.tx-info { flex: 1; min-width: 0; }
+.tx-title { font-size: 14px; font-weight: 600; color: #e2e8f0; white-space: normal; word-break: break-word; line-height: 1.4; }
+.tx-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+.tx-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.tx-amt-credit { font-size: 15px; font-weight: 700; color: #10b981; white-space: nowrap; }
+.tx-amt-debit { font-size: 15px; font-weight: 700; color: #f87171; white-space: nowrap; }
+.tx-edit-btn { width: 26px; height: 26px; min-height: 26px; padding: 0; font-size: 12px; border: 1px solid #ffffff18; background: #14233a; color: #94a3b8; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+/* Transaction filter bar */
+.tx-filter-bar { margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tx-quick-btn { font-size: 13px; padding: 6px 14px; border-radius: 999px; }
+.tx-quick-btn.active { background: linear-gradient(135deg,#7c3aed,#2563eb); border-color: #9b7aff; color: #fff; }
+.tx-cal-btn { width: 34px; height: 34px; padding: 0; border-radius: 10px; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tx-cal-btn.active { background: linear-gradient(135deg,#7c3aed,#2563eb); border-color: #9b7aff; }
+.tx-cal-dropdown { position: relative; }
+.tx-cal-panel { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; background: #0d1728; border: 1px solid #ffffff18; border-radius: 16px; padding: 14px; min-width: 240px; box-shadow: 0 12px 40px #0009; display: none; }
+.tx-cal-panel.open { display: block; }
+.tx-cal-preset { display: block; width: 100%; text-align: left; background: none; border: 0; color: #c8d4e8; font-size: 13px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
+.tx-cal-preset:hover { background: #ffffff0d; }
+.tx-cal-divider { border: 0; border-top: 1px solid #ffffff10; margin: 8px 0; }
+.tx-cal-custom { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.tx-cal-custom label { font-size: 11px; color: #64748b; font-weight: 600; display: flex; flex-direction: column; gap: 3px; }
+.tx-cal-custom input { margin: 0; font-size: 12px; padding: 6px 8px; }
+.tx-active-label { font-size: 12px; color: #8b5cf6; font-weight: 600; flex: 1; }
+.tx-pdf-btn { font-size: 12px; padding: 6px 12px; border-radius: 999px; white-space: nowrap; }
+.tx-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #ffffff0a; }
 </style>
 </head>
 <body>
@@ -286,6 +316,7 @@
 
 <div id="toast" class="toast"></div>
 
+<script src="jspdf.umd.min.js"></script>
 <script src="shared.js"></script>
 <script src="iVault.js"></script>
 </body>

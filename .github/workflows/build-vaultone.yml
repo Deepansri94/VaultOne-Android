@@ -80,7 +80,8 @@ jobs:
                    sw.js VaultOne.png \
                    iVault.html iVault.js \
                    FamilyVault.html FamilyVault.js \
-                   PasswordVault.html PasswordVault.js; do
+                   PasswordVault.html PasswordVault.js \
+                   jspdf.umd.min.js; do
             if [ ! -f "./$f" ]; then
               MISSING="$MISSING $f"
             fi
@@ -93,7 +94,8 @@ jobs:
            ls -lh index.html shared.js shared.css sw.js VaultOne.png \
                  iVault.html iVault.js \
                  FamilyVault.html FamilyVault.js \
-                 PasswordVault.html PasswordVault.js
+                 PasswordVault.html PasswordVault.js \
+                 jspdf.umd.min.js
 
       # 7. CREATE ANDROID PROJECT STRUCTURE
       - name: Create Android project structure
@@ -147,6 +149,7 @@ jobs:
           cp FamilyVault.js      app/src/main/assets/FamilyVault.js
           cp PasswordVault.html  app/src/main/assets/PasswordVault.html
           cp PasswordVault.js    app/src/main/assets/PasswordVault.js
+          cp jspdf.umd.min.js    app/src/main/assets/jspdf.umd.min.js
           if [ -f "vaultone_seed.json" ]; then
             cp vaultone_seed.json app/src/main/assets/vaultone_seed.json
             echo "Seed JSON copied."
