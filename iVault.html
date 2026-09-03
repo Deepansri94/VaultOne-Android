@@ -7,7 +7,7 @@
 <title>iVault 💰</title>
 <link rel="stylesheet" href="shared.css">
 <style>
-.nav { grid-template-columns: repeat(6, 1fr); }
+.nav { grid-template-columns: repeat(7, 1fr); }
 .sub-view { display: none; }
 .sub-view.active { display: block; }
 .budget-bar-wrap { margin-top: 8px; }
@@ -24,6 +24,12 @@
 .loan-item .sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
 .loan-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 #budgetSaveBtn { position: relative; z-index: 31; }
+.cash-wallet-panel { position: fixed; bottom: 0; left: 0; right: 0; z-index: 45; background: #0b1627; border: 1px solid #ffffff18; border-radius: 26px 26px 0 0; padding: 18px; max-height: 82vh; overflow-y: auto; display: none; box-shadow: 0 -8px 40px #0009; }
+.cash-wallet-panel.open { display: block; }
+.cash-wallet-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+.cash-wallet-head h3 { margin: 0; font-size: 18px; }
+.cash-wallet-fab { position: fixed; bottom: 158px; right: 18px; z-index: 35; width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #059669, #0e7490); border: none; color: #fff; font-size: 25px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 24px #0008; cursor: pointer; transition: transform .15s; }
+.cash-wallet-fab:active { transform: scale(.93); }
 </style>
 </head>
 <body>
@@ -71,12 +77,20 @@
       <div class="stat">Savings (month)<b class="cyan" id="statSavings">₹0</b></div>
     </div>
     <div class="card">
+      <h3>Cash Position</h3>
+      <div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        <div class="stat">Available in Account<b class="green" id="accountBalance">₹0</b></div>
+        <div class="stat">Held in Cash Wallets<b class="cyan" id="walletBalance">₹0</b></div>
+      </div>
+      <p class="muted" style="margin-bottom:0">Withdrawals move money from the account into a purpose wallet. Wallet spending is recorded as an expense.</p>
+    </div>
+    <div class="card">
       <h3>Monthly Budget</h3>
       <div class="metric" id="budgetTotal">₹0</div>
       <div class="budget-bar-wrap"><div class="progress"><i id="budgetBar" style="width:0%"></i></div></div>
       <p class="muted" id="budgetInfo">No budget configured.</p>
     </div>
-    <div class="card">
+    <div class="card" style="display:none">
       <h3>Recent Activity</h3>
       <div id="recentActivity" class="list"></div>
     </div>
@@ -94,7 +108,7 @@
         <div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Save Income</button></div>
       </form>
     </div>
-    <div class="card">
+    <div class="card" style="display:none">
       <h3>Income History</h3>
       <div id="incomeList"></div>
     </div>
@@ -121,9 +135,18 @@
         <div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Save Expense</button></div>
       </form>
     </div>
-    <div class="card">
+    <div class="card" style="display:none">
       <h3>Expense History</h3>
       <div id="expenseList"></div>
+    </div>
+  </div>
+
+  <!-- Consolidated transactions sub-view -->
+  <div class="sub-view" id="sv-transactions">
+    <div class="card">
+      <h3>Transactions</h3>
+      <p class="muted">Income and expenses together, newest first.</p>
+      <div id="transactionList"></div>
     </div>
   </div>
 
@@ -144,6 +167,15 @@
         <div id="budgetCategoryFields" style="grid-column:1/-1"></div>
         <div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary" id="budgetSaveBtn">Save Budget</button></div>
       </form>
+    </div>
+    <div class="card" id="budgetDistributionCard">
+      <h3>Budget Distribution</h3>
+      <div class="stats" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+        <div class="stat">Want<b id="budgetWantPercent">0%</b></div>
+        <div class="stat">Need<b id="budgetNeedPercent">0%</b></div>
+        <div class="stat">Save<b id="budgetSavePercent">0%</b></div>
+      </div>
+      <p class="muted" id="budgetDistributionMessage" style="margin-bottom:0">Set a budget to see your distribution.</p>
     </div>
     <div class="card" id="budgetActualsCard" style="display:none">
       <h3>Budget vs Actual</h3>
@@ -218,10 +250,20 @@
     <button type="button" data-sv="budget"><span>🧮</span>Budget</button>
     <button type="button" data-sv="investments"><span>📈</span>Invest</button>
     <button type="button" data-sv="loans"><span>🏦</span>Loans</button>
+    <button type="button" data-sv="transactions"><span>🧾</span>Transactions</button>
   </div>
 </nav>
 
 </div><!-- .app -->
+
+<!-- Cash wallets FAB -->
+<button class="cash-wallet-fab" id="cashWalletFab" title="Cash Wallets" aria-label="Cash Wallets">💼</button>
+<div id="cashWalletPanel" class="cash-wallet-panel">
+  <div class="cash-wallet-head"><h3>💼 Cash Wallets</h3><button class="iconbtn" id="cashWalletPanelClose">✕</button></div>
+  <div id="cashWalletSummary" class="muted"></div>
+  <div class="actions" style="margin-top:12px"><button class="btn primary" id="cashWalletAddBtn">+ New Wallet</button><button class="btn" id="cashWalletWithdrawBtn">＋ Add Cash</button><button class="btn" id="cashWalletSpendBtn">− Spend Cash</button></div>
+  <div id="cashWalletList" class="list" style="margin-top:14px"></div>
+</div>
 
 <!-- Notes FAB -->
 <button class="notes-fab" id="notesFab" title="Notes">📝</button>

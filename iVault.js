@@ -1,8 +1,8 @@
 'use strict';
 /* ===== iVault — own IndexedDB ===== */
 const IV_DB = 'iVaultDB';
-const IV_VER = 1;
-const IV_STORES = ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes'];
+const IV_VER = 2;
+const IV_STORES = ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes','cashWallets'];
 
 const BUDGET_CATS = ['Household','Transport','Food & Personal','Health & Emergency','Loans & Financial','Family / Religious / Social','Savings & Investments','Other'];
 const BUDGET_SUBCATS = {
@@ -128,9 +128,44 @@ async function switchSV(id) {
   if (id === 'overview') await renderOverview();
   else if (id === 'income') { await renderIncome(); }
   else if (id === 'expenses') { await renderExpenses(); const catSel = document.querySelector('#expenseForm [name="category"]'); if (catSel) await populateExpLinked(catSel.value); }
+  else if (id === 'transactions') await renderTransactions();
   else if (id === 'budget') await renderBudget();
   else if (id === 'investments') await renderInvestments();
   else if (id === 'loans') await renderLoans();
+}
+
+async function renderTransactions() {
+  const [income, expenses] = await Promise.all([getAll('income'), getAll('expenses')]);
+  const rows = [
+    ...income.map(row => ({ ...row, transactionType: 'Income', description: row.note || row.type || 'Income' })),
+    ...expenses.map(row => ({ ...row, transactionType: 'Expense', description: row.note || row.subcategory || row.category || 'Expense' }))
+  ].sort((a, b) => historySort(a, b));
+  const body = rows.map(row => `<tr>
+    <td>${esc(row.date || '')}</td>
+    <td><span class="pill">${row.transactionType}</span></td>
+    <td>${esc(row.description)}</td>
+    <td>${esc(row.category || row.type || '')}</td>
+    <td class="${row.transactionType === 'Expense' ? 'red' : 'green'}"><b>${row.transactionType === 'Expense' ? '-' : '+'}${money(row.amount, state.settings.currency)}</b></td>
+    <td><div class="table-actions">
+      <button class="btn-icon" data-txedit="${row.id}" data-txtype="${row.transactionType}" title="Edit">✏️</button>
+      <button class="btn-icon danger" data-txdel="${row.id}" data-txtype="${row.transactionType}" title="Delete">🗑️</button>
+    </div></td>
+  </tr>`).join('');
+  const el = $('transactionList');
+  el.innerHTML = rows.length
+    ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Category</th><th>Amount</th><th>Actions</th></tr></thead><tbody>${body}</tbody></table></div>`
+    : '<div class="empty">No income or expense transactions yet.</div>';
+  el.querySelectorAll('[data-txedit]').forEach(b => b.onclick = () => {
+    if (b.dataset.txtype === 'Income') incomeEditModal(b.dataset.txedit);
+    else expenseEditModal(b.dataset.txedit);
+  });
+  el.querySelectorAll('[data-txdel]').forEach(b => b.onclick = async () => {
+    const store = b.dataset.txtype === 'Income' ? 'income' : 'expenses';
+    if (!confirm(`Delete this ${b.dataset.txtype.toLowerCase()} record?`)) return;
+    await delOne(store, b.dataset.txdel);
+    await logActivity(b.dataset.txtype, `${b.dataset.txtype} deleted`);
+    await renderTransactions(); await renderOverview();
+  });
 }
 
 /* ===== Overview ===== */
@@ -161,6 +196,7 @@ async function renderOverview() {
   $('statIncome').textContent = money(mInc, state.settings.currency);
   $('statExpense').textContent = money(mExp, state.settings.currency);
   $('statSavings').textContent = money(Math.max(0, mInc - mExp), state.settings.currency);
+  renderCashWallets();
 
   // Budget bar
   const budRec = bud.find(b => b.month === month);
@@ -177,6 +213,111 @@ async function renderOverview() {
     ? recent.map(a => `<div class="item"><div><div class="title">${esc(a.text)}</div><div class="sub">${new Date(a.createdAt).toLocaleString()}</div></div><span class="pill">${esc(a.type)}</span></div>`).join('')
     : '<div class="empty">No activity yet.</div>';
 }
+
+/* ===== Cash wallets ===== */
+async function cashPosition() {
+  const [wallets, income, expenses] = await Promise.all([getAll('cashWallets'), getAll('income'), getAll('expenses')]);
+  const N = v => Number.isFinite(Number(v)) ? Number(v) : 0;
+  const withdrawals = wallets.reduce((sum, wallet) => sum + (wallet.movements || []).filter(m => m.type === 'withdrawal').reduce((s, m) => s + N(m.amount), 0), 0);
+  const regularExpenses = expenses.filter(expense => !expense.walletId).reduce((sum, expense) => sum + N(expense.amount), 0);
+  const account = income.reduce((sum, row) => sum + N(row.amount), 0) - regularExpenses - withdrawals;
+  const wallet = wallets.reduce((sum, row) => sum + N(row.balance), 0);
+  return { wallets, account, wallet };
+}
+
+async function renderCashWallets() {
+  const position = await cashPosition();
+  if ($('accountBalance')) $('accountBalance').textContent = money(position.account, state.settings.currency);
+  if ($('walletBalance')) $('walletBalance').textContent = money(position.wallet, state.settings.currency);
+  if (!$('cashWalletList')) return;
+  $('cashWalletSummary').textContent = `Account: ${money(position.account, state.settings.currency)} · Wallets: ${money(position.wallet, state.settings.currency)}`;
+  $('cashWalletList').innerHTML = position.wallets.length
+    ? position.wallets.map(wallet => `<div class="item"><div style="min-width:0"><div class="title">${esc(wallet.name)}</div><div class="sub">${esc(wallet.category || 'Other')} · ${esc(wallet.subcategory || 'Uncategorized')}</div><div class="sub">Balance: <b>${money(wallet.balance, state.settings.currency)}</b></div></div><div class="actions" style="margin-top:0;align-items:center"><span class="pill">Cash</span><button class="btn-icon danger" type="button" data-wallet-delete="${esc(wallet.id)}" title="Delete wallet" aria-label="Delete ${esc(wallet.name)}">🗑️</button></div></div>`).join('')
+    : '<div class="empty">No cash wallets yet. Create one for a specific purpose.</div>';
+}
+
+async function deleteCashWallet(id) {
+  const wallet = await getOne('cashWallets', id);
+  if (!wallet) return;
+  if (Number(wallet.balance || 0) > 0) { toast('Spend or transfer the remaining wallet cash before deleting', true); return; }
+  if (!confirm(`Delete the cash wallet "${wallet.name}"? Its history will also be deleted.`)) return;
+  await delOne('cashWallets', id);
+  await logActivity('Cash Wallet', `Wallet deleted: ${wallet.name}`);
+  toast('Cash wallet deleted');
+  await renderOverview();
+}
+
+function walletOptions(wallets) {
+  return wallets.map(wallet => `<option value="${esc(wallet.id)}">${esc(wallet.name)} · ${money(wallet.balance, state.settings.currency)}</option>`).join('');
+}
+
+function walletCategoryOptions(selected) {
+  return BUDGET_CATS.map(category => `<option ${category === selected ? 'selected' : ''}>${esc(category)}</option>`).join('');
+}
+
+function walletSubcategoryOptions(category, selected) {
+  return [''].concat(getSubcats(category)).map(subcategory => `<option value="${esc(subcategory)}" ${subcategory === selected ? 'selected' : ''}>${esc(subcategory || '-- select --')}</option>`).join('');
+}
+
+async function addCashWallet() {
+  const defaultCategory = 'Other';
+  openModal('New Cash Wallet', `<form class="grid"><label>Wallet name <span class="req-star">*</span><input name="name" required placeholder="e.g. Sabarimala Temple"></label><label>Category <span class="req-star">*</span><select name="category" id="walletCategorySelect">${walletCategoryOptions(defaultCategory)}</select></label><label>Sub-category<select name="subcategory" id="walletSubcategorySelect">${walletSubcategoryOptions(defaultCategory, '')}</select></label><div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Create Wallet</button></div></form>`, async fd => {
+    const name = String(fd.get('name') || '').trim();
+    if (!name) { toast('Enter a wallet name', true); return; }
+    const category = String(fd.get('category') || 'Other');
+    const subcategory = String(fd.get('subcategory') || '');
+    await putOne('cashWallets', { id: uid(), name, category, subcategory, balance: 0, movements: [], createdAt: new Date().toISOString() });
+    await logActivity('Cash Wallet', `Wallet created: ${name}`);
+    closeModal(); toast('Cash wallet created'); await renderCashWallets();
+  });
+  setTimeout(() => $('walletCategorySelect')?.addEventListener('change', event => {
+    $('walletSubcategorySelect').innerHTML = walletSubcategoryOptions(event.target.value, '');
+  }), 0);
+}
+
+async function addCashToWallet() {
+  const position = await cashPosition();
+  if (!position.wallets.length) { toast('Create a cash wallet first', true); return; }
+  openModal('Add Cash to Wallet', `<form class="grid"><label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0.01" step="0.01" required></label><label>Cash Wallet<select name="walletId" required>${walletOptions(position.wallets)}</select></label><label style="grid-column:1/-1">Purpose<input name="purpose" placeholder="Temple, medicine, milk..."></label><div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Add Cash</button></div></form>`, async fd => {
+    const amount = Number(fd.get('amount')); const wallet = position.wallets.find(row => row.id === fd.get('walletId'));
+    if (amount <= 0 || !wallet) { toast('Enter a valid amount and wallet', true); return; }
+    if (amount > position.account) { toast('Add amount exceeds available account balance', true); return; }
+    wallet.balance = Number(wallet.balance || 0) + amount;
+    wallet.movements = [...(wallet.movements || []), { id: uid(), type: 'withdrawal', amount, purpose: fd.get('purpose') || '', date: today(), createdAt: new Date().toISOString() }];
+    await putOne('cashWallets', wallet); await logActivity('Cash Wallet', `Cash added to ${wallet.name}`);
+    closeModal(); toast('Cash added to wallet'); await renderOverview();
+  });
+}
+
+async function spendFromCashWallet() {
+  const position = await cashPosition();
+  if (!position.wallets.length) { toast('Create a cash wallet first', true); return; }
+  openModal('Spend Cash', `<form class="grid"><label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0.01" step="0.01" required></label><label>Cash Wallet<select name="walletId" required>${walletOptions(position.wallets)}</select></label><label style="grid-column:1/-1">Purpose <span class="req-star">*</span><input name="purpose" required placeholder="Medicine, milk, offering..."></label><div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Record Cash Expense</button></div></form>`, async fd => {
+    const amount = Number(fd.get('amount')); const wallet = position.wallets.find(row => row.id === fd.get('walletId')); const purpose = String(fd.get('purpose') || '').trim();
+    if (amount <= 0 || !wallet || !purpose) { toast('Enter a valid amount, wallet, and purpose', true); return; }
+    if (amount > Number(wallet.balance || 0)) { toast('Spend exceeds this wallet balance', true); return; }
+    wallet.balance = Number(wallet.balance || 0) - amount;
+    wallet.movements = [...(wallet.movements || []), { id: uid(), type: 'spend', amount, purpose, date: today(), createdAt: new Date().toISOString() }];
+    await putOne('cashWallets', wallet);
+    await putOne('expenses', { id: uid(), category: wallet.category || 'Other', subcategory: wallet.subcategory || '', amount, date: today(), note: `${purpose} · Cash wallet: ${wallet.name}`, walletId: wallet.id, createdAt: new Date().toISOString() });
+    await logActivity('Expense', `Cash spent from ${wallet.name}`);
+    closeModal(); toast('Cash expense recorded'); await renderOverview();
+  });
+}
+
+function wireCashWallets() {
+  $('cashWalletFab')?.addEventListener('click', () => { $('cashWalletPanel').classList.toggle('open'); renderCashWallets(); });
+  $('cashWalletPanelClose')?.addEventListener('click', () => $('cashWalletPanel').classList.remove('open'));
+  $('cashWalletAddBtn')?.addEventListener('click', addCashWallet);
+  $('cashWalletWithdrawBtn')?.addEventListener('click', addCashToWallet);
+  $('cashWalletSpendBtn')?.addEventListener('click', spendFromCashWallet);
+  $('cashWalletList')?.addEventListener('click', event => {
+    const button = event.target.closest('[data-wallet-delete]');
+    if (button) deleteCashWallet(button.dataset.walletDelete);
+  });
+}
+
+wireCashWallets();
 
 /* ===== Income ===== */
 async function renderIncome() {
@@ -556,6 +697,22 @@ async function renderBudget() {
   const actuals = {};
   BUDGET_CATS.forEach(c => { actuals[c] = mExp.filter(x => x.category === c).reduce((a, b) => a + Number(b.amount || 0), 0); });
   const bt = BUDGET_CATS.reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
+  const wantBudget = ['Transport', 'Food & Personal', 'Family / Religious / Social', 'Other']
+    .reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
+  const needBudget = ['Household', 'Health & Emergency', 'Loans & Financial']
+    .reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
+  const saveBudget = budgetCategoryTotal(cats, 'Savings & Investments');
+  const percent = value => bt ? Math.round(value / bt * 100) : 0;
+  $('budgetWantPercent').textContent = percent(wantBudget) + '%';
+  $('budgetNeedPercent').textContent = percent(needBudget) + '%';
+  $('budgetSavePercent').textContent = percent(saveBudget) + '%';
+  $('budgetDistributionMessage').textContent = bt
+    ? percent(saveBudget) >= 20
+      ? 'Great saving discipline. Your distribution is building a strong buffer.'
+      : percent(needBudget) <= 50
+        ? 'Good balance. Keep your needs controlled and grow your savings when possible.'
+        : 'Your needs are taking a large share. Review wants and protect a regular saving amount.'
+    : 'Set a budget to see your Want, Need, and Save distribution.';
 
   if (bt > 0 || mExp.length) {
     $('budgetActualsCard').style.display = 'block';

@@ -21,9 +21,90 @@ test('overview stats start at zero', async ({ page }) => {
   }
 });
 
+test('cash wallets separate add cash and spend cash', async ({ page }) => {
+  await page.locator('[data-sv="income"]').click();
+  await page.locator('#incomeForm input[name="amount"]').fill('110000');
+  await setDate(page, '#incomeForm input[name="date"]', '2025-01-15');
+  await page.locator('#incomeForm button[type="submit"]').click();
+
+  await page.locator('#cashWalletFab').click();
+  await expect(page.locator('#cashWalletPanel')).toHaveClass(/open/);
+  const walletDetails = [
+    ['Sabarimala Temple', 'Family / Religious / Social', 'Festivals / Pooja'],
+    ['Medicine Expense', 'Health & Emergency', 'Medicine / Pharmacy'],
+    ['Milk', 'Food & Personal', 'Milk & Dairy'],
+    ['Other', 'Other', 'Miscellaneous']
+  ];
+  for (const [name, category, subcategory] of walletDetails) {
+    await page.locator('#cashWalletAddBtn').click();
+    await expect(page.locator('#modal')).toHaveClass(/open/);
+    await page.locator('#modalBody input[name="name"]').fill(name);
+    await page.locator('#modalBody select[name="category"]').selectOption({ label: category });
+    await page.locator('#modalBody select[name="subcategory"]').selectOption({ label: subcategory });
+    await page.locator('#modalBody button[type="submit"]').click();
+    await expect(page.locator('#modal')).not.toHaveClass(/open/);
+  }
+  await expect(page.locator('#cashWalletList')).toContainText('Sabarimala Temple');
+  await expect(page.locator('#cashWalletList')).toContainText('Medicine Expense');
+  await expect(page.locator('#cashWalletList')).toContainText('Milk');
+  await expect(page.locator('#cashWalletList')).toContainText('Other');
+  await expect(page.locator('#cashWalletList')).toContainText('Festivals / Pooja');
+
+  await page.locator('#cashWalletWithdrawBtn').click();
+  await expect(page.locator('#modalTitle')).toHaveText('Add Cash to Wallet');
+  await page.locator('#modalBody input[name="amount"]').fill('100000');
+  const walletId = await page.locator('#modalBody select[name="walletId"] option').first().getAttribute('value');
+  await page.locator('#modalBody select[name="walletId"]').selectOption(walletId!);
+  await page.locator('#modalBody button[type="submit"]').click();
+  await expect(page.locator('#modal')).not.toHaveClass(/open/);
+  await expect(page.locator('#accountBalance')).toContainText(/10,000|10000/);
+  await expect(page.locator('#walletBalance')).toContainText(/1,00,000|100000/);
+  await expect(page.locator('#cashWalletList')).toContainText(/1,00,000|100000/);
+
+  await page.locator('#cashWalletSpendBtn').click();
+  await expect(page.locator('#modalTitle')).toHaveText('Spend Cash');
+  await page.locator('#modalBody input[name="amount"]').fill('500');
+  await page.locator('#modalBody input[name="purpose"]').fill('Milk');
+  await page.locator('#modalBody select[name="walletId"]').selectOption(walletId!);
+  await page.locator('#modalBody button[type="submit"]').click();
+  await expect(page.locator('#modal')).not.toHaveClass(/open/);
+  await expect(page.locator('#walletBalance')).toContainText(/99,500|99500/);
+  await expect(page.locator('#statExpense')).toContainText(/500/);
+});
+
+test('empty cash wallet can be deleted after confirmation', async ({ page }) => {
+  await page.locator('#cashWalletFab').click();
+  await page.locator('#cashWalletAddBtn').click();
+  await page.locator('#modalBody input[name="name"]').fill('Temporary Wallet');
+  await page.locator('#modalBody button[type="submit"]').click();
+  await expect(page.locator('#modal')).not.toHaveClass(/open/);
+  await expect(page.locator('#cashWalletList')).toContainText('Temporary Wallet');
+  await page.evaluate(() => window.confirm = () => true);
+  await page.locator('[data-wallet-delete]').click();
+  await expect(page.locator('#cashWalletList')).not.toContainText('Temporary Wallet');
+});
+
+test('transactions tab combines income and expenses', async ({ page }) => {
+  await page.locator('[data-sv="income"]').click();
+  await page.locator('#incomeForm input[name="amount"]').fill('5000');
+  await setDate(page, '#incomeForm input[name="date"]', '2025-01-15');
+  await page.locator('#incomeForm input[name="note"]').fill('Monthly salary');
+  await page.locator('#incomeForm button[type="submit"]').click();
+  await page.locator('[data-sv="expenses"]').click();
+  await page.locator('#expenseForm input[name="amount"]').fill('1200');
+  await setDate(page, '#expenseForm input[name="date"]', '2025-01-16');
+  await page.locator('#expenseForm input[name="note"]').fill('Groceries');
+  await page.locator('#expenseForm button[type="submit"]').click();
+  await page.locator('[data-sv="transactions"]').click();
+  await expect(page.locator('#transactionList')).toContainText('Monthly salary');
+  await expect(page.locator('#transactionList')).toContainText('Groceries');
+  await expect(page.locator('#transactionList')).toContainText('Income');
+  await expect(page.locator('#transactionList')).toContainText('Expense');
+});
+
 // TC-IV-003
 test('nav tabs switch sub-views', async ({ page }) => {
-  for (const tab of ['income', 'expenses', 'budget', 'investments', 'loans']) {
+  for (const tab of ['income', 'expenses', 'transactions', 'budget', 'investments', 'loans']) {
     await page.locator(`[data-sv="${tab}"]`).click();
     await expect(page.locator(`#sv-${tab}`)).toHaveClass(/active/);
   }
@@ -85,7 +166,7 @@ test('delete income record', async ({ page }) => {
   await setDate(page, '#incomeForm input[name="date"]', '2025-02-01');
   await page.locator('#incomeForm button[type="submit"]').click();
   await autoConfirm(page);
-  await page.locator('[data-idel]').first().click();
+  await page.locator('[data-idel]').first().click({ force: true });
   await expect(page.locator('#incomeList')).toContainText('No income');
 });
 
@@ -131,12 +212,16 @@ test('expense updates overview stat', async ({ page }) => {
 // TC-IV-010
 test('budget save locks form and edit unlocks it', async ({ page }) => {
   await page.locator('[data-sv="budget"]').click();
+  await expect(page.locator('#budgetDistributionCard')).toBeVisible();
   await page.locator('input[name="cat_Household"]').fill('20000');
   await page.locator('#budgetSaveBtn').click();
   expect((await getToast(page)).toLowerCase()).toContain('saved');
+  await expect(page.locator('#budgetNeedPercent')).toHaveText('100%');
   await expect(page.locator('input[name="cat_Household"]')).toBeDisabled();
   await page.locator('#budgetEditBtn').click();
   await expect(page.locator('input[name="cat_Household"]')).toBeEnabled();
+  await page.locator('[data-sv="overview"]').click();
+  await expect(page.locator('#budgetDistributionCard')).not.toBeVisible();
 });
 
 test('budget vs actual includes subcategory rows', async ({ page }) => {
