@@ -539,11 +539,19 @@ jobs:
 
               private String parseApkUrl(String json) {
                   try {
-                      java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(
-                          "\\\"browser_download_url\\\"\\s*:\\s*\\\"([^\\\"]*VaultOne\\.apk)\\\"")
-                          .matcher(json);
-                      if (!matcher.find()) return null;
-                      return matcher.group(1).replace("\\\\/", "/");
+                      String url = parseStringField(json, "browser_download_url");
+                      if (url != null && url.endsWith(".apk")) return url;
+                      // scan all occurrences in case first field is not the APK
+                      int idx = 0;
+                      while (true) {
+                          idx = json.indexOf("browser_download_url", idx);
+                          if (idx < 0) return null;
+                          int q1 = json.indexOf('"', json.indexOf(':', idx));
+                          int q2 = json.indexOf('"', q1 + 1);
+                          String candidate = json.substring(q1 + 1, q2);
+                          if (candidate.endsWith(".apk")) return candidate;
+                          idx++;
+                      }
                   } catch (Exception e) { return null; }
               }
 
@@ -610,17 +618,6 @@ jobs:
                   intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                   intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                   startActivity(intent);
-              }
-
-              private int parseIntField(String json, String key) {
-                  try {
-                      String pattern = "\"" + key + "\"";
-                      int idx = json.indexOf(pattern);
-                      if (idx < 0) return -1;
-                      String rest = json.substring(idx + pattern.length());
-                      rest = rest.replaceAll("[^0-9]", " ").trim();
-                      return Integer.parseInt(rest.split("\\s+")[0]);
-                  } catch (Exception e) { return -1; }
               }
 
               private String parseStringField(String json, String key) {
