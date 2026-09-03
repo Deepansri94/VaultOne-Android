@@ -970,7 +970,7 @@ jobs:
               }
               signingConfigs {
                   release {
-                      storeFile file('../../vaultone-release.jks')
+                      storeFile file(rootProject.projectDir.absolutePath + '/vaultone-release.jks')
                       storePassword 'vaultone123'
                       keyAlias 'vaultone'
                       keyPassword 'vaultone123'
