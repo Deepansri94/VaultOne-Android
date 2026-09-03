@@ -974,7 +974,7 @@ jobs:
               }
               signingConfigs {
                   release {
-                      storeFile file(rootProject.projectDir.absolutePath + '/vaultone-release.jks')
+                      storeFile file(System.getenv('GITHUB_WORKSPACE') + '/vaultone-release.jks')
                       storePassword 'vaultone123'
                       keyAlias 'vaultone'
                       keyPassword 'vaultone123'
@@ -1010,7 +1010,10 @@ jobs:
       # 25. BUILD RELEASE APK
       - name: Build VaultOne Release APK
         shell: bash
-        run: ./gradlew --no-daemon assembleRelease --stacktrace
+        run: |
+          echo "Keystore exists: $(ls -lh vaultone-release.jks)"
+          echo "Keystore absolute path: $(pwd)/vaultone-release.jks"
+          ./gradlew --no-daemon assembleRelease --stacktrace 2>&1 | tail -60
 
       # 26. VERIFY APK
       - name: Verify APK
