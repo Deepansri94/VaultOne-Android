@@ -17,8 +17,9 @@ app/build/
 .gradle/
 local.properties
 
-# Release keystore — never commit, stored as GitHub secret KEYSTORE_BASE64
+# Release keystore — never commit the .jks, .b64 is safe (no private key exposure beyond repo access)
 vaultone-release.jks
+keystore_b64.txt
 
 # OS
 .DS_Store
