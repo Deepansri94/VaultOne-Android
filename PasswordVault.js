@@ -81,8 +81,8 @@ let state = { settings: { id: 'settings', name: '', currency: 'INR', pinHash: ''
       document.getElementById('spExportBtn')?.addEventListener('click', async () => {
         try {
           const data = await exportJSON('PasswordVault', PV_STORES);
-          downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}), 'PasswordVault_Backup_'+today()+'.json');
-          await logActivity('Backup','JSON backup exported'); toast('Backup exported');
+          const result = saveBackupFile(JSON.stringify(data,null,2), 'PasswordVault_Backup_'+today()+'.json');
+          await logActivity('Backup','JSON backup exported'); toast(result);
         } catch(e) { toast('Export failed: '+e.message, true); }
       });
       document.getElementById('spImportBtn')?.addEventListener('click', () => {

@@ -36,8 +36,8 @@ let _activeTile = null;
       document.getElementById('spFvExportBtn')?.addEventListener('click', async () => {
         try {
           const data = await exportJSON('FamilyVault', FV_STORES);
-          downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}), 'FamilyVault_Backup_'+today()+'.json');
-          await logActivity('Backup','JSON backup exported'); toast('Backup exported');
+          const result = saveBackupFile(JSON.stringify(data,null,2), 'FamilyVault_Backup_'+today()+'.json');
+          await logActivity('Backup','JSON backup exported'); toast(result);
         } catch(e) { toast('Export failed: '+e.message, true); }
       });
       document.getElementById('spFvImportBtn')?.addEventListener('click', () => {

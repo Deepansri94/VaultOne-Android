@@ -665,19 +665,26 @@ jobs:
 
                   @JavascriptInterface
                   public boolean saveExport(String json, String fileName) {
+                      Uri itemUri = null;
                       try {
+                          String safeName = (fileName == null || fileName.trim().isEmpty())
+                                  ? "VaultOne_Backup.json"
+                                  : fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+                          byte[] data = (json == null ? "{}" : json).getBytes("UTF-8");
                           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                               ContentValues values = new ContentValues();
-                              values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+                              values.put(MediaStore.Downloads.DISPLAY_NAME, safeName);
                               values.put(MediaStore.Downloads.MIME_TYPE, "application/json");
+                              values.put(MediaStore.Downloads.RELATIVE_PATH,
+                                      Environment.DIRECTORY_DOWNLOADS);
                               values.put(MediaStore.Downloads.IS_PENDING, 1);
-                              Uri itemUri = context.getContentResolver().insert(
+                              itemUri = context.getContentResolver().insert(
                                       MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
                               if (itemUri == null) return false;
                               try (OutputStream out =
                                            context.getContentResolver().openOutputStream(itemUri)) {
-                                  if (out == null) return false;
-                                  out.write(json.getBytes("UTF-8"));
+                                  if (out == null) throw new java.io.IOException("Could not open Downloads file");
+                                  out.write(data);
                               }
                               values.clear();
                               values.put(MediaStore.Downloads.IS_PENDING, 0);
@@ -687,15 +694,18 @@ jobs:
                                       Environment.DIRECTORY_DOWNLOADS);
                               if (!dir.exists()) dir.mkdirs();
                               try (java.io.FileOutputStream fos = new java.io.FileOutputStream(
-                                      new java.io.File(dir, fileName))) {
-                                  fos.write(json.getBytes("UTF-8"));
+                                      new java.io.File(dir, safeName))) {
+                                  fos.write(data);
                               }
                           }
                           activity.runOnUiThread(() -> Toast.makeText(context,
-                                  "Saved to Downloads: " + fileName,
+                                  "Saved to Downloads: " + safeName,
                                   Toast.LENGTH_LONG).show());
                           return true;
                       } catch (Exception e) {
+                          if (itemUri != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                              try { context.getContentResolver().delete(itemUri, null, null); } catch (Exception ignored) { }
+                          }
                           return false;
                       }
                   }

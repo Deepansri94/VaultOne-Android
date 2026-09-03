@@ -599,6 +599,14 @@ async function snoozeReminder(reminder, opts) {
 function bufToB64(buf) { let bin = ''; const bytes = new Uint8Array(buf); const chunk = 0x8000; for (let i = 0; i < bytes.length; i += chunk) bin += String.fromCharCode(...bytes.subarray(i, i + chunk)); return btoa(bin); }
 function b64ToBuf(s) { const bin = atob(s); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a.buffer; }
 function downloadBlob(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+function saveBackupFile(json, name) {
+  if (window.VaultOneAndroid && typeof window.VaultOneAndroid.saveExport === 'function') {
+    if (!window.VaultOneAndroid.saveExport(json, name)) throw new Error('Android could not save the backup to Downloads.');
+    return 'Saved to Downloads';
+  }
+  downloadBlob(new Blob([json], { type: 'application/json' }), name);
+  return 'Download started';
+}
 
 async function exportJSON(appName, stores) {
   const out = { app: appName, exportedAt: new Date().toISOString() };

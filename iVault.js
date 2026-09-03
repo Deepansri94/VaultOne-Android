@@ -62,8 +62,8 @@ let _budgetEditMode = false; // true only when user explicitly clicks Edit
       document.getElementById('spIvExportBtn')?.addEventListener('click', async () => {
         try {
           const data = await exportJSON('iVault', IV_STORES);
-          downloadBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}), 'iVault_Backup_'+today()+'.json');
-          await logActivity('Backup','JSON backup exported'); toast('Backup exported');
+          const result = saveBackupFile(JSON.stringify(data,null,2), 'iVault_Backup_'+today()+'.json');
+          await logActivity('Backup','JSON backup exported'); toast(result);
         } catch(e) { toast('Export failed: '+e.message, true); }
       });
       document.getElementById('spIvImportBtn')?.addEventListener('click', () => {
