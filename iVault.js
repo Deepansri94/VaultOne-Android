@@ -140,7 +140,11 @@ async function renderOverview() {
   const mExp = exp.filter(x => (x.date||'').startsWith(month)).reduce((a,b) => a + N(b.amount), 0);
 
   // Net worth = investments + (total income - total expenses) - loan liabilities
-  const invAssets = inv.reduce((s,x) => s + N(x.currentValue), 0);
+  const currentGoldPrice = N(state.settings.currentGoldPricePerGram);
+  const currentDematValue = N(state.settings.currentDematPortfolioValue);
+  const invAssets = inv.reduce((s,x) => s + (x.type === 'Gold' && currentGoldPrice > 0
+    ? N(x.grams) * currentGoldPrice
+    : x.type === 'Demat' && currentDematValue > 0 ? 0 : N(x.currentValue)), 0) + currentDematValue;
   const totalInc = inc.reduce((s,x) => s + N(x.amount), 0);
   const totalExp = exp.reduce((s,x) => s + N(x.amount), 0);
   const cashSavings = Math.max(0, totalInc - totalExp);
@@ -254,7 +258,7 @@ async function renderExpenses() {
 }
 
 /* ===== Expense form — dynamic sub-category ===== */
-const INV_LINKABLE = ['RD','PPF','SSA','NPS','Insurance','Other Saving']; // Demat excluded
+const INV_LINKABLE = ['RD','PPF','SSA','NPS','Demat','Insurance','Other Saving'];
 
 // Returns current sub-cats for a category (merges defaults + any user-added ones stored in meta)
 function getSubcats(category) {
@@ -284,6 +288,8 @@ async function populateExpLinked(category) {
       invs.map(x => {
         const label = x.type === 'Insurance'
           ? `${esc(x.name)} · Premium: ${money(x.premiumAmount || 0, state.settings.currency)} · Due: ${esc(x.premiumDueDate || '—')}`
+          : x.type === 'Demat'
+            ? `${esc(x.name || x.type)} · Invested: ${money(x.investedValue ?? x.purchaseValue ?? x.openingBalance, state.settings.currency)} · Portfolio: ${money(state.settings.currentDematPortfolioValue || x.currentValue, state.settings.currency)}`
           : `${esc(x.name || x.type)} (${esc(x.type)}) · ${money(x.currentValue, state.settings.currency)}`;
         return `<option value="${x.id}">${label}</option>`;
       }).join('');
@@ -376,6 +382,12 @@ $('expenseForm').onsubmit = async e => {
         await putOne('investments', inv);
         await logActivity('Insurance', `Premium paid: ${money(amount, state.settings.currency)} for ${inv.name}`);
         paidMsg = `Premium of ${money(amount, state.settings.currency)} paid for "${subcategory}" on ${date}`;
+      } else if (inv.type === 'Demat') {
+        inv.investedValue = (Number(inv.investedValue ?? inv.purchaseValue ?? inv.openingBalance) || 0) + amount;
+        inv.purchaseValue = inv.investedValue;
+        await putOne('investments', inv);
+        await logActivity('Demat', `Contribution: ${money(amount, state.settings.currency)} added to ${inv.name}`);
+        paidMsg = `Added ${money(amount, state.settings.currency)} to "${subcategory}" purchase value on ${date}`;
       } else {
         inv.currentValue = (Number(inv.currentValue) || 0) + amount;
         await putOne('investments', inv);
@@ -483,7 +495,7 @@ async function renderBudget() {
       return `<div style="display:grid;grid-template-columns:1fr auto 120px;gap:6px;align-items:center;margin-bottom:4px;padding-left:16px">
         <span class="budget-sublabel" data-cat="${esc(c)}" data-sub="${esc(s)}" style="font-size:12px;color:#94a3b8;cursor:pointer" title="Click to rename">${esc(s)}</span>
         <button type="button" class="btn-icon" data-rensub data-cat="${esc(c)}" data-sub="${esc(s)}" title="Rename">✏️</button>
-        <input name="sub_${safeSub}" type="number" min="0" step="1" value="${Number(cats[c + '.' + s] || 0)}" style="margin-top:0;font-size:12px;padding:5px 8px">
+        <input name="sub_${safeSub}" type="number" min="0" step="1" value="${Number(cats[c + '.' + s] || 0)}" data-budget-sub="${esc(c)}" style="margin-top:0;font-size:12px;padding:5px 8px">
       </div>`;
     }).join('');
     return `<div style="margin-bottom:12px;border:1px solid #ffffff10;border-radius:10px;padding:10px">
@@ -495,6 +507,19 @@ async function renderBudget() {
       <button type="button" class="btn" data-addsubcat="${esc(c)}" style="margin-top:6px;font-size:12px;padding:4px 10px">+ Add Sub-category</button>
     </div>`;
   }).join('');
+
+  // Keep each category amount synchronized with entered subcategory amounts.
+  BUDGET_CATS.forEach(c => {
+    const categoryInput = $('budgetCategoryFields').querySelector(`[name="cat_${c.replace(/[^a-z0-9]/gi, '_')}"]`);
+    const subInputs = [...$('budgetCategoryFields').querySelectorAll(`[data-budget-sub="${c}"]`)];
+    if (!categoryInput || !subInputs.length) return;
+    const syncCategoryTotal = () => {
+      const values = subInputs.map(input => Number(input.value) || 0);
+      if (values.some(value => value > 0)) categoryInput.value = values.reduce((total, value) => total + value, 0);
+    };
+    subInputs.forEach(input => input.addEventListener('input', syncCategoryTotal));
+    syncCategoryTotal();
+  });
 
   // Wire rename sub-category buttons
   $('budgetCategoryFields').querySelectorAll('[data-rensub]').forEach(btn => {
@@ -533,7 +558,17 @@ async function renderBudget() {
       const actual = actuals[c] || 0;
       const diff = budgeted - actual;
       const cls = diff >= 0 ? 'good' : 'bad';
-      return `<tr><td>${esc(c)}</td><td>${money(budgeted, state.settings.currency)}</td><td>${money(actual, state.settings.currency)}</td><td class="${cls}">${money(diff, state.settings.currency)}</td></tr>`;
+      const categoryRow = `<tr><td>${esc(c)}</td><td>${money(budgeted, state.settings.currency)}</td><td>${money(actual, state.settings.currency)}</td><td class="${cls}">${money(diff, state.settings.currency)}</td></tr>`;
+      const subcategoryRows = getSubcats(c).map(s => {
+        const subBudgeted = Number(cats[c + '.' + s] || 0);
+        const subActual = mExp
+          .filter(x => x.category === c && x.subcategory === s)
+          .reduce((total, x) => total + Number(x.amount || 0), 0);
+        const subDiff = subBudgeted - subActual;
+        const subCls = subDiff >= 0 ? 'good' : 'bad';
+        return `<tr><td style="padding-left:24px;color:#94a3b8">${esc(s)}</td><td>${money(subBudgeted, state.settings.currency)}</td><td>${money(subActual, state.settings.currency)}</td><td class="${subCls}">${money(subDiff, state.settings.currency)}</td></tr>`;
+      }).join('');
+      return categoryRow + subcategoryRows;
     }).join('');
     $('budgetActuals').innerHTML = `<div class="table-wrap"><table class="comparison">
       <thead><tr><th>Category</th><th>Budgeted</th><th>Actual</th><th>Remaining</th></tr></thead>
@@ -637,12 +672,13 @@ const INV_TYPES = ['FD','RD','PPF','SSA','NPS','Demat','Gold','Insurance','Other
 
 async function renderInvestments() {
   const rows = await getAll('investments');
+  const regularRows = rows.filter(x => x.type !== 'Gold' && x.type !== 'Demat');
   const N = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
-  if (!rows.length) { $('invList').innerHTML = '<div class="empty">No investments added yet.</div>'; return; }
+  if (!regularRows.length) $('invList').innerHTML = '<div class="empty">No savings or investments added yet.</div>';
   const grouped = {};
-  INV_TYPES.forEach(t => { grouped[t] = rows.filter(x => x.type === t); });
+  INV_TYPES.filter(t => t !== 'Gold').forEach(t => { grouped[t] = regularRows.filter(x => x.type === t); });
   let html = '';
-  INV_TYPES.forEach(t => {
+  INV_TYPES.filter(t => t !== 'Gold').forEach(t => {
     if (!grouped[t].length) return;
     html += `<div class="inv-section-head">${esc(t)}</div>`;
     html += grouped[t].map(x => {
@@ -675,7 +711,7 @@ async function renderInvestments() {
       </div>`;
     }).join('');
   });
-  $('invList').innerHTML = html;
+  if (regularRows.length) $('invList').innerHTML = html;
   $('invList').querySelectorAll('[data-invedit]').forEach(b => b.onclick = async () => {
     const x = await getOne('investments', b.dataset.invedit); if (x) invModal(x);
   });
@@ -685,9 +721,180 @@ async function renderInvestments() {
     await logActivity('Investment', 'Investment deleted');
     await renderInvestments(); await renderOverview();
   });
+  const goldRows = rows.filter(x => x.type === 'Gold');
+  const currentPriceInput = $('currentGoldPricePerGram');
+  if (currentPriceInput) currentPriceInput.value = Number(state.settings.currentGoldPricePerGram || 0) || '';
+  $('updateGoldPriceBtn').onclick = () => {
+    const editor = $('goldPriceEditor');
+    if (editor) {
+      const isHidden = editor.style.display === 'none';
+      editor.style.display = isHidden ? 'flex' : 'none';
+    }
+  };
+  $('saveGoldPriceBtn').onclick = async () => {
+    const price = Number(currentPriceInput?.value || 0);
+    if (price <= 0) { toast('Enter a valid current gold price', true); return; }
+    state.settings.currentGoldPricePerGram = price;
+    await putOne('meta', { ...state.settings, id: 'settings' });
+    toast('Current gold price updated');
+    $('goldPriceEditor').style.display = 'none';
+    renderGoldOverview(goldRows); await renderOverview();
+  };
+  renderGoldOverview(goldRows);
+  const dematRows = rows.filter(x => x.type === 'Demat');
+  const dematValueInput = $('currentDematPortfolioValue');
+  if (dematValueInput) dematValueInput.value = Number(state.settings.currentDematPortfolioValue || 0) || '';
+  $('updateDematValueBtn').onclick = () => {
+    const editor = $('dematValueEditor');
+    if (editor) editor.style.display = editor.style.display === 'none' ? 'flex' : 'none';
+  };
+  $('saveDematValueBtn').onclick = async () => {
+    const value = Number(dematValueInput?.value || 0);
+    if (value <= 0) { toast('Enter a valid portfolio value', true); return; }
+    state.settings.currentDematPortfolioValue = value;
+    await putOne('meta', { ...state.settings, id: 'settings' });
+    $('dematValueEditor').style.display = 'none';
+    toast('Portfolio value updated');
+    renderDematOverview(dematRows); await renderOverview();
+  };
+  renderDematOverview(dematRows);
 }
 
 $('addInvBtn').onclick = () => invModal();
+$('addGoldBtn').onclick = () => goldModal();
+$('addDematBtn').onclick = () => dematModal();
+
+function renderGoldOverview(rows) {
+  const totalGrams = rows.reduce((total, row) => total + (Number(row.grams) || 0), 0);
+  const purchaseValue = rows.reduce((total, row) => total + (Number(row.purchaseValue) || 0), 0);
+  const currentGoldPrice = Number(state.settings.currentGoldPricePerGram) || 0;
+  const currentValue = currentGoldPrice > 0
+    ? totalGrams * currentGoldPrice
+    : rows.reduce((total, row) => total + (Number(row.currentValue) || 0), 0);
+  const profitLoss = currentValue - purchaseValue;
+  const summary = rows.length ? `<div class="stats" style="margin-bottom:14px">
+    <div class="stat">Total Gold<b>${totalGrams.toFixed(3)} g</b></div>
+    <div class="stat">Purchase Value<b>${money(purchaseValue, state.settings.currency)}</b></div>
+    <div class="stat">Current Value<b>${money(currentValue, state.settings.currency)}</b></div>
+    <div class="stat">Profit / Loss<b class="${profitLoss >= 0 ? 'green' : 'red'}">${money(profitLoss, state.settings.currency)}</b></div>
+  </div>` : '';
+  const list = rows.length ? `<div class="inv-section-head">Gold Holdings</div>${rows.map(row => {
+    const value = currentGoldPrice > 0 ? (Number(row.grams) || 0) * currentGoldPrice : (Number(row.currentValue) || 0);
+    const purchase = Number(row.purchaseValue) || 0;
+    return `<div class="item">
+      <div><div class="title">${esc(row.name || 'Gold')}</div><div class="sub">${(Number(row.grams) || 0).toFixed(3)} g · ${esc(row.goldType || 'Jewellery')} · Purchase ${money(purchase, state.settings.currency)}</div></div>
+      <b class="${value >= purchase ? 'green' : 'red'}">${money(value, state.settings.currency)}</b>
+      <div class="actions"><button class="btn-icon" data-gold-edit="${row.id}" title="Edit">✏️</button><button class="btn-icon danger" data-gold-delete="${row.id}" title="Delete">🗑️</button></div>
+    </div>`;
+  }).join('')}` : '<div class="empty">No gold holdings added yet.</div>';
+  $('goldOverview').innerHTML = `<div class="muted" style="font-size:12px;margin-bottom:8px">Current value uses the shared current gold price above.</div>` + summary + list;
+  $('goldOverview').querySelectorAll('[data-gold-edit]').forEach(button => button.onclick = async () => {
+    const row = await getOne('investments', button.dataset.goldEdit);
+    if (row) goldModal(row);
+  });
+  $('goldOverview').querySelectorAll('[data-gold-delete]').forEach(button => button.onclick = async () => {
+    if (!confirm('Delete this gold holding?')) return;
+    await delOne('investments', button.dataset.goldDelete);
+    await logActivity('Gold', 'Gold holding deleted');
+    await renderInvestments(); await renderOverview();
+  });
+}
+
+function renderDematOverview(rows) {
+  const investedValue = rows.reduce((total, row) => total + (Number(row.investedValue ?? row.purchaseValue ?? row.openingBalance) || 0), 0);
+  const portfolioValue = Number(state.settings.currentDematPortfolioValue) || (rows.length ? rows.reduce((total, row) => total + (Number(row.currentValue) || 0), 0) : 0);
+  const profitLoss = portfolioValue - investedValue;
+  const summary = rows.length ? `<div class="stats" style="margin-bottom:14px">
+    <div class="stat">Invested Value<b>${money(investedValue, state.settings.currency)}</b></div>
+    <div class="stat">Portfolio Value<b>${money(portfolioValue, state.settings.currency)}</b></div>
+    <div class="stat">Overall P&amp;L<b class="${profitLoss >= 0 ? 'green' : 'red'}">${money(profitLoss, state.settings.currency)}</b></div>
+  </div>` : '';
+  const list = rows.length ? `<div class="inv-section-head">Demat Accounts</div>${rows.map(row => `<div class="item">
+    <div><div class="title">${esc(row.name || 'Demat Account')}</div><div class="sub">Invested Value: ${money(row.investedValue ?? row.purchaseValue ?? row.openingBalance, state.settings.currency)}</div></div>
+    <b class="${portfolioValue >= investedValue ? 'green' : 'red'}">Portfolio Value: ${money(portfolioValue, state.settings.currency)}</b>
+    <div class="actions"><button class="btn-icon" data-demat-edit="${row.id}" title="Edit">✏️</button><button class="btn-icon danger" data-demat-delete="${row.id}" title="Delete">🗑️</button></div>
+  </div>`).join('')}` : '<div class="empty">No Demat account added yet.</div>';
+  $('dematOverview').innerHTML = summary + list;
+  $('dematOverview').querySelectorAll('[data-demat-edit]').forEach(button => button.onclick = async () => {
+    const row = await getOne('investments', button.dataset.dematEdit);
+    if (row) dematModal(row);
+  });
+  $('dematOverview').querySelectorAll('[data-demat-delete]').forEach(button => button.onclick = async () => {
+    if (!confirm('Delete this Demat account?')) return;
+    await delOne('investments', button.dataset.dematDelete);
+    await logActivity('Demat', 'Demat account deleted');
+    await renderInvestments(); await renderOverview();
+  });
+}
+
+function dematModal(existing = null) {
+  openModal(existing ? 'Edit Demat Account' : 'Add Demat Account', `<form class="grid">
+    <label>Account Name <span class="req-star">*</span><input name="name" required value="${esc(existing?.name || '')}" placeholder="e.g. ABC Securities"></label>
+    <label>Invested Value <span class="req-star">*</span><input name="investedValue" type="number" min="0" step="0.01" required value="${Number(existing?.investedValue ?? existing?.purchaseValue ?? existing?.openingBalance ?? 0)}"></label>
+    <label style="grid-column:1/-1">Notes<textarea name="notes" placeholder="Optional notes">${esc(existing?.notes || '')}</textarea></label>
+    <div class="muted" style="grid-column:1/-1;font-size:12px">Monthly contributions are added through Expenses &gt; Savings &amp; Investments &gt; this Demat account.</div>
+    <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Demat</button></div>
+  </form>`, async fd => {
+    const investedValue = Number(fd.get('investedValue') || 0);
+    const name = String(fd.get('name') || '').trim();
+    if (!name || investedValue < 0) { toast('Enter valid Demat details', true); return; }
+    await putOne('investments', {
+      id: existing?.id || uid(), type: 'Demat', name, investedValue,
+      purchaseValue: investedValue,
+      currentValue: Number(existing?.currentValue || 0), notes: String(fd.get('notes') || '').trim(),
+      createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    await logActivity('Demat', (existing ? 'Demat updated: ' : 'Demat added: ') + name);
+    closeModal(); toast(existing ? 'Demat updated' : 'Demat saved');
+    await renderInvestments(); await renderOverview();
+  });
+}
+
+function goldModal(existing = null) {
+  const goldType = existing?.goldType || 'Jewellery';
+  openModal(existing ? 'Edit Gold' : 'Add Gold', `<form class="grid">
+    <label>Name <span class="req-star">*</span><input name="name" required value="${esc(existing?.name || '')}" placeholder="e.g. Gold chain"></label>
+    <label>Grams <span class="req-star">*</span><input name="grams" type="number" min="0.001" step="0.001" required value="${Number(existing?.grams || 0) || ''}"></label>
+    <label>Type <select name="goldType"><option ${goldType === 'Coin' ? 'selected' : ''}>Coin</option><option ${goldType === 'Jewellery' ? 'selected' : ''}>Jewellery</option></select></label>
+    <label>Current Price per Gram <span class="req-star">*</span><input name="goldRate" type="number" min="0" step="0.01" required placeholder="e.g. 6500" value="${Number(existing?.goldRate || 0) || ''}"></label>
+    <label>Making Charge <input name="makingCharge" type="number" min="0" step="0.01" value="${Number(existing?.makingCharge || 0)}"></label>
+    <label>GST (%) <input name="gstRate" type="number" min="0" step="0.01" value="${Number(existing?.gstRate || 0)}"></label>
+    <label>Purchase Total <input name="purchaseTotal" type="number" readonly value="${Number(existing?.purchaseValue || 0)}"></label>
+    <div class="muted" id="goldCalcInfo" style="grid-column:1/-1;font-size:12px"></div>
+    <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Gold</button></div>
+  </form>`, async fd => {
+    const grams = Number(fd.get('grams') || 0);
+    const goldRate = Number(fd.get('goldRate') || 0);
+    const makingCharge = Number(fd.get('makingCharge') || 0);
+    const gstRate = Number(fd.get('gstRate') || 0);
+    const subtotal = grams * goldRate + makingCharge;
+    const purchaseValue = subtotal + subtotal * gstRate / 100;
+    if (!String(fd.get('name') || '').trim() || grams <= 0 || goldRate < 0 || makingCharge < 0 || gstRate < 0) {
+      toast('Enter valid gold details', true); return;
+    }
+    await putOne('investments', {
+      id: existing?.id || uid(), type: 'Gold', name: String(fd.get('name')).trim(), grams, goldType: fd.get('goldType'),
+      goldRate, makingCharge, gstRate, purchaseValue, currentValue: existing?.currentValue || purchaseValue,
+      createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    await logActivity('Gold', (existing ? 'Gold updated: ' : 'Gold added: ') + String(fd.get('name')).trim());
+    closeModal(); toast(existing ? 'Gold updated' : 'Gold saved');
+    await renderInvestments(); await renderOverview();
+  });
+  const form = $('modalBody').querySelector('form');
+  const updateGoldTotal = () => {
+    const grams = Number(form.elements.grams.value) || 0;
+    const rate = Number(form.elements.goldRate.value) || 0;
+    const making = Number(form.elements.makingCharge.value) || 0;
+    const gstRate = Number(form.elements.gstRate.value) || 0;
+    const subtotal = grams * rate + making;
+    const total = subtotal + subtotal * gstRate / 100;
+    form.elements.purchaseTotal.value = total.toFixed(2);
+    $('goldCalcInfo').textContent = `Gold value ${money(grams * rate, state.settings.currency)} + making ${money(making, state.settings.currency)} + GST ${money(total - subtotal, state.settings.currency)} = ${money(total, state.settings.currency)}`;
+  };
+  ['grams', 'goldRate', 'makingCharge', 'gstRate'].forEach(name => form.elements[name].addEventListener('input', updateGoldTotal));
+  updateGoldTotal();
+}
 
 function invModal(existing = null) {
   const typeOpts = INV_TYPES.map(t => `<option ${existing?.type === t ? 'selected' : ''}>${t}</option>`).join('');

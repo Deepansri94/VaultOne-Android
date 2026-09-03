@@ -112,6 +112,26 @@ test('budget save locks form and edit unlocks it', async ({ page }) => {
   await expect(page.locator('input[name="cat_Household"]')).toBeEnabled();
 });
 
+test('budget vs actual includes subcategory rows', async ({ page }) => {
+  const today = new Date().toISOString().slice(0, 10);
+  await page.locator('[data-sv="expenses"]').click();
+  await page.locator('#expenseForm select[name="category"]').selectOption({ label: 'Household' });
+  await page.locator('#expSubcatSelect').selectOption({ label: 'Rent' });
+  await page.locator('#expenseForm input[name="amount"]').fill('15000');
+  await setDate(page, '#expenseForm input[name="date"]', today);
+  await page.locator('#expenseForm button[type="submit"]').click();
+
+  await page.locator('[data-sv="budget"]').click();
+  await page.locator('input[name="sub_Household_Rent"]').fill('200');
+  await page.locator('input[name="sub_Household_Electricity"]').fill('200');
+  await expect(page.locator('input[name="cat_Household"]')).toHaveValue('400');
+  await page.locator('#budgetSaveBtn').click();
+
+  const table = page.locator('#budgetActuals');
+  await expect(table).toContainText('Rent');
+  await expect(table).toContainText(/15,000|15000/);
+});
+
 // TC-IV-011
 test('budget month navigation changes label', async ({ page }) => {
   await page.locator('[data-sv="budget"]').click();
@@ -133,6 +153,54 @@ test('add investment appears in list', async ({ page }) => {
   await page.locator('#modalBody input[name="interestRate"]').fill('7');
   await page.locator('#modalBody .btn.primary').click();
   await expect(page.locator('#invList')).toContainText('SBI FD');
+});
+
+test('add gold calculates purchase value and overview', async ({ page }) => {
+  await page.locator('[data-sv="investments"]').click();
+  await page.locator('#addGoldBtn').click();
+  await page.locator('#modalBody input[name="name"]').fill('Gold Chain');
+  await page.locator('#modalBody input[name="grams"]').fill('10');
+  await page.locator('#modalBody select[name="goldType"]').selectOption({ label: 'Jewellery' });
+  await page.locator('#modalBody input[name="goldRate"]').fill('5000');
+  await page.locator('#modalBody input[name="makingCharge"]').fill('1000');
+  await page.locator('#modalBody input[name="gstRate"]').fill('3');
+  await expect(page.locator('#modalBody input[name="purchaseTotal"]')).toHaveValue('52530.00');
+  await page.locator('#modalBody .btn.primary').click();
+  await page.locator('#updateGoldPriceBtn').click();
+  await page.locator('#currentGoldPricePerGram').fill('6000');
+  await page.locator('#saveGoldPriceBtn').click();
+
+  await expect(page.locator('#goldOverview')).toContainText('10.000 g');
+  await expect(page.locator('#goldOverview')).toContainText(/52,530|52530/);
+  await expect(page.locator('#goldOverview')).toContainText(/7,470|7470/);
+});
+
+test('add Demat account and contribute through expenses', async ({ page }) => {
+  await page.locator('[data-sv="investments"]').click();
+  await page.locator('#addDematBtn').click();
+  await page.locator('#modalBody input[name="name"]').fill('ABC Demat');
+  await page.locator('#modalBody input[name="investedValue"]').fill('100000');
+  await page.locator('#modalBody .btn.primary').click();
+  await page.locator('#updateDematValueBtn').click();
+  await page.locator('#currentDematPortfolioValue').fill('120000');
+  await page.locator('#saveDematValueBtn').click();
+
+  await page.locator('[data-sv="expenses"]').click();
+  await page.locator('#expenseForm select[name="category"]').selectOption({ label: 'Savings & Investments' });
+  await expect(page.locator('#expLinkedSelect')).toContainText('Invested:');
+  await expect(page.locator('#expLinkedSelect')).toContainText('Portfolio:');
+  const dematOption = page.locator('#expLinkedSelect option', { hasText: 'ABC Demat' });
+  await page.locator('#expLinkedSelect').selectOption({ value: await dematOption.getAttribute('value') ?? undefined });
+  await page.locator('#expenseForm input[name="amount"]').fill('5000');
+  await setDate(page, '#expenseForm input[name="date"]', new Date().toISOString().slice(0, 10));
+  await page.locator('#expenseForm button[type="submit"]').click();
+
+  await page.locator('[data-sv="investments"]').click();
+  await expect(page.locator('#dematOverview')).toContainText('Invested Value');
+  await expect(page.locator('#dematOverview')).toContainText(/1,05,000|105,000|105000/);
+  await expect(page.locator('#dematOverview')).toContainText(/15,000|15000/);
+  await page.locator('[data-sv="overview"]').click();
+  await expect(page.locator('#statNetWorth')).toContainText(/1,20,000|120,000|120000/);
 });
 
 // TC-IV-013
