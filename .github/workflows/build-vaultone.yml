@@ -519,8 +519,13 @@ jobs:
                           String remoteName = parseStringField(json, "name");
                           int remoteCode = tag.startsWith("build-")
                               ? Integer.parseInt(tag.substring(6)) : -1;
-                          // Extract APK browser_download_url from assets array
+                          // Extract APK browser_download_url from assets array. Fall back to
+                          // the deterministic GitHub release URL if parsing changes upstream.
                           String apkUrl = parseApkUrl(json);
+                          if (!isHttpUrl(apkUrl) && tag.startsWith("build-")) {
+                              apkUrl = "https://github.com/Deepansri94/VaultOne-Android/releases/download/"
+                                  + tag + "/VaultOne.apk";
+                          }
                           if (remoteCode > CURRENT_VERSION_CODE && apkUrl != null) {
                               final String finalUrl = apkUrl;
                               final String finalName = remoteName;
@@ -534,18 +539,22 @@ jobs:
 
               private String parseApkUrl(String json) {
                   try {
-                      // Find browser_download_url after "VaultOne.apk"
-                      int apkIdx = json.indexOf("VaultOne.apk");
-                      if (apkIdx < 0) return null;
-                      String after = json.substring(apkIdx);
-                      String key = "browser_download_url";
-                      int urlIdx = after.indexOf(key);
-                      if (urlIdx < 0) return null;
-                      String rest = after.substring(urlIdx + key.length());
-                      int q1 = rest.indexOf('"');
-                      int q2 = rest.indexOf('"', q1 + 1);
-                      return rest.substring(q1 + 1, q2);
+                      java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(
+                          "\\\"browser_download_url\\\"\\s*:\\s*\\\"([^\\\"]*VaultOne\\.apk)\\\"")
+                          .matcher(json);
+                      if (!matcher.find()) return null;
+                      return matcher.group(1).replace("\\\\/", "/");
                   } catch (Exception e) { return null; }
+              }
+
+              private boolean isHttpUrl(String value) {
+                  if (value == null || value.trim().isEmpty()) return false;
+                  try {
+                      java.net.URI uri = new java.net.URI(value.trim());
+                      return ("http".equalsIgnoreCase(uri.getScheme())
+                          || "https".equalsIgnoreCase(uri.getScheme()))
+                          && uri.getHost() != null;
+                  } catch (Exception e) { return false; }
               }
 
               private void showUpdateDialog(String versionName, String apkUrl) {
@@ -558,6 +567,10 @@ jobs:
               }
 
               private void downloadAndInstall(String apkUrl) {
+                  if (!isHttpUrl(apkUrl)) {
+                      Toast.makeText(this, "Update link is invalid. Please try again later.", Toast.LENGTH_LONG).show();
+                      return;
+                  }
                   Toast.makeText(this, "Downloading update...", Toast.LENGTH_SHORT).show();
                   new Thread(() -> {
                       try {
@@ -565,11 +578,14 @@ jobs:
                           cacheDir.mkdirs();
                           File apkFile = new File(cacheDir, "VaultOne_update.apk");
                           HttpURLConnection conn =
-                              (HttpURLConnection) new URL(apkUrl).openConnection();
+                              (HttpURLConnection) new URL(apkUrl.trim()).openConnection();
                           conn.setConnectTimeout(15000);
                           conn.setReadTimeout(60000);
                           conn.setRequestProperty("Accept", "application/octet-stream");
                           conn.setInstanceFollowRedirects(true);
+                          if (conn.getResponseCode() < 200 || conn.getResponseCode() >= 300) {
+                              throw new java.io.IOException("Update server returned HTTP " + conn.getResponseCode());
+                          }
                           try (InputStream in = conn.getInputStream();
                                FileOutputStream out = new FileOutputStream(apkFile)) {
                               byte[] buf = new byte[8192];
