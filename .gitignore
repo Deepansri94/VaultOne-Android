@@ -17,6 +17,9 @@ app/build/
 .gradle/
 local.properties
 
+# Release keystore — never commit, stored as GitHub secret KEYSTORE_BASE64
+vaultone-release.jks
+
 # OS
 .DS_Store
 Thumbs.db

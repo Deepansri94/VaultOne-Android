@@ -937,18 +937,15 @@ jobs:
         shell: bash
         run: ./gradlew --no-daemon clean --stacktrace
 
-      # 23. GENERATE RELEASE KEYSTORE
-      - name: Generate release keystore
+      # 23. DECODE RELEASE KEYSTORE FROM SECRET
+      - name: Decode release keystore
         shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           set -e
-          keytool -genkeypair -v \
-            -keystore vaultone-release.jks \
-            -alias vaultone \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass vaultone123 -keypass vaultone123 \
-            -dname "CN=VaultOne, OU=VaultOne, O=VaultOne, L=IN, S=IN, C=IN"
-          echo "Keystore generated."
+          echo "$KEYSTORE_BASE64" | base64 -d > vaultone-release.jks
+          echo "Keystore decoded."
 
       # 24. CONFIGURE RELEASE SIGNING IN APP BUILD.GRADLE
       - name: Add signing config to app build.gradle
