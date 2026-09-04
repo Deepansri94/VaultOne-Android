@@ -43,12 +43,12 @@
 .tx-amt-debit { font-size: 15px; font-weight: 700; color: #f87171; white-space: nowrap; }
 .tx-edit-btn { width: 26px; height: 26px; min-height: 26px; padding: 0; font-size: 12px; border: 1px solid #ffffff18; background: #14233a; color: #94a3b8; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
 /* Transaction filter bar */
-.tx-filter-bar { margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.tx-quick-btn { font-size: 13px; padding: 6px 14px; border-radius: 999px; }
+.tx-filter-bar { margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.tx-quick-btn { font-size: 13px; padding: 6px 14px; border-radius: 999px; flex: 1; text-align: center; }
 .tx-quick-btn.active { background: linear-gradient(135deg,#7c3aed,#2563eb); border-color: #9b7aff; color: #fff; }
-.tx-cal-btn { width: 34px; height: 34px; padding: 0; border-radius: 10px; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.tx-cal-btn { height: 36px; padding: 0 10px; border-radius: 999px; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; flex: 1; }
 .tx-cal-btn.active { background: linear-gradient(135deg,#7c3aed,#2563eb); border-color: #9b7aff; }
-.tx-cal-dropdown { position: relative; }
+.tx-cal-dropdown { position: relative; flex: 1; display: flex; }
 .tx-cal-panel { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; background: #0d1728; border: 1px solid #ffffff18; border-radius: 16px; padding: 14px; min-width: 240px; box-shadow: 0 12px 40px #0009; display: none; }
 .tx-cal-panel.open { display: block; }
 .tx-cal-preset { display: block; width: 100%; text-align: left; background: none; border: 0; color: #c8d4e8; font-size: 13px; padding: 8px 10px; border-radius: 8px; cursor: pointer; }
@@ -58,7 +58,7 @@
 .tx-cal-custom label { font-size: 11px; color: #64748b; font-weight: 600; display: flex; flex-direction: column; gap: 3px; }
 .tx-cal-custom input { margin: 0; font-size: 12px; padding: 6px 8px; }
 .tx-active-label { font-size: 12px; color: #8b5cf6; font-weight: 600; flex: 1; }
-.tx-pdf-btn { font-size: 12px; padding: 6px 12px; border-radius: 999px; white-space: nowrap; }
+.tx-pdf-btn { font-size: 13px; padding: 6px 14px; border-radius: 999px; white-space: nowrap; flex: 1; text-align: center; }
 .tx-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #ffffff0a; }
 </style>
 </head>

@@ -185,7 +185,7 @@ async function renderTransactions() {
     <div class="tx-filter-bar">
       <button class="btn tx-quick-btn${_txFilter.quick === 'last10' ? ' active' : ''}" id="txLast10">Last 10</button>
       <div class="tx-cal-dropdown" id="txCalDropdown">
-        <button class="btn tx-cal-btn${calActive ? ' active' : ''}" id="txCalBtn" title="Filter by date">📅</button>
+        <button class="btn tx-cal-btn${calActive ? ' active' : ''}" id="txCalBtn" title="Filter by date" style="width:100%">📅 Date</button>
         <div class="tx-cal-panel" id="txCalPanel">
           <button class="tx-cal-preset" data-preset="last30">Last 30 Days</button>
           <button class="tx-cal-preset" data-preset="thismonth">This Month</button>
@@ -425,19 +425,11 @@ function downloadTxPdf(rows) {
   // ── Save ──
   const fileName = 'VaultOne_Statement_' + (now.replace(/ /g, '_')) + '.pdf';
 
-  // Android bridge — save to Downloads
-  if (window.VaultOneAndroid?.saveExport) {
+  if (window.VaultOneAndroid && typeof window.VaultOneAndroid.saveExport === 'function') {
     try {
-      const pdfBase64 = doc.output('datauristring');
-      // Extract base64 payload and write via bridge as data URI isn't directly saveable;
-      // fall back to blob URL share instead
-      const blob = doc.output('blob');
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href = url; a.download = fileName;
-      document.body.appendChild(a); a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
-    } catch(e) { toast('PDF save failed: ' + e.message, true); }
+      const b64 = doc.output('datauristring').split(',')[1];
+      if (!window.VaultOneAndroid.saveExport(b64, fileName)) throw new Error('Android could not save the statement to Downloads.');
+    } catch(e) { toast('PDF save failed: ' + e.message, true); return; }
   } else {
     doc.save(fileName);
   }

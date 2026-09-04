@@ -14,8 +14,10 @@ const daysUntil = d => {
 };
 const money = (n, curr) => {
   const c = curr || (typeof state !== 'undefined' && state.settings && state.settings.currency) || 'INR';
-  try { return new Intl.NumberFormat('en-IN', { style: 'currency', currency: c, maximumFractionDigits: 0 }).format(Math.round(Number(n) || 0)); }
-  catch { return '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN'); }
+  const v = Number(n) || 0;
+  const hasPaise = v % 1 !== 0;
+  try { return new Intl.NumberFormat('en-IN', { style: 'currency', currency: c, minimumFractionDigits: hasPaise ? 2 : 0, maximumFractionDigits: 2 }).format(v); }
+  catch { return '₹' + (hasPaise ? v.toFixed(2) : Math.round(v)).toLocaleString('en-IN'); }
 };
 
 /* ===== DOM helper ===== */
