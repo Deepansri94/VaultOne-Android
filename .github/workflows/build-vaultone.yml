@@ -661,17 +661,25 @@ jobs:
                   }
 
                   @JavascriptInterface
-                  public boolean saveExport(String json, String fileName) {
+                  public boolean saveExport(String data, String fileName) {
                       Uri itemUri = null;
                       try {
                           String safeName = (fileName == null || fileName.trim().isEmpty())
                                   ? "VaultOne_Backup.json"
                                   : fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
-                          byte[] data = (json == null ? "{}" : json).getBytes("UTF-8");
+                          String mimeType = safeName.endsWith(".pdf")
+                                  ? "application/pdf" : "application/json";
+                          byte[] bytes;
+                          if (safeName.endsWith(".pdf") && data != null && data.startsWith("JVBERi")) {
+                              // PDF passed as raw base64
+                              bytes = android.util.Base64.decode(data, android.util.Base64.DEFAULT);
+                          } else {
+                              bytes = (data == null ? "{}" : data).getBytes("UTF-8");
+                          }
                           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                               ContentValues values = new ContentValues();
                               values.put(MediaStore.Downloads.DISPLAY_NAME, safeName);
-                              values.put(MediaStore.Downloads.MIME_TYPE, "application/json");
+                              values.put(MediaStore.Downloads.MIME_TYPE, mimeType);
                               values.put(MediaStore.Downloads.RELATIVE_PATH,
                                       Environment.DIRECTORY_DOWNLOADS);
                               values.put(MediaStore.Downloads.IS_PENDING, 1);
@@ -681,7 +689,7 @@ jobs:
                               try (OutputStream out =
                                            context.getContentResolver().openOutputStream(itemUri)) {
                                   if (out == null) throw new java.io.IOException("Could not open Downloads file");
-                                  out.write(data);
+                                  out.write(bytes);
                               }
                               values.clear();
                               values.put(MediaStore.Downloads.IS_PENDING, 0);
@@ -692,7 +700,7 @@ jobs:
                               if (!dir.exists()) dir.mkdirs();
                               try (java.io.FileOutputStream fos = new java.io.FileOutputStream(
                                       new java.io.File(dir, safeName))) {
-                                  fos.write(data);
+                                  fos.write(bytes);
                               }
                           }
                           activity.runOnUiThread(() -> Toast.makeText(context,
