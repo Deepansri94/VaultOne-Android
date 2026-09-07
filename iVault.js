@@ -247,7 +247,7 @@ async function renderTransactions() {
         return `<div class="tx-row">
           <div class="tx-info">
             <div class="tx-title">${esc(row.description)}</div>
-            ${row.category ? `<div class="tx-sub">${esc(row.category)}</div>` : ''}
+            <div class="tx-sub">${esc(row.transactionType)}${row.category ? ' · ' + esc(row.category) : ''}</div>
           </div>
           <div class="tx-right">
             <span class="${isIncome ? 'tx-amt-credit' : 'tx-amt-debit'}">${isIncome ? '+' : '-'}${money(row.amount, state.settings.currency)}</span>
