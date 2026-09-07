@@ -126,4 +126,4 @@ jobs:
 
     steps:
       - name: Gate passed
-        run: echo "✅ All 59 Playwright tests passed. APK and EXE builds may proceed."
+        run: echo "✅ All 67 Playwright tests passed. APK and EXE builds may proceed."
