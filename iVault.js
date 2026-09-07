@@ -41,6 +41,7 @@ let _budgetEditMode = false; // true only when user explicitly clicks Edit
 (async () => {
   try {
     await openDB(IV_DB, IV_VER, IV_STORES);
+    if (!db) throw new Error('IndexedDB connection failed — db is undefined after openDB');
     const s = await getOne('meta','settings');
     if (s) {
       state.settings = { ...state.settings, ...s };
@@ -246,7 +247,7 @@ async function renderTransactions() {
         return `<div class="tx-row">
           <div class="tx-info">
             <div class="tx-title">${esc(row.description)}</div>
-            ${row.category ? `<div class="tx-sub">${esc(row.category)}</div>` : ''}
+            <div class="tx-sub">${esc(row.transactionType)}${row.category ? ' · ' + esc(row.category) : ''}</div>
           </div>
           <div class="tx-right">
             <span class="${isIncome ? 'tx-amt-credit' : 'tx-amt-debit'}">${isIncome ? '+' : '-'}${money(row.amount, state.settings.currency)}</span>
@@ -751,6 +752,7 @@ $('incomeForm').onsubmit = async e => {
   const fd = new FormData(form);
   const amount = Number(fd.get('amount'));
   if (amount <= 0) { toast('Enter a valid amount', true); return; }
+  if (!db) { toast('Database not ready. Please reload the page.', true); return; }
   await putOne('income', { id: uid(), type: fd.get('type'), amount, date: fd.get('date') || today(), note: fd.get('note') || '', createdAt: new Date().toISOString() });
   await logActivity('Income', 'Income saved');
   toast('Income saved');
@@ -766,6 +768,7 @@ $('expenseForm').onsubmit = async e => {
   const fd = new FormData(form);
   const amount = Number(fd.get('amount'));
   if (amount <= 0) { toast('Enter a valid amount', true); return; }
+  if (!db) { toast('Database not ready. Please reload the page.', true); return; }
   const category = fd.get('category') || '';
   const linkedId = fd.get('linkedId') || '';
   const date = fd.get('date') || today();
@@ -985,11 +988,23 @@ async function renderBudget() {
     if (budgetEditBtn) budgetEditBtn.style.display = 'none';
   }
 
-  // Actuals
-  const exp = await getAll('expenses');
+  // Actuals — query expenses + loan EMI payments + investment contributions
+  const [exp, loans, invs] = await Promise.all([getAll('expenses'), getAll('loans'), getAll('investments')]);
   const mExp = exp.filter(x => (x.date || '').startsWith(month));
   const actuals = {};
   BUDGET_CATS.forEach(c => { actuals[c] = mExp.filter(x => x.category === c).reduce((a, b) => a + Number(b.amount || 0), 0); });
+  // VO-11: Add loan EMI payments made this month to 'Loans & Financial'
+  loans.forEach(loan => {
+    (loan.payments || []).forEach(p => {
+      if ((p.date || '').startsWith(month)) actuals['Loans & Financial'] = (actuals['Loans & Financial'] || 0) + Number(p.emi || 0);
+    });
+  });
+  // VO-11: Add investment contributions made this month to 'Savings & Investments'
+  invs.forEach(inv => {
+    (inv.payments || []).forEach(p => {
+      if ((p.date || '').startsWith(month)) actuals['Savings & Investments'] = (actuals['Savings & Investments'] || 0) + Number(p.amount || 0);
+    });
+  });
   const bt = BUDGET_CATS.reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
   const wantBudget = ['Transport', 'Food & Personal', 'Family / Religious / Social', 'Other']
     .reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
@@ -1160,6 +1175,7 @@ async function renderInvestments() {
             ${valueRow}
           </div>
           <div class="actions">
+            <button class="btn-icon" data-invhist="${x.id}" title="History">📋</button>
             <button class="btn-icon" data-invedit="${x.id}" title="Edit">✏️</button>
             <button class="btn-icon danger" data-invdel="${x.id}" title="Delete">🗑️</button>
           </div>
@@ -1169,6 +1185,10 @@ async function renderInvestments() {
     }).join('');
   });
   if (regularRows.length) $('invList').innerHTML = html;
+  // VO-12: Wire history buttons
+  $('invList').querySelectorAll('[data-invhist]').forEach(b => b.onclick = async () => {
+    const x = await getOne('investments', b.dataset.invhist); if (x) invHistoryModal(x);
+  });
   $('invList').querySelectorAll('[data-invedit]').forEach(b => b.onclick = async () => {
     const x = await getOne('investments', b.dataset.invedit); if (x) invModal(x);
   });
@@ -1514,6 +1534,25 @@ function loanModal(existing = null) {
     await renderLoans(); await renderOverview();
     renderBellReminders();
   });
+}
+
+/* ===== VO-12: Investment history modal ===== */
+function invHistoryModal(inv) {
+  const payments = (inv.payments || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const isIns = inv.type === 'Insurance';
+  const cols = isIns
+    ? '<th>Date</th><th>Amount</th><th>Note</th>'
+    : '<th>Date</th><th>Type</th><th>Amount</th><th>Balance / Value</th>';
+  const rows = payments.length
+    ? payments.map((p, i) => isIns
+        ? `<tr><td>${esc(p.date||'')}</td><td>${money(p.amount, state.settings.currency)}</td><td>${esc(p.note||'')}</td></tr>`
+        : `<tr><td>${esc(p.date||'')}</td><td>${esc(p.type||'Contribution')}</td><td>${money(p.amount||p.emi||0, state.settings.currency)}</td><td>${money(p.outstanding??p.balance??'—', state.settings.currency)}</td></tr>`
+      ).join('')
+    : `<tr><td colspan="4" style="text-align:center;color:#64748b">No history recorded yet.</td></tr>`;
+  openModal(`📋 History — ${esc(inv.name || inv.type)}`,
+    `<div class="table-wrap"><table class="data-table"><thead><tr>${cols}</tr></thead><tbody>${rows}</tbody></table></div>
+     <div class="actions" style="margin-top:12px"><button class="btn" id="invHistClose">Close</button></div>`);
+  setTimeout(() => { document.getElementById('invHistClose')?.addEventListener('click', closeModal); }, 0);
 }
 
 /* ===== Settings wired via shared.js panel ===== */
