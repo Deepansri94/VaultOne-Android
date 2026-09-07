@@ -1085,8 +1085,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          TAG="build-${VERSION_CODE}"
-          RELEASE_NAME="VaultOne ${VERSION_NAME}"
+          export TAG="build-${VERSION_CODE}"
+          export RELEASE_NAME="VaultOne ${VERSION_NAME}"
 
           # Build release body + payload from release_notes.json
           python3 - <<'PYEOF'

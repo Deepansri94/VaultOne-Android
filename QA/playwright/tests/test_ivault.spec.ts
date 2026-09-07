@@ -40,14 +40,6 @@ test('cash wallets separate add cash and spend cash', async ({ page }) => {
     await expect(page.locator('#modal')).toHaveClass(/open/);
     await page.locator('#modalBody input[name="name"]').fill(name);
     await page.locator('#modalBody select[name="category"]').selectOption({ label: category });
-    // Wait for subcategory options to be populated after category change
-    await page.waitForFunction(
-      (sub) => {
-        const sel = document.querySelector<HTMLSelectElement>('#walletSubcategorySelect');
-        return sel ? Array.from(sel.options).some(o => o.text === sub) : false;
-      },
-      subcategory
-    );
     await page.locator('#modalBody select[name="subcategory"]').selectOption({ label: subcategory });
     await page.locator('#modalBody button[type="submit"]').click();
     await expect(page.locator('#modal')).not.toHaveClass(/open/);
