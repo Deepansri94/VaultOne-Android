@@ -1,0 +1,251 @@
+{
+  "meta": {
+    "project": "VaultOne",
+    "prefix": "VO",
+    "counter": 13,
+    "exportedAt": "2025-07-14T00:00:00.000Z"
+  },
+  "projects": [
+    {
+      "id": "proj-vo",
+      "name": "VaultOne",
+      "key": "VO",
+      "type": "Software",
+      "description": "Offline-first personal vault app",
+      "lead": "Deepan CG",
+      "color": "#0052cc",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    }
+  ],
+  "issues": [
+    {
+      "id": "VO-1",
+      "title": "Home dashboard net worth summary card",
+      "description": "Display total assets minus liabilities as a summary card on the Home screen.",
+      "type": "story",
+      "priority": "High",
+      "status": "done",
+      "assignee": "",
+      "sprint": "Sprint 1",
+      "createdAt": "2025-01-01T09:00:00.000Z",
+      "updatedAt": "2026-09-07T06:11:21.670Z",
+      "projectId": "proj-vo",
+      "worklogs": [
+        {
+          "id": "1788763446875",
+          "author": "Deepan",
+          "timeSpent": "1h",
+          "description": "test",
+          "date": "2025-07-14",
+          "loggedAt": "2026-09-07T06:44:06.875Z"
+        }
+      ]
+    },
+    {
+      "id": "VO-2",
+      "title": "Income transaction linked to bank account",
+      "description": "When an income entry is saved, the linked bank account balance should increase automatically.",
+      "type": "story",
+      "priority": "High",
+      "status": "done",
+      "assignee": "",
+      "sprint": "Sprint 1",
+      "createdAt": "2025-01-01T09:05:00.000Z",
+      "updatedAt": "2025-01-01T09:05:00.000Z",
+      "projectId": "proj-vo"
+    },
+    {
+      "id": "VO-3",
+      "title": "FD maturity reminder auto-creation",
+      "description": "Automatically create a reminder for FD maturity date when an FD record is saved.",
+      "type": "story",
+      "priority": "Low",
+      "status": "done",
+      "assignee": "Deepan",
+      "sprint": "Sprint 1",
+      "createdAt": "2025-01-01T09:10:00.000Z",
+      "updatedAt": "2026-09-07T06:43:04.211Z",
+      "projectId": "proj-vo",
+      "comments": [
+        {
+          "id": "1788763234026",
+          "author": "Deepan CG",
+          "text": "Test",
+          "createdAt": "2026-09-07T06:40:34.027Z"
+        }
+      ],
+      "author": "Deepan"
+    },
+    {
+      "id": "VO-4",
+      "title": "PasswordVault AES-GCM encryption",
+      "description": "All password entries must be encrypted with AES-GCM 256-bit using a PBKDF2-derived key from the Vault PIN.",
+      "type": "story",
+      "priority": "High",
+      "status": "done",
+      "assignee": "",
+      "sprint": "Sprint 1",
+      "createdAt": "2025-01-01T09:15:00.000Z",
+      "updatedAt": "2025-01-01T09:15:00.000Z",
+      "projectId": "proj-vo"
+    },
+    {
+      "id": "VO-5",
+      "title": "Birthday reminder auto-creation for family members",
+      "description": "Auto-create a yearly birthday reminder for every Active family member who has a DOB set.",
+      "type": "story",
+      "priority": "Medium",
+      "status": "done",
+      "assignee": "",
+      "sprint": "Sprint 2",
+      "createdAt": "2025-01-02T09:00:00.000Z",
+      "updatedAt": "2025-01-02T09:00:00.000Z",
+      "projectId": "proj-vo"
+    },
+    {
+      "id": "VO-6",
+      "title": "Document file preview (image / PDF)",
+      "description": "Images should render inline; PDFs should open in an iframe; other formats offered for download.",
+      "type": "story",
+      "priority": "Medium",
+      "status": "done",
+      "assignee": "",
+      "sprint": "Sprint 2",
+      "createdAt": "2025-01-02T09:05:00.000Z",
+      "updatedAt": "2025-01-02T09:05:00.000Z",
+      "projectId": "proj-vo"
+    },
+    {
+      "id": "VO-7",
+      "title": "Loan EMI outstanding balance calculation",
+      "description": "Outstanding balance should use the reducing-balance EMI formula. manualOutstanding overrides when set.",
+      "type": "story",
+      "priority": "High",
+      "status": "done",
+      "assignee": "",
+      "sprint": "Sprint 2",
+      "createdAt": "2025-01-02T09:10:00.000Z",
+      "updatedAt": "2025-01-02T09:10:00.000Z",
+      "projectId": "proj-vo"
+    },
+    {
+      "id": "VO-8",
+      "title": "GoldVault current value calculation",
+      "description": "Current value = weight × current market rate for matching purity (18K/22K/24K). Show gain/loss vs purchase price.",
+      "type": "story",
+      "priority": "Medium",
+      "status": "done",
+      "assignee": "",
+      "sprint": "Sprint 3",
+      "createdAt": "2025-01-03T09:00:00.000Z",
+      "updatedAt": "2026-09-07T07:08:10.532Z",
+      "projectId": "proj-vo"
+    },
+    {
+      "id": "VO-9",
+      "title": "Full JSON backup and restore",
+      "description": "Export all stores including encrypted passwords and base64-encoded document blobs. Import merges per record ID.",
+      "type": "story",
+      "priority": "High",
+      "status": "done",
+      "assignee": "",
+      "sprint": "Sprint 3",
+      "createdAt": "2025-01-03T09:05:00.000Z",
+      "updatedAt": "2026-09-07T07:08:14.361Z",
+      "projectId": "proj-vo"
+    },
+    {
+      "id": "VO-10",
+      "title": "Android APK native AlarmManager notifications",
+      "description": "Reminders must fire via AlarmManager even when the app is closed or the device is idle.",
+      "type": "story",
+      "priority": "High",
+      "status": "done",
+      "assignee": "",
+      "sprint": "Sprint 3",
+      "createdAt": "2025-01-03T09:10:00.000Z",
+      "updatedAt": "2026-09-07T07:08:16.492Z",
+      "projectId": "proj-vo"
+    },
+    {
+      "id": "VO-11",
+      "title": "Budget Actual not reflecting Personal Loan payments and Savings & Investment transactions",
+      "description": "## Bug Report\n\n**Module:** iVault → Budget\n\n**Summary:**\nThe Budget Actual column does not update when a Personal Loan EMI payment is made or when a Savings & Investment transaction (FD, RD, PPF, SSA, NPS, Demat, etc.) is recorded. Only regular Expense transactions appear to feed into the Budget Actual figures.\n\n**Steps to Reproduce:**\n1. Create a monthly budget with amounts set for the 'Loans & Financial' and 'Savings & Investments' categories.\n2. Record a Personal Loan EMI payment under the Loans section.\n3. Record an investment contribution (e.g. RD monthly deposit or NPS contribution) under Savings & Investments.\n4. Navigate to Budget → current month → Budgeted vs Actual table.\n\n**Expected Result:**\n- The 'Loans & Financial' Actual column should reflect the EMI amount paid for the Personal Loan.\n- The 'Savings & Investments' Actual column should reflect the investment contribution amount.\n\n**Actual Result:**\n- Both Actual values remain ₹0 regardless of payments made.\n- Only transactions created via the Expenses module appear in Budget Actual.\n\n**Root Cause (suspected):**\nThe budget actual aggregation logic queries only the `expenses` store. Loan EMI payments and investment contributions write to the `transactions` store (or `loans`/`investments` stores) but are not mapped to a budget category, so they are excluded from the Actual calculation.\n\n**Fix Guidance:**\n- Loan EMI payments should be mapped to the 'Loans & Financial' budget category and included in the Actual aggregation.\n- Investment contributions (RD, PPF, SSA, NPS, Demat buy) should be mapped to the 'Savings & Investments' budget category and included in the Actual aggregation.\n- The aggregation should query the unified `transactions` store filtered by month and category mapping, not just the `expenses` store.",
+      "type": "bug",
+      "priority": "High",
+      "status": "inprogress",
+      "assignee": "Deepan",
+      "sprint": "Sprint 4",
+      "createdAt": "2025-07-14T09:00:00.000Z",
+      "updatedAt": "2026-09-07T07:27:36.485Z",
+      "projectId": "proj-vo"
+    },
+    {
+      "id": "VO-12",
+      "title": "Payment history for all investment types (FD, RD, PPF, SSA, NPS, Demat)",
+      "description": "## Story\n\n**Module:** iVault → Savings & Investments\n\n**Background:**\nLoan payment history is already tracked — each EMI payment is recorded with date, principal, interest, and outstanding balance. Users want the same contribution/transaction history for all investment types so they can audit their investment activity over time.\n\n**User Story:**\nAs a user, I want to see a full contribution/transaction history for each investment record (FD, RD, PPF, SSA, NPS, Demat, Other Saving) so that I can track every payment I have made and verify my investment growth.\n\n**Acceptance Criteria:**\n\n- **FD:** Show a single lump-sum deposit entry on the start date with the principal amount.\n- **RD:** Show each monthly contribution entry with date and amount. Running total balance shown.\n- **PPF:** Show each contribution entry (date, amount). Annual interest credit entries shown separately.\n- **SSA:** Show each contribution entry (date, amount). Annual interest credit entries shown separately.\n- **NPS:** Show each monthly contribution entry (date, amount, tier — Tier I / Tier II).\n- **Demat:** Show each buy/sell lot entry (date, stock, qty, price, transaction type). P&L updated per entry.\n- **Other Saving:** Show manual value update entries (date, previous value, new value).\n\n**UI:**\n- Each investment card/row should have a 'History' button (📋) that opens a modal or expandable panel.\n- History table columns: Date | Type | Amount | Notes | Balance/Value after transaction.\n- Sorted newest first. Paginated at 10 rows.\n- History entries stored in the existing `transactions` store with `referenceId` pointing to the investment record.",
+      "type": "story",
+      "priority": "Medium",
+      "status": "inprogress",
+      "assignee": "",
+      "sprint": "Sprint 4",
+      "createdAt": "2025-07-14T09:05:00.000Z",
+      "updatedAt": "2026-09-07T07:08:29.276Z",
+      "projectId": "proj-vo"
+    },
+    {
+      "id": "VO-13",
+      "title": "Expense FAB save fails with \"Cannot read properties of undefined (reading 'transaction')\"",
+      "description": "## Bug Report\n\n**Module:** iVault → Expenses\n\n**Summary:**\nTapping the FAB (+) button to save a new Expense entry throws a JavaScript error and the record is not saved. A toast message displays: \"Could not save: Cannot read properties of undefined (reading 'transaction')\".\n\n**Steps to Reproduce:**\n1. Open iVault → Expenses.\n2. Tap the FAB (+) button to open the Add Expense form.\n3. Fill in all required fields (amount, category, date, bank account).\n4. Tap Save.\n\n**Expected Result:**\nExpense is saved to IndexedDB, bank account balance decreases, a transaction record is created, and the expense list refreshes.\n\n**Actual Result:**\nToast error shown: \"Could not save: Cannot read properties of undefined (reading 'transaction')\". No record is saved. Bank balance unchanged.\n\n**Error Details:**\n```\nTypeError: Cannot read properties of undefined (reading 'transaction')\n```\nThis error occurs when code attempts to call `.transaction()` on the `db` object, which is `undefined` at the time of the call. This means the IndexedDB connection (`db`) has not been initialised or has been lost before the save handler runs.\n\n**Root Cause (suspected):**\n- The `db` variable is `undefined` when the Expense save function executes.\n- Likely causes:\n  1. The `openDB()` / `initDB()` call is not awaited before the FAB save handler fires.\n  2. The `db` reference is scoped incorrectly and is not accessible inside the Expenses module's save function.\n  3. A page navigation or module switch is re-initialising the module without re-opening the DB connection.\n\n**Fix Guidance:**\n- Ensure `db` is initialised and awaited at app startup before any store operation is attempted.\n- Add a guard in the save handler: if `db` is falsy, call `openDB()` and retry.\n- Verify the `db` variable is shared correctly across all modules (iVault, FamilyVault, etc.) via `shared.js` or a global singleton pattern.\n- Add a try/catch around all IndexedDB `.transaction()` calls with a user-friendly fallback message.",
+      "type": "bug",
+      "priority": "High",
+      "status": "inprogress",
+      "assignee": "Deepan",
+      "sprint": "Sprint 4",
+      "createdAt": "2025-07-14T09:10:00.000Z",
+      "updatedAt": "2026-09-07T07:08:30.926Z",
+      "projectId": "proj-vo",
+      "author": "Deepan"
+    },
+    {
+      "id": "VO-14",
+      "projectId": "proj-vo",
+      "title": "Application version update with Release Notes.",
+      "description": "Can we show the Release Notes to the application after updating the application to new version.\nAnd I need to show App Version in index.html",
+      "type": "story",
+      "priority": "Low",
+      "status": "inprogress",
+      "assignee": "",
+      "sprint": "Mobile Application Versioning",
+      "createdAt": "2026-09-07T07:20:52.869Z",
+      "updatedAt": "2026-09-07T09:24:25.758Z"
+    },
+    {
+      "id": "VO-15",
+      "projectId": "proj-vo",
+      "title": "CICD with Automation Testing",
+      "description": "Can we add the Test script in Build yml file, So that we can Achive CI CD process with Unit Testing.",
+      "type": "story",
+      "priority": "Medium",
+      "status": "inprogress",
+      "assignee": "",
+      "sprint": "Mobile Application Versioning",
+      "createdAt": "2026-09-07T07:56:14.052Z",
+      "updatedAt": "2026-09-07T09:24:25.447Z"
+    }
+  ],
+  "counters": {
+    "proj-vo": 2
+  },
+  "versions": [
+    {
+      "id": "v-mtqxbqkh",
+      "projectId": "proj-vo",
+      "name": "Sprint 5",
+      "description": "Mobile Application Versioning",
+      "releaseDate": "2026-09-30",
+      "released": false,
+      "createdAt": "2026-09-07T07:33:13.409Z"
+    }
+  ]
+}

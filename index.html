@@ -236,8 +236,8 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
 /* ===== Index page: open iVaultDB so shared.js Notes IIFE can use it ===== */
 (async function () {
   const DB_NAME = 'iVaultDB';
-  const STORES = ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes'];
-  await openDB(DB_NAME, 1, STORES);
+  const STORES = ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes','cashWallets'];
+  await openDB(DB_NAME, 2, STORES);
 })();
 
 /* ===== Quick Add Expense FAB ===== */

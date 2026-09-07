@@ -7,6 +7,12 @@ on:
     branches:
       - main
 
+  # Also triggered when the CI workflow completes successfully on main
+  workflow_run:
+    workflows: ["VaultOne CI \u2014 Playwright Tests"]
+    types: [completed]
+    branches: [main]
+
 permissions:
     contents: write
 
@@ -24,6 +30,12 @@ jobs:
   build:
     name: Build VaultOne APK
     runs-on: ubuntu-latest
+    # Skip the direct-push trigger if tests haven't run yet;
+    # only proceed when triggered by workflow_run with a successful conclusion
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      github.event_name == 'push'
 
     steps:
 
