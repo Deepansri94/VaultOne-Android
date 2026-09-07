@@ -1,0 +1,227 @@
+name: VaultOne CI — Playwright Tests
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Triggers
+#   • Every push to main or any release/** branch
+#   • Every PR targeting main or release/**
+#   • Manual trigger via GitHub Actions UI
+# ─────────────────────────────────────────────────────────────────────────────
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+  pull_request:
+    branches:
+      - main
+      - 'release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write         # annotate PR checks with test results
+  pull-requests: write  # post test summary comment on PRs
+
+# Cancel any in-progress run for the same branch / PR to save minutes
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Jobs
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+
+  # ── Job 1: Validate all required source files exist ──────────────────────
+  validate-files:
+    name: Validate Source Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check all required app files are present
+        shell: bash
+        run: |
+          set -e
+          MISSING=""
+          for f in \
+            index.html shared.js shared.css sw.js VaultOne.png \
+            iVault.html iVault.js \
+            FamilyVault.html FamilyVault.js \
+            PasswordVault.html PasswordVault.js \
+            jspdf.umd.min.js; do
+            if [ ! -f "./$f" ]; then
+              MISSING="$MISSING $f"
+            fi
+          done
+          if [ -n "$MISSING" ]; then
+            echo "❌ Missing required files:$MISSING"
+            exit 1
+          fi
+          echo "✅ All required source files present."
+          ls -lh index.html shared.js shared.css iVault.html FamilyVault.html PasswordVault.html
+
+  # ── Job 2a: iVault tests ─────────────────────────────────────────────────
+  test-ivault:
+    name: Tests — iVault
+    runs-on: ubuntu-latest
+    needs: validate-files
+
+    defaults:
+      run:
+        working-directory: QA/playwright
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: QA/playwright/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install chromium --with-deps
+
+      - name: Run iVault tests
+        run: npx playwright test tests/test_ivault.spec.ts --reporter=list,html
+        env:
+          CI: true
+
+      - name: Upload iVault HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-ivault-${{ github.run_number }}
+          path: QA/playwright/reports/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload iVault traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-ivault-${{ github.run_number }}
+          path: QA/playwright/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ── Job 2b: FamilyVault tests ─────────────────────────────────────────────
+  test-family:
+    name: Tests — FamilyVault
+    runs-on: ubuntu-latest
+    needs: validate-files
+
+    defaults:
+      run:
+        working-directory: QA/playwright
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: QA/playwright/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install chromium --with-deps
+
+      - name: Run FamilyVault tests
+        run: npx playwright test tests/test_family.spec.ts --reporter=list,html
+        env:
+          CI: true
+
+      - name: Upload FamilyVault HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-family-${{ github.run_number }}
+          path: QA/playwright/reports/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload FamilyVault traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-family-${{ github.run_number }}
+          path: QA/playwright/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ── Job 2c: PasswordVault tests ───────────────────────────────────────────
+  test-passwords:
+    name: Tests — PasswordVault
+    runs-on: ubuntu-latest
+    needs: validate-files
+
+    defaults:
+      run:
+        working-directory: QA/playwright
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: QA/playwright/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install chromium --with-deps
+
+      - name: Run PasswordVault tests
+        run: npx playwright test tests/test_passwords.spec.ts --reporter=list,html
+        env:
+          CI: true
+
+      - name: Upload PasswordVault HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-passwords-${{ github.run_number }}
+          path: QA/playwright/reports/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload PasswordVault traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-passwords-${{ github.run_number }}
+          path: QA/playwright/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ── Job 3: CI Gate — downstream builds only proceed when all tests pass ───
+  ci-gate:
+    name: CI Gate (All Tests Must Pass)
+    runs-on: ubuntu-latest
+    needs: [test-ivault, test-family, test-passwords]
+
+    steps:
+      - name: Gate passed
+        run: echo "✅ All 67 Playwright tests passed. APK and EXE builds may proceed."

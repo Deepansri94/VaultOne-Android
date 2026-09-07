@@ -40,6 +40,14 @@ test('cash wallets separate add cash and spend cash', async ({ page }) => {
     await expect(page.locator('#modal')).toHaveClass(/open/);
     await page.locator('#modalBody input[name="name"]').fill(name);
     await page.locator('#modalBody select[name="category"]').selectOption({ label: category });
+    // Wait for subcategory options to be populated after category change
+    await page.waitForFunction(
+      (sub) => {
+        const sel = document.querySelector<HTMLSelectElement>('#walletSubcategorySelect');
+        return sel ? Array.from(sel.options).some(o => o.text === sub) : false;
+      },
+      subcategory
+    );
     await page.locator('#modalBody select[name="subcategory"]').selectOption({ label: subcategory });
     await page.locator('#modalBody button[type="submit"]').click();
     await expect(page.locator('#modal')).not.toHaveClass(/open/);
@@ -363,6 +371,71 @@ test('money values have no decimal places', async ({ page }) => {
   await page.locator('[data-sv="overview"]').click();
   const text = await page.locator('#statIncome').textContent();
   expect(text).not.toMatch(/\.\d{2}/);
+});
+
+// VO-11: budget actuals include loan EMI payments
+test('budget actuals include loan EMI payment', async ({ page }) => {
+  const today = new Date().toISOString().slice(0, 10);
+  // Add a loan with EMI
+  await page.locator('[data-sv="loans"]').click();
+  await page.locator('#addLoanBtn').click();
+  await page.locator('select[name="loanType"]').selectOption({ label: 'Personal Loan' });
+  await page.locator('input[name="name"]').fill('Test EMI Loan');
+  await page.locator('input[name="principal"]').fill('100000');
+  await page.locator('input[name="interestRate"]').fill('10');
+  await page.locator('input[name="outstanding"]').fill('90000');
+  await page.locator('input[name="emi"]').fill('3000');
+  await setDate(page, 'input[name="startDate"]', today);
+  await page.locator('#modalBody .btn.primary').click();
+  await page.waitForTimeout(400);
+  // Navigate to budget and check actuals table shows Loans & Financial
+  await page.locator('[data-sv="budget"]').click();
+  await page.locator('input[name="cat_Loans___Financial"]').fill('5000');
+  await page.locator('#budgetSaveBtn').click();
+  const table = page.locator('#budgetActuals');
+  await expect(table).toContainText('Loans');
+});
+
+// VO-11: budget actuals include investment payments
+test('budget actuals include investment contribution', async ({ page }) => {
+  const today = new Date().toISOString().slice(0, 10);
+  await page.locator('[data-sv="expenses"]').click();
+  await page.locator('#expenseForm select[name="category"]').selectOption({ label: 'Savings & Investments' });
+  await page.locator('#expenseForm input[name="amount"]').fill('2000');
+  await setDate(page, '#expenseForm input[name="date"]', today);
+  await page.locator('#expenseForm button[type="submit"]').click();
+  await page.locator('[data-sv="budget"]').click();
+  await page.locator('input[name="cat_Savings___Investments"]').fill('5000');
+  await page.locator('#budgetSaveBtn').click();
+  const table = page.locator('#budgetActuals');
+  await expect(table).toContainText('Savings');
+  await expect(table).toContainText(/2,000|2000/);
+});
+
+// VO-12: investment inline contribution history shown after payment
+test('investment shows inline contribution history after payment', async ({ page }) => {
+  const today = new Date().toISOString().slice(0, 10);
+  // Add an RD investment (RD is linkable from expenses)
+  await page.locator('[data-sv="investments"]').click();
+  await page.locator('#addInvBtn').click();
+  await page.locator('#modalBody select[name="type"]').selectOption({ label: 'RD' });
+  await page.locator('#modalBody input[name="name"]').fill('History RD');
+  await page.locator('#modalBody input[name="provider"]').fill('SBI');
+  await page.locator('#modalBody input[name="currentValue"]').fill('10000');
+  await page.locator('#modalBody .btn.primary').click();
+  await page.waitForTimeout(400);
+  // Make a contribution via expenses
+  await page.locator('[data-sv="expenses"]').click();
+  await page.locator('#expenseForm select[name="category"]').selectOption({ label: 'Savings & Investments' });
+  await page.waitForTimeout(300);
+  await page.locator('#expLinkedSelect').selectOption({ index: 1 });
+  await page.locator('#expenseForm input[name="amount"]').fill('5000');
+  await setDate(page, '#expenseForm input[name="date"]', today);
+  await page.locator('#expenseForm button[type="submit"]').click();
+  // Go back to investments and verify inline history details block
+  await page.locator('[data-sv="investments"]').click();
+  await expect(page.locator('#invList')).toContainText('Contribution History (1)');
+  await expect(page.locator('#invList')).toContainText(/5,000|5000/);
 });
 
 // TC-IV-017

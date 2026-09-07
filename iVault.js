@@ -816,11 +816,15 @@ $('expenseForm').onsubmit = async e => {
       } else if (inv.type === 'Demat') {
         inv.investedValue = (Number(inv.investedValue ?? inv.purchaseValue ?? inv.openingBalance) || 0) + amount;
         inv.purchaseValue = inv.investedValue;
+        if (!inv.payments) inv.payments = [];
+        inv.payments.push({ date, amount, balance: inv.investedValue, note: fd.get('note') || '' });
         await putOne('investments', inv);
         await logActivity('Demat', `Contribution: ${money(amount, state.settings.currency)} added to ${inv.name}`);
         paidMsg = `Added ${money(amount, state.settings.currency)} to "${subcategory}" purchase value on ${date}`;
       } else {
         inv.currentValue = (Number(inv.currentValue) || 0) + amount;
+        if (!inv.payments) inv.payments = [];
+        inv.payments.push({ date, amount, balance: inv.currentValue, note: fd.get('note') || '' });
         await putOne('investments', inv);
         await logActivity('Investment', `Top-up: ${money(amount, state.settings.currency)} added to ${inv.name}`);
         paidMsg = `Added ${money(amount, state.settings.currency)} to "${subcategory}" on ${date}`;
@@ -1156,12 +1160,13 @@ async function renderInvestments() {
     html += grouped[t].map(x => {
       const isIns = x.type === 'Insurance';
       const payments = (x.payments || []).slice().reverse();
-      const payHtml = isIns && payments.length
-        ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">Premium History (${payments.length})</summary>
-            <div style="margin-top:6px">${payments.map(p =>
-              `<div style="font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid #ffffff08">
-                Paid ${money(p.amount, state.settings.currency)} on ${esc(p.date)}${p.note ? ' · ' + esc(p.note) : ''}
-              </div>`).join('')}
+      const histLabel = isIns ? 'Premium History' : 'Contribution History';
+      const payHtml = payments.length
+        ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">${histLabel} (${payments.length})</summary>
+            <div style="margin-top:6px">${payments.map(p => {
+              if (isIns) return `<div style="font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid #ffffff08">Paid ${money(p.amount, state.settings.currency)} on ${esc(p.date)}${p.note ? ' · ' + esc(p.note) : ''}</div>`;
+              return `<div style="font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid #ffffff08">Contributed ${money(p.amount || 0, state.settings.currency)} on ${esc(p.date || '')}${Number.isFinite(Number(p.balance ?? p.outstanding)) ? ' · Balance: ' + money(p.balance ?? p.outstanding, state.settings.currency) : ''}</div>`;
+            }).join('')}
             </div></details>` : '';
       const valueRow = isIns
         ? `<div class="sub">Premium: <b>${money(x.premiumAmount || 0, state.settings.currency)}</b> · ${esc(x.premiumFrequency || 'Yearly')}</div>
@@ -1175,7 +1180,6 @@ async function renderInvestments() {
             ${valueRow}
           </div>
           <div class="actions">
-            <button class="btn-icon" data-invhist="${x.id}" title="History">📋</button>
             <button class="btn-icon" data-invedit="${x.id}" title="Edit">✏️</button>
             <button class="btn-icon danger" data-invdel="${x.id}" title="Delete">🗑️</button>
           </div>
@@ -1185,10 +1189,6 @@ async function renderInvestments() {
     }).join('');
   });
   if (regularRows.length) $('invList').innerHTML = html;
-  // VO-12: Wire history buttons
-  $('invList').querySelectorAll('[data-invhist]').forEach(b => b.onclick = async () => {
-    const x = await getOne('investments', b.dataset.invhist); if (x) invHistoryModal(x);
-  });
   $('invList').querySelectorAll('[data-invedit]').forEach(b => b.onclick = async () => {
     const x = await getOne('investments', b.dataset.invedit); if (x) invModal(x);
   });
@@ -1534,25 +1534,6 @@ function loanModal(existing = null) {
     await renderLoans(); await renderOverview();
     renderBellReminders();
   });
-}
-
-/* ===== VO-12: Investment history modal ===== */
-function invHistoryModal(inv) {
-  const payments = (inv.payments || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  const isIns = inv.type === 'Insurance';
-  const cols = isIns
-    ? '<th>Date</th><th>Amount</th><th>Note</th>'
-    : '<th>Date</th><th>Type</th><th>Amount</th><th>Balance / Value</th>';
-  const rows = payments.length
-    ? payments.map((p, i) => isIns
-        ? `<tr><td>${esc(p.date||'')}</td><td>${money(p.amount, state.settings.currency)}</td><td>${esc(p.note||'')}</td></tr>`
-        : `<tr><td>${esc(p.date||'')}</td><td>${esc(p.type||'Contribution')}</td><td>${money(p.amount||p.emi||0, state.settings.currency)}</td><td>${money(p.outstanding??p.balance??'—', state.settings.currency)}</td></tr>`
-      ).join('')
-    : `<tr><td colspan="4" style="text-align:center;color:#64748b">No history recorded yet.</td></tr>`;
-  openModal(`📋 History — ${esc(inv.name || inv.type)}`,
-    `<div class="table-wrap"><table class="data-table"><thead><tr>${cols}</tr></thead><tbody>${rows}</tbody></table></div>
-     <div class="actions" style="margin-top:12px"><button class="btn" id="invHistClose">Close</button></div>`);
-  setTimeout(() => { document.getElementById('invHistClose')?.addEventListener('click', closeModal); }, 0);
 }
 
 /* ===== Settings wired via shared.js panel ===== */
