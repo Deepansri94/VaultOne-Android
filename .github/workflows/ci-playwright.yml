@@ -66,11 +66,11 @@ jobs:
           echo "✅ All required source files present."
           ls -lh index.html shared.js shared.css iVault.html FamilyVault.html PasswordVault.html
 
-  # ── Job 2: Playwright automation tests ───────────────────────────────────
-  playwright-tests:
-    name: Playwright Tests (Chromium)
+  # ── Job 2a: iVault tests ─────────────────────────────────────────────────
+  test-ivault:
+    name: Tests — iVault
     runs-on: ubuntu-latest
-    needs: validate-files   # only run after file validation passes
+    needs: validate-files
 
     defaults:
       run:
@@ -93,36 +93,134 @@ jobs:
       - name: Install Playwright browsers (Chromium only)
         run: npx playwright install chromium --with-deps
 
-      - name: Run Playwright tests
-        run: npx playwright test --reporter=list,html
+      - name: Run iVault tests
+        run: npx playwright test tests/test_ivault.spec.ts --reporter=list,html
         env:
           CI: true
 
-      # Always upload the HTML report so failures are visible in Actions UI
-      - name: Upload Playwright HTML report
+      - name: Upload iVault HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ github.run_number }}
+          name: report-ivault-${{ github.run_number }}
           path: QA/playwright/reports/
           retention-days: 14
           if-no-files-found: ignore
 
-      # Upload traces only on failure for debugging
-      - name: Upload test traces on failure
+      - name: Upload iVault traces on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-traces-${{ github.run_number }}
+          name: traces-ivault-${{ github.run_number }}
           path: QA/playwright/test-results/
           retention-days: 7
           if-no-files-found: ignore
 
-  # ── Job 3: CI Gate — downstream builds only proceed when tests pass ───────
+  # ── Job 2b: FamilyVault tests ─────────────────────────────────────────────
+  test-family:
+    name: Tests — FamilyVault
+    runs-on: ubuntu-latest
+    needs: validate-files
+
+    defaults:
+      run:
+        working-directory: QA/playwright
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: QA/playwright/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install chromium --with-deps
+
+      - name: Run FamilyVault tests
+        run: npx playwright test tests/test_family.spec.ts --reporter=list,html
+        env:
+          CI: true
+
+      - name: Upload FamilyVault HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-family-${{ github.run_number }}
+          path: QA/playwright/reports/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload FamilyVault traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-family-${{ github.run_number }}
+          path: QA/playwright/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ── Job 2c: PasswordVault tests ───────────────────────────────────────────
+  test-passwords:
+    name: Tests — PasswordVault
+    runs-on: ubuntu-latest
+    needs: validate-files
+
+    defaults:
+      run:
+        working-directory: QA/playwright
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: QA/playwright/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install chromium --with-deps
+
+      - name: Run PasswordVault tests
+        run: npx playwright test tests/test_passwords.spec.ts --reporter=list,html
+        env:
+          CI: true
+
+      - name: Upload PasswordVault HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-passwords-${{ github.run_number }}
+          path: QA/playwright/reports/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload PasswordVault traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traces-passwords-${{ github.run_number }}
+          path: QA/playwright/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ── Job 3: CI Gate — downstream builds only proceed when all tests pass ───
   ci-gate:
     name: CI Gate (All Tests Must Pass)
     runs-on: ubuntu-latest
-    needs: playwright-tests
+    needs: [test-ivault, test-family, test-passwords]
 
     steps:
       - name: Gate passed
