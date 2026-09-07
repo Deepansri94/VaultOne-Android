@@ -65,7 +65,7 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
     </a>
   </div>
   <div class="footer">
-    VaultOne <span id="appVersionLabel">v2.0</span> · No server · No cloud
+    VaultOne <span id="appVersionLabel">...</span> · No server · No cloud
     <button id="releaseNotesBtn" title="What's new" style="
       background:none;border:none;color:var(--purple);font-size:11px;
       cursor:pointer;padding:0 4px;text-decoration:underline;vertical-align:middle">What's new</button>
@@ -117,78 +117,120 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 'use strict';
 
 /* ===== App version & Release Notes (VO-14) ===== */
-const APP_VERSION = '2.1';
-const RELEASE_NOTES = [
-  {
-    version: '2.1',
-    date: '2025-07-14',
-    notes: [
-      '🐛 VO-13: Fixed Expense save crash (db undefined error on first open)',
-      '🐛 VO-11: Budget Actual now includes Loan EMI payments and Investment contributions',
-      '✨ VO-12: Investment history 📋 button added for all types (FD, RD, PPF, SSA, NPS, Demat)',
-      '🚀 VO-15: CI/CD pipeline with Playwright automation tests added',
-      '📱 VO-14: App version shown in launcher footer with Release Notes'
-    ]
-  },
-  {
-    version: '2.0',
-    date: '2025-01-03',
-    notes: [
-      '✨ Modular architecture: iVault, FamilyVault, PasswordVault as separate pages',
-      '✨ GoldVault current value calculation with gain/loss',
-      '✨ Full JSON backup and restore across all vaults',
-      '✨ Android APK native AlarmManager notifications'
-    ]
-  }
-];
+const GITHUB_RELEASES_API = 'https://api.github.com/repos/Deepansri94/VaultOne-Android/releases';
+const SEEN_KEY = 'vaultone_seen_version';
+const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
 
 (function () {
-  const SEEN_KEY = 'vaultone_seen_version';
 
-  function renderReleaseNotes() {
+  /* ── Helpers ── */
+  function fmtDate(iso) {
+    if (!iso) return '';
+    try { return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); }
+    catch { return iso.slice(0, 10); }
+  }
+
+  function parseVersion(name) {
+    // Release name is e.g. "VaultOne 2.82" — extract the number part
+    const m = String(name || '').match(/([\d.]+)/);
+    return m ? m[1] : name;
+  }
+
+  /* ── Render modal from releases array ── */
+  function renderReleaseNotes(releases, latestVersion) {
     const body = document.getElementById('releaseNotesBody');
     if (!body) return;
-    body.innerHTML = RELEASE_NOTES.map(r => `
-      <div style="margin-bottom:18px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          <span style="font-weight:800;font-size:15px;color:#c4b5fd">v${r.version}</span>
-          <span style="font-size:11px;color:var(--muted)">${r.date}</span>
-          ${r.version === APP_VERSION ? '<span style="background:#7c3aed22;border:1px solid #7c3aed55;color:#c4b5fd;font-size:10px;padding:2px 8px;border-radius:999px">Current</span>' : ''}
-        </div>
-        <ul style="margin:0;padding-left:18px;display:grid;gap:5px">
-          ${r.notes.map(n => `<li style="font-size:13px;color:#b7c2d4">${n}</li>`).join('')}
-        </ul>
-      </div>`).join('<hr style="border-color:#ffffff10;margin:14px 0">');
+    if (!releases.length) {
+      body.innerHTML = '<div class="empty">No release information available.</div>';
+    } else {
+      body.innerHTML = releases.map((r, i) => {
+        const ver = parseVersion(r.name || r.tag_name);
+        const date = fmtDate(r.published_at);
+        const isCurrent = i === 0;
+        const lines = (r.body || '').split('\n')
+          .map(l => l.replace(/^[-*]\s*/, '').trim())
+          .filter(l => l.length > 0)
+          .slice(0, 10);
+        return `
+          <div style="margin-bottom:18px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+              <span style="font-weight:800;font-size:15px;color:#c4b5fd">${esc(r.name || ver)}</span>
+              <span style="font-size:11px;color:var(--muted)">${esc(date)}</span>
+              ${isCurrent ? '<span style="background:#7c3aed22;border:1px solid #7c3aed55;color:#c4b5fd;font-size:10px;padding:2px 8px;border-radius:999px">Latest</span>' : ''}
+            </div>
+            ${lines.length
+              ? `<ul style="margin:0;padding-left:18px;display:grid;gap:5px">${lines.map(l => `<li style="font-size:13px;color:#b7c2d4">${esc(l)}</li>`).join('')}</ul>`
+              : '<p style="font-size:13px;color:var(--muted);margin:0">Automated build release.</p>'}
+          </div>`;
+      }).join('<hr style="border-color:#ffffff10;margin:14px 0">');
+    }
     body.innerHTML += '<div class="actions" style="margin-top:4px"><button class="btn primary" id="rnCloseBtn">Got it ✔</button></div>';
     document.getElementById('rnCloseBtn')?.addEventListener('click', closeReleaseNotes);
   }
 
-  function openReleaseNotes() {
-    renderReleaseNotes();
+  function openReleaseNotes(releases, latestVersion) {
+    renderReleaseNotes(releases, latestVersion);
     document.getElementById('releaseNotesModal').classList.add('open');
-    localStorage.setItem(SEEN_KEY, APP_VERSION);
+    if (latestVersion) localStorage.setItem(SEEN_KEY, latestVersion);
   }
 
   function closeReleaseNotes() {
     document.getElementById('releaseNotesModal').classList.remove('open');
   }
 
-  // Wire buttons
-  document.getElementById('releaseNotesBtn')?.addEventListener('click', openReleaseNotes);
+  /* ── Fetch releases from GitHub API ── */
+  async function fetchReleases() {
+    // Try cache first (valid for 1 hour)
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHED_RELEASES_KEY) || 'null');
+      if (cached && cached.ts && (Date.now() - cached.ts) < 3600000) return cached.data;
+    } catch {}
+    try {
+      const res = await fetch(GITHUB_RELEASES_API + '?per_page=5');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      localStorage.setItem(CACHED_RELEASES_KEY, JSON.stringify({ ts: Date.now(), data }));
+      return data;
+    } catch {
+      // Offline or rate-limited — return cached even if stale
+      try { return JSON.parse(localStorage.getItem(CACHED_RELEASES_KEY) || 'null')?.data || []; } catch { return []; }
+    }
+  }
+
+  /* ── Update footer version label ── */
+  function updateVersionLabel(releases) {
+    const vLabel = document.getElementById('appVersionLabel');
+    if (!vLabel) return;
+    if (releases && releases.length) {
+      vLabel.textContent = releases[0].name || ('v' + parseVersion(releases[0].tag_name));
+    }
+  }
+
+  /* ── Boot ── */
+  document.addEventListener('DOMContentLoaded', async () => {
+    const releases = await fetchReleases();
+    const latestVersion = releases.length ? (releases[0].name || releases[0].tag_name) : null;
+
+    updateVersionLabel(releases);
+
+    // Auto-show if user hasn't seen this version yet
+    const seen = localStorage.getItem(SEEN_KEY);
+    if (latestVersion && seen !== latestVersion) {
+      setTimeout(() => openReleaseNotes(releases, latestVersion), 600);
+    }
+
+    // Wire "What's new" button — fetch fresh on click
+    document.getElementById('releaseNotesBtn')?.addEventListener('click', async () => {
+      const fresh = await fetchReleases();
+      openReleaseNotes(fresh, fresh.length ? (fresh[0].name || fresh[0].tag_name) : null);
+    });
+  });
+
   document.getElementById('releaseNotesClose')?.addEventListener('click', closeReleaseNotes);
   document.getElementById('releaseNotesModal')?.addEventListener('click', e => {
     if (e.target.id === 'releaseNotesModal') closeReleaseNotes();
   });
 
-  // Show automatically if user hasn't seen this version yet
-  document.addEventListener('DOMContentLoaded', () => {
-    const seen = localStorage.getItem(SEEN_KEY);
-    if (seen !== APP_VERSION) setTimeout(openReleaseNotes, 600);
-  });
-
-  // Update footer version label
-  const vLabel = document.getElementById('appVersionLabel');
-  if (vLabel) vLabel.textContent = 'v' + APP_VERSION;
 })();
 
 /* ===== Index page: open iVaultDB so shared.js Notes IIFE can use it ===== */
