@@ -64,7 +64,23 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
       </div>
     </a>
   </div>
-  <div class="footer">VaultOne v2.0 · No server · No cloud</div>
+  <div class="footer">
+    VaultOne <span id="appVersionLabel">v2.0</span> · No server · No cloud
+    <button id="releaseNotesBtn" title="What's new" style="
+      background:none;border:none;color:var(--purple);font-size:11px;
+      cursor:pointer;padding:0 4px;text-decoration:underline;vertical-align:middle">What's new</button>
+  </div>
+</div>
+
+<!-- Release Notes Modal -->
+<div id="releaseNotesModal" class="modal">
+  <div class="sheet" style="border-radius:26px 26px 0 0">
+    <div class="modal-head">
+      <h3>🚀 What's New</h3>
+      <button class="iconbtn" id="releaseNotesClose">✕</button>
+    </div>
+    <div id="releaseNotesBody"></div>
+  </div>
 </div>
 
 <!-- Quick Add Expense FAB -->
@@ -99,6 +115,82 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 <script src="shared.js"></script>
 <script>
 'use strict';
+
+/* ===== App version & Release Notes (VO-14) ===== */
+const APP_VERSION = '2.1';
+const RELEASE_NOTES = [
+  {
+    version: '2.1',
+    date: '2025-07-14',
+    notes: [
+      '🐛 VO-13: Fixed Expense save crash (db undefined error on first open)',
+      '🐛 VO-11: Budget Actual now includes Loan EMI payments and Investment contributions',
+      '✨ VO-12: Investment history 📋 button added for all types (FD, RD, PPF, SSA, NPS, Demat)',
+      '🚀 VO-15: CI/CD pipeline with Playwright automation tests added',
+      '📱 VO-14: App version shown in launcher footer with Release Notes'
+    ]
+  },
+  {
+    version: '2.0',
+    date: '2025-01-03',
+    notes: [
+      '✨ Modular architecture: iVault, FamilyVault, PasswordVault as separate pages',
+      '✨ GoldVault current value calculation with gain/loss',
+      '✨ Full JSON backup and restore across all vaults',
+      '✨ Android APK native AlarmManager notifications'
+    ]
+  }
+];
+
+(function () {
+  const SEEN_KEY = 'vaultone_seen_version';
+
+  function renderReleaseNotes() {
+    const body = document.getElementById('releaseNotesBody');
+    if (!body) return;
+    body.innerHTML = RELEASE_NOTES.map(r => `
+      <div style="margin-bottom:18px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="font-weight:800;font-size:15px;color:#c4b5fd">v${r.version}</span>
+          <span style="font-size:11px;color:var(--muted)">${r.date}</span>
+          ${r.version === APP_VERSION ? '<span style="background:#7c3aed22;border:1px solid #7c3aed55;color:#c4b5fd;font-size:10px;padding:2px 8px;border-radius:999px">Current</span>' : ''}
+        </div>
+        <ul style="margin:0;padding-left:18px;display:grid;gap:5px">
+          ${r.notes.map(n => `<li style="font-size:13px;color:#b7c2d4">${n}</li>`).join('')}
+        </ul>
+      </div>`).join('<hr style="border-color:#ffffff10;margin:14px 0">');
+    body.innerHTML += '<div class="actions" style="margin-top:4px"><button class="btn primary" id="rnCloseBtn">Got it ✔</button></div>';
+    document.getElementById('rnCloseBtn')?.addEventListener('click', closeReleaseNotes);
+  }
+
+  function openReleaseNotes() {
+    renderReleaseNotes();
+    document.getElementById('releaseNotesModal').classList.add('open');
+    localStorage.setItem(SEEN_KEY, APP_VERSION);
+  }
+
+  function closeReleaseNotes() {
+    document.getElementById('releaseNotesModal').classList.remove('open');
+  }
+
+  // Wire buttons
+  document.getElementById('releaseNotesBtn')?.addEventListener('click', openReleaseNotes);
+  document.getElementById('releaseNotesClose')?.addEventListener('click', closeReleaseNotes);
+  document.getElementById('releaseNotesModal')?.addEventListener('click', e => {
+    if (e.target.id === 'releaseNotesModal') closeReleaseNotes();
+  });
+
+  // Show automatically if user hasn't seen this version yet
+  document.addEventListener('DOMContentLoaded', () => {
+    const seen = localStorage.getItem(SEEN_KEY);
+    if (seen !== APP_VERSION) setTimeout(openReleaseNotes, 600);
+  });
+
+  // Update footer version label
+  const vLabel = document.getElementById('appVersionLabel');
+  if (vLabel) vLabel.textContent = 'v' + APP_VERSION;
+})();
+
 /* ===== Index page: open iVaultDB so shared.js Notes IIFE can use it ===== */
 (async function () {
   const DB_NAME = 'iVaultDB';
