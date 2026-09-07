@@ -9,7 +9,6 @@ name: VaultOne CI — Playwright Tests
 on:
   push:
     branches:
-      - main
       - 'release/**'
   pull_request:
     branches:
