@@ -1088,13 +1088,47 @@ jobs:
           TAG="build-${VERSION_CODE}"
           RELEASE_NAME="VaultOne ${VERSION_NAME}"
 
-          # Create release and parse upload_url with python3
+          # Build release body + payload from release_notes.json
+          python3 - <<'PYEOF'
+          import json, os, subprocess
+
+          tag  = os.environ['TAG']  if 'TAG'  in os.environ else 'build-0'
+          name = os.environ['RELEASE_NAME'] if 'RELEASE_NAME' in os.environ else 'VaultOne'
+          sha  = os.environ.get('GITHUB_SHA', '')[:12]
+          repo = os.environ.get('GITHUB_REPOSITORY', '')
+          token = os.environ.get('GH_TOKEN', '')
+
+          try:
+            with open('release_notes.json') as f:
+              data = json.load(f)
+            latest = data['releases'][0]
+            lines = ['## ' + latest.get('sprint', ''), '']
+            for h in latest.get('highlights', []):
+              lines.append('- ' + h)
+            lines += ['', 'Build: ' + sha]
+            body = '\n'.join(lines)
+          except Exception:
+            body = 'Automated build from commit ' + sha
+
+          payload = json.dumps({
+            'tag_name': tag, 'name': name,
+            'body': body, 'draft': False, 'prerelease': False
+          })
+          with open('/tmp/release_payload.json', 'w') as f:
+            f.write(payload)
+          print('Release body prepared.')
+          print(body)
+          PYEOF
+
+          # Create release
           RELEASE_RESPONSE=$(curl -sS -X POST \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" \
-            -d "{\"tag_name\":\"${TAG}\",\"name\":\"${RELEASE_NAME}\",\"body\":\"Automated build from commit ${GITHUB_SHA}\",\"draft\":false,\"prerelease\":false}")
+            --data-binary @/tmp/release_payload.json)
+
 
           echo "Release API response: $RELEASE_RESPONSE"
 

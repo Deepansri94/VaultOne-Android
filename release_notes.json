@@ -1,0 +1,16 @@
+{
+  "releases": [
+    {
+      "version": "VaultOne 2.82",
+      "sprint": "Sprint 4 & 5 — Mobile Application Versioning",
+      "date": "2026-09-07",
+      "highlights": [
+        "VO-11: Budget actuals now include Loan EMI and Investment payments",
+        "VO-12: Inline contribution history on investment cards (same as Loan payment history)",
+        "VO-13: Fixed expense save crash from launcher FAB (db guard + DB version mismatch)",
+        "VO-14: App version shown in footer with live release notes modal (fetched from GitHub Releases)",
+        "VO-15: CI/CD pipeline — Playwright tests gate APK and EXE builds on every push"
+      ]
+    }
+  ]
+}
