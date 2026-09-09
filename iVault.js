@@ -1672,8 +1672,10 @@ async function renderDemat() {
   el.innerHTML = editorHtml + summaryHtml + listHtml;
 
   // Wire static header buttons (defined in HTML)
-  $('dematAddBtn')?.onclick = () => dematModal();
-  $('dematUpdateValBtn')?.onclick = () => {
+  const dematAddBtn = $('dematAddBtn');
+  const dematUpdateValBtn = $('dematUpdateValBtn');
+  if (dematAddBtn) dematAddBtn.onclick = () => dematModal();
+  if (dematUpdateValBtn) dematUpdateValBtn.onclick = () => {
     const ed = $('dematValueEditor2');
     if (ed) ed.style.display = ed.style.display === 'none' ? 'block' : 'none';
   };
@@ -1758,6 +1760,9 @@ async function renderNps() {
 async function renderLoans() {
   const rows = await getAll('loans');
   const N = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+  // Wire the static Add Loan btn each time the tab renders
+  const addLoanBtn = $('addLoanBtn');
+  if (addLoanBtn) addLoanBtn.onclick = () => loanModal();
   if (!rows.length) { $('loanList').innerHTML = '<div class="empty">No loans added yet.</div>'; return; }
   $('loanList').innerHTML = rows.map(x => {
     const out = x.status === 'Settled' ? 0 : N(x.outstanding);
@@ -1791,8 +1796,6 @@ async function renderLoans() {
     await renderLoans(); await renderOverview();
   });
 }
-
-$('addLoanBtn').onclick = () => loanModal();
 
 function loanModal(existing = null) {
   const typeOpts = ['Personal Loan','Home Loan','Vehicle Loan','Gold Loan','Education Loan','Other'].map(t => `<option ${existing?.loanType === t ? 'selected' : ''}>${t}</option>`).join('');
