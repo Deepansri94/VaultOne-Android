@@ -1300,10 +1300,9 @@ function invSection(key, icon, title, summary, addBtnHtml, bodyHtml) {
       <span class="inv-sec-icon">${icon}</span>
       <span class="inv-sec-title">${title}</span>
       <span class="inv-sec-summary muted" id="inv-sec-sum-${key}">${summary}</span>
-      <span style="flex:1"></span>
-      ${addBtnHtml}
     </div>
     <div class="inv-collapse-body" id="inv-sec-body-${key}" style="${open ? '' : 'display:none'}">
+      ${addBtnHtml ? `<div class="actions" style="margin:0 0 12px">${addBtnHtml}</div>` : ''}
       ${bodyHtml}
     </div>
   </div>`;
