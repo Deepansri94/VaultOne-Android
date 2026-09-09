@@ -246,6 +246,8 @@
     <div class="seg-bar">
       <button class="seg-btn active" data-inner-seg="investments" data-group="investloans">📈 Invest</button>
       <button class="seg-btn" data-inner-seg="loans" data-group="investloans">🏦 Loans</button>
+      <button class="seg-btn" data-inner-seg="demat" data-group="investloans">📊 Demat</button>
+      <button class="seg-btn" data-inner-seg="nps" data-group="investloans">🏛️ NPS</button>
     </div>
     <div class="card">
       <h3 style="margin:0 0 14px">Savings &amp; Investments</h3>
@@ -258,6 +260,8 @@
     <div class="seg-bar">
       <button class="seg-btn" data-inner-seg="investments" data-group="investloans">📈 Invest</button>
       <button class="seg-btn active" data-inner-seg="loans" data-group="investloans">🏦 Loans</button>
+      <button class="seg-btn" data-inner-seg="demat" data-group="investloans">📊 Demat</button>
+      <button class="seg-btn" data-inner-seg="nps" data-group="investloans">🏛️ NPS</button>
     </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
@@ -265,6 +269,34 @@
         <button class="btn primary" id="addLoanBtn">+ Add Loan</button>
       </div>
       <div id="loanList" style="margin-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- Demat sub-view -->
+  <div class="sub-view" id="sv-demat">
+    <div class="seg-bar">
+      <button class="seg-btn" data-inner-seg="investments" data-group="investloans">📈 Invest</button>
+      <button class="seg-btn" data-inner-seg="loans" data-group="investloans">🏦 Loans</button>
+      <button class="seg-btn active" data-inner-seg="demat" data-group="investloans">📊 Demat</button>
+      <button class="seg-btn" data-inner-seg="nps" data-group="investloans">🏛️ NPS</button>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 14px">📊 Demat</h3>
+      <div id="dematList"></div>
+    </div>
+  </div>
+
+  <!-- NPS sub-view -->
+  <div class="sub-view" id="sv-nps">
+    <div class="seg-bar">
+      <button class="seg-btn" data-inner-seg="investments" data-group="investloans">📈 Invest</button>
+      <button class="seg-btn" data-inner-seg="loans" data-group="investloans">🏦 Loans</button>
+      <button class="seg-btn" data-inner-seg="demat" data-group="investloans">📊 Demat</button>
+      <button class="seg-btn active" data-inner-seg="nps" data-group="investloans">🏛️ NPS</button>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 14px">🏛️ NPS</h3>
+      <div id="npsList"></div>
     </div>
   </div>
 
