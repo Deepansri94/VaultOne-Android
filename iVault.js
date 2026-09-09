@@ -1497,49 +1497,6 @@ async function renderInvestments() {
   renderDematOverview(dematRows);
 }
 
-
-  const currentPriceInput = $('currentGoldPricePerGram');
-  if (currentPriceInput) currentPriceInput.value = Number(state.settings.currentGoldPricePerGram || 0) || '';
-  $('updateGoldPriceBtn').onclick = () => {
-    const editor = $('goldPriceEditor');
-    if (editor) {
-      const isHidden = editor.style.display === 'none';
-      editor.style.display = isHidden ? 'flex' : 'none';
-    }
-  };
-  $('saveGoldPriceBtn').onclick = async () => {
-    const price = Number(currentPriceInput?.value || 0);
-    if (price <= 0) { toast('Enter a valid current gold price', true); return; }
-    state.settings.currentGoldPricePerGram = price;
-    await putOne('meta', { ...state.settings, id: 'settings' });
-    toast('Current gold price updated');
-    $('goldPriceEditor').style.display = 'none';
-    renderGoldOverview(goldRows); await renderOverview();
-  };
-  renderGoldOverview(goldRows);
-  const dematRows = rows.filter(x => x.type === 'Demat');
-  const dematValueInput = $('currentDematPortfolioValue');
-  if (dematValueInput) dematValueInput.value = Number(state.settings.currentDematPortfolioValue || 0) || '';
-  $('updateDematValueBtn').onclick = () => {
-    const editor = $('dematValueEditor');
-    if (editor) editor.style.display = editor.style.display === 'none' ? 'flex' : 'none';
-  };
-  $('saveDematValueBtn').onclick = async () => {
-    const value = Number(dematValueInput?.value || 0);
-    if (value <= 0) { toast('Enter a valid portfolio value', true); return; }
-    state.settings.currentDematPortfolioValue = value;
-    await putOne('meta', { ...state.settings, id: 'settings' });
-    $('dematValueEditor').style.display = 'none';
-    toast('Portfolio value updated');
-    renderDematOverview(dematRows); await renderOverview();
-  };
-  renderDematOverview(dematRows);
-}
-
-$('addInvBtn').onclick = () => invModal();
-$('addGoldBtn').onclick = () => goldModal();
-$('addDematBtn').onclick = () => dematModal();
-
 function renderGoldOverview(rows) {
   const totalGrams = rows.reduce((total, row) => total + (Number(row.grams) || 0), 0);
   const purchaseValue = rows.reduce((total, row) => total + (Number(row.purchaseValue) || 0), 0);
