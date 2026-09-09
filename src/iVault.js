@@ -1681,8 +1681,9 @@ async function renderDemat() {
     if (ed) ed.style.display = ed.style.display === 'none' ? 'block' : 'none';
   };
 
-  // Wire dynamic buttons inside dematList
-  el.querySelector('#dematSaveValBtn')?.addEventListener('click', async () => {
+  // Wire dynamic buttons inside dematList (use onclick to avoid stale addEventListener across re-renders)
+  const dematSaveValBtn = el.querySelector('#dematSaveValBtn');
+  if (dematSaveValBtn) dematSaveValBtn.onclick = async () => {
     const val = Number($('dematPortfolioInput')?.value || 0);
     if (val <= 0) { toast('Enter a valid portfolio value', true); return; }
     state.settings.currentDematPortfolioValue = val;
@@ -1690,10 +1691,11 @@ async function renderDemat() {
     $('dematValueEditor2').style.display = 'none';
     toast('Portfolio value updated');
     await renderDemat(); await renderOverview();
-  });
-  el.querySelector('#dematCancelValBtn')?.addEventListener('click', () => {
+  };
+  const dematCancelValBtn = el.querySelector('#dematCancelValBtn');
+  if (dematCancelValBtn) dematCancelValBtn.onclick = () => {
     $('dematValueEditor2').style.display = 'none';
-  });
+  };
   el.querySelectorAll('[data-demat-edit]').forEach(b => b.onclick = async () => {
     const r = await getOne('investments', b.dataset.dematEdit); if (r) dematModal(r);
   });
