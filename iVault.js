@@ -1502,7 +1502,7 @@ function dematModal(existing = null) {
     });
     await logActivity('Demat', (existing ? 'Demat updated: ' : 'Demat added: ') + name);
     closeModal(); toast(existing ? 'Demat updated' : 'Demat saved');
-    await renderInvestments(); await renderOverview();
+    await renderDemat(); await renderOverview();
   });
 }
 
@@ -1637,11 +1637,13 @@ async function renderDemat() {
   const investedValue = rows.reduce((s, r) => s + N(r.investedValue ?? r.purchaseValue ?? r.openingBalance), 0);
   const profitLoss = portfolioValue - investedValue;
 
-  const toolbarHtml = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-      <button class="btn primary" id="dematAddBtn">+ Add Account</button>
-      <button class="btn" id="dematUpdateValBtn" type="button">↻ Update Portfolio Value</button>
-    </div>
+  const summaryHtml = rows.length ? `<div class="stats" style="margin-bottom:14px">
+    <div class="stat">Invested<b>${money(investedValue, state.settings.currency)}</b></div>
+    <div class="stat">Portfolio<b>${money(portfolioValue, state.settings.currency)}</b></div>
+    <div class="stat">P&amp;L<b class="${profitLoss >= 0 ? 'green' : 'red'}">${money(profitLoss, state.settings.currency)}</b></div>
+  </div>` : '';
+
+  const editorHtml = `
     <div id="dematValueEditor2" style="display:none;margin-bottom:14px">
       <label style="display:block">Current Portfolio Value
         <input id="dematPortfolioInput" type="number" min="0" step="0.01" placeholder="e.g. 125000"
@@ -1652,12 +1654,6 @@ async function renderDemat() {
         <button class="btn" id="dematCancelValBtn" type="button">Cancel</button>
       </div>
     </div>`;
-
-  const summaryHtml = rows.length ? `<div class="stats" style="margin-bottom:14px">
-    <div class="stat">Invested<b>${money(investedValue, state.settings.currency)}</b></div>
-    <div class="stat">Portfolio<b>${money(portfolioValue, state.settings.currency)}</b></div>
-    <div class="stat">P&amp;L<b class="${profitLoss >= 0 ? 'green' : 'red'}">${money(profitLoss, state.settings.currency)}</b></div>
-  </div>` : '';
 
   const listHtml = rows.length
     ? rows.map(r => `<div class="item">
@@ -1673,24 +1669,27 @@ async function renderDemat() {
       </div>`).join('')
     : '<div class="empty">No Demat accounts added yet.</div>';
 
-  el.innerHTML = toolbarHtml + summaryHtml + listHtml;
+  el.innerHTML = editorHtml + summaryHtml + listHtml;
 
-  el.querySelector('#dematAddBtn')?.addEventListener('click', () => dematModal());
-  el.querySelector('#dematUpdateValBtn')?.addEventListener('click', () => {
-    const ed = el.querySelector('#dematValueEditor2');
+  // Wire static header buttons (defined in HTML)
+  $('dematAddBtn')?.onclick = () => dematModal();
+  $('dematUpdateValBtn')?.onclick = () => {
+    const ed = $('dematValueEditor2');
     if (ed) ed.style.display = ed.style.display === 'none' ? 'block' : 'none';
-  });
-  el.querySelector('#dematCancelValBtn')?.addEventListener('click', () => {
-    el.querySelector('#dematValueEditor2').style.display = 'none';
-  });
+  };
+
+  // Wire dynamic buttons inside dematList
   el.querySelector('#dematSaveValBtn')?.addEventListener('click', async () => {
-    const val = Number(el.querySelector('#dematPortfolioInput')?.value || 0);
+    const val = Number($('dematPortfolioInput')?.value || 0);
     if (val <= 0) { toast('Enter a valid portfolio value', true); return; }
     state.settings.currentDematPortfolioValue = val;
     await putOne('meta', { ...state.settings, id: 'settings' });
-    el.querySelector('#dematValueEditor2').style.display = 'none';
+    $('dematValueEditor2').style.display = 'none';
     toast('Portfolio value updated');
     await renderDemat(); await renderOverview();
+  });
+  el.querySelector('#dematCancelValBtn')?.addEventListener('click', () => {
+    $('dematValueEditor2').style.display = 'none';
   });
   el.querySelectorAll('[data-demat-edit]').forEach(b => b.onclick = async () => {
     const r = await getOne('investments', b.dataset.dematEdit); if (r) dematModal(r);

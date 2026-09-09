@@ -264,11 +264,11 @@
       <button class="seg-btn" data-inner-seg="nps" data-group="investloans">🏛️ NPS</button>
     </div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <h3 style="margin:0">Loans</h3>
-        <button class="btn primary" id="addLoanBtn">+ Add Loan</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0">🏦 Loans</h3>
+        <button class="btn-icon primary" id="addLoanBtn" title="Add Loan" aria-label="Add Loan" style="background:linear-gradient(135deg,#7c3aed,#2563eb);border-color:#9b7aff;font-size:20px;width:42px;height:42px">➕</button>
       </div>
-      <div id="loanList" style="margin-top:14px"></div>
+      <div id="loanList"></div>
     </div>
   </div>
 
@@ -281,7 +281,13 @@
       <button class="seg-btn" data-inner-seg="nps" data-group="investloans">🏛️ NPS</button>
     </div>
     <div class="card">
-      <h3 style="margin:0 0 14px">📊 Demat</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0">📊 Demat</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn-icon" id="dematUpdateValBtn" title="Update Portfolio Value" aria-label="Update Portfolio Value">↻</button>
+          <button class="btn-icon" id="dematAddBtn" title="Add Demat Account" aria-label="Add Demat Account" style="background:linear-gradient(135deg,#7c3aed,#2563eb);border-color:#9b7aff;font-size:20px;width:42px;height:42px">➕</button>
+        </div>
+      </div>
       <div id="dematList"></div>
     </div>
   </div>
