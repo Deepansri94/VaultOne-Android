@@ -258,10 +258,23 @@
       "sprint": "Sprint 6",
       "createdAt": "2026-09-09T10:01:26.284Z",
       "updatedAt": "2026-09-09T10:03:33.289Z"
+    },
+    {
+      "id": "VO-18",
+      "projectId": "proj-vo",
+      "title": "iVault Invest tab — Collapsible sections for Savings & Investments, Gold, Demat, NPS",
+      "description": "## Story\n\n**Module:** iVault → Invest & Loans → Invest tab\n\n**User Story:**\nAs a user, I want the Invest tab to group investment types into collapsible sections with a triangle toggle, so I can expand only what I need and keep the screen clean.\n\n**Desired Section Structure:**\n\n| Section Header | Triangle | Contains |\n|---|---|---|\n| 📦 Savings & Investments | ▶ / ▼ | FD, RD, PPF, SSA, Other Savings list + Add button |\n| 🪙 Gold | ▶ / ▼ | Gold holdings, market rate update, gold overview |\n| 📊 Demat | ▶ / ▼ | Demat accounts, portfolio value update, demat overview |\n| 🏛️ NPS | ▶ / ▼ | NPS accounts, contribution entry, current value update |\n\n**Acceptance Criteria:**\n\n- Each section has a header row with a triangle icon (▶ collapsed, ▼ expanded) and the section title.\n- Clicking the header row toggles the section open/closed with a smooth animation.\n- All sections are collapsed by default on first load.\n- Last open/closed state is remembered per section in localStorage so it persists across page reloads.\n- The section header shows a summary count or total value when collapsed (e.g. \"Gold — 3 holdings · ₹1,20,000\").\n- All existing add/edit/delete functionality inside each section remains unchanged.\n- Works correctly on both mobile and desktop viewports.",
+      "type": "story",
+      "priority": "Medium",
+      "status": "backlog",
+      "assignee": "",
+      "sprint": "Sprint 7",
+      "createdAt": "2026-09-09T10:16:32.934Z",
+      "updatedAt": "2026-09-09T10:16:32.934Z"
     }
   ],
   "counters": {
-    "proj-vo": 17
+    "proj-vo": 18
   },
   "versions": [
     {
