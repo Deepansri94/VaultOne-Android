@@ -422,14 +422,16 @@ test('demat update value editor toggles and saves', async ({ page }) => {
   await page.locator('#modalBody input[name="name"]').fill('Test Demat');
   await page.locator('#modalBody input[name="investedValue"]').fill('50000');
   await submitModal(page);
-  // wait for renderDemat() to finish re-wiring buttons after modal closes
   await expect(page.locator('#dematList')).toContainText('Test Demat');
+  // wait for 'Demat saved' toast to clear before proceeding
+  await expect(page.locator('#toast')).not.toBeVisible();
 
   await page.locator('#dematUpdateValBtn').click();
   await expect(page.locator('#dematValueEditor2')).toBeVisible();
   await page.locator('#dematPortfolioInput').fill('60000');
   await page.locator('#dematSaveValBtn').click();
-  expect((await getToast(page)).toLowerCase()).toContain('portfolio value updated');
+  // assert toast contains expected text directly (avoids stale toast race)
+  await expect(page.locator('#toast')).toContainText(/portfolio value updated/i);
   await expect(page.locator('#dematValueEditor2')).not.toBeVisible();
 });
 
