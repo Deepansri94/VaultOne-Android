@@ -120,19 +120,51 @@ function wireNav() {
   document.querySelectorAll('[data-sv]').forEach(btn => {
     btn.onclick = () => switchSV(btn.dataset.sv);
   });
+  // VO-17: wire inner segment pills
+  document.querySelectorAll('[data-inner-seg]').forEach(btn => {
+    btn.onclick = () => {
+      const seg = btn.dataset.innerSeg;
+      const group = btn.dataset.group;
+      switchSV(group, seg);
+    };
+  });
 }
 
-async function switchSV(id) {
-  _currentSV = id;
-  document.querySelectorAll('.sub-view').forEach(v => v.classList.toggle('active', v.id === 'sv-' + id));
-  document.querySelectorAll('[data-sv]').forEach(b => b.classList.toggle('active', b.dataset.sv === id));
-  if (id === 'overview') await renderOverview();
-  else if (id === 'income') { await renderIncome(); }
-  else if (id === 'expenses') { await renderExpenses(); const catSel = document.querySelector('#expenseForm [name="category"]'); if (catSel) await populateExpLinked(catSel.value); }
-  else if (id === 'transactions') { _txFilter = { fromDate: '', toDate: '', quick: 'last10', page: 1, pageSize: 20, label: '' }; await renderTransactions(); }
-  else if (id === 'budget') await renderBudget();
-  else if (id === 'investments') await renderInvestments();
-  else if (id === 'loans') await renderLoans();
+// VO-17: inner segment state per grouped tab
+const _innerSeg = { money: 'income', investloans: 'investments' };
+
+async function switchSV(id, innerOverride) {
+  // VO-17: map grouped tab ids to actual sub-view ids
+  const grouped = { money: true, investloans: true };
+  let svId = id;
+  if (id === 'money') {
+    if (innerOverride) _innerSeg.money = innerOverride;
+    svId = _innerSeg.money;
+  } else if (id === 'investloans') {
+    if (innerOverride) _innerSeg.investloans = innerOverride;
+    svId = _innerSeg.investloans;
+  }
+  _currentSV = svId;
+
+  document.querySelectorAll('.sub-view').forEach(v => v.classList.toggle('active', v.id === 'sv-' + svId));
+
+  // highlight outer nav buttons
+  const outerMap = { income: 'money', expenses: 'money', budget: 'money', investments: 'investloans', loans: 'investloans' };
+  const activeOuter = outerMap[svId] || svId;
+  document.querySelectorAll('[data-sv]').forEach(b => b.classList.toggle('active', b.dataset.sv === activeOuter || b.dataset.sv === svId));
+
+  // update inner segment pills
+  document.querySelectorAll('[data-inner-seg]').forEach(b => {
+    b.classList.toggle('active', b.dataset.innerSeg === svId);
+  });
+
+  if (svId === 'overview') await renderOverview();
+  else if (svId === 'income') { await renderIncome(); }
+  else if (svId === 'expenses') { await renderExpenses(); const catSel = document.querySelector('#expenseForm [name="category"]'); if (catSel) await populateExpLinked(catSel.value); }
+  else if (svId === 'transactions') { _txFilter = { fromDate: '', toDate: '', quick: 'last10', page: 1, pageSize: 20, label: '' }; await renderTransactions(); }
+  else if (svId === 'budget') await renderBudget();
+  else if (svId === 'investments') await renderInvestments();
+  else if (svId === 'loans') await renderLoans();
 }
 
 function txDateLabel(dateStr) {
@@ -1143,6 +1175,94 @@ $('budgetNext').onclick = () => {
   renderBudget();
 };
 
+/* ===== VO-16: NPS Demat-style helpers ===== */
+function npsModal(existing = null) {
+  openModal(existing ? 'Edit NPS Account' : 'Add NPS Account', `<form class="grid">
+    <label>Provider <span class="req-star">*</span><input name="provider" required value="${esc(existing?.provider || '')}" placeholder="e.g. HDFC Pension"></label>
+    <label>Account Number<input name="accountNumber" value="${esc(existing?.accountNumber || '')}"></label>
+    <label>Tier<select name="tier"><option ${(existing?.tier||'Tier I')==='Tier I'?'selected':''}>Tier I</option><option ${existing?.tier==='Tier II'?'selected':''}>Tier II</option></select></label>
+    <label>Current Corpus Value<input name="currentValue" type="number" min="0" step="0.01" value="${Number(existing?.currentValue||0)}"></label>
+    <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save NPS</button></div>
+  </form>`, async fd => {
+    const provider = String(fd.get('provider')||'').trim();
+    if (!provider) { toast('Enter provider name', true); return; }
+    const record = {
+      id: existing?.id || uid(), type: 'NPS',
+      name: provider, provider,
+      accountNumber: String(fd.get('accountNumber')||'').trim(),
+      tier: fd.get('tier') || 'Tier I',
+      currentValue: Number(fd.get('currentValue')||0),
+      contributions: existing?.contributions || [],
+      valueUpdates: existing?.valueUpdates || [],
+      payments: existing?.payments || [],
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await putOne('investments', record);
+    await logActivity('NPS', (existing ? 'NPS updated: ' : 'NPS added: ') + provider);
+    closeModal(); toast(existing ? 'NPS updated' : 'NPS saved');
+    await renderInvestments(); await renderOverview();
+  });
+}
+
+async function npsAddContribution(nps) {
+  openModal('Add NPS Contribution', `<form class="grid">
+    <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0.01" step="0.01" required></label>
+    <label>Date <span class="req-star">*</span><input name="date" type="date" required value="${today()}"></label>
+    <label style="grid-column:1/-1">Notes<input name="notes" placeholder="Optional"></label>
+    <div class="actions" style="grid-column:1/-1"><button class="btn primary">Add Contribution</button></div>
+  </form>`, async fd => {
+    const amount = Number(fd.get('amount'));
+    if (amount <= 0) { toast('Enter a valid amount', true); return; }
+    const entry = { id: uid(), date: fd.get('date')||today(), amount, notes: fd.get('notes')||'', createdAt: new Date().toISOString() };
+    nps.contributions = [...(nps.contributions||[]), entry];
+    nps.payments = [...(nps.payments||[]), { date: entry.date, amount, balance: nps.currentValue, note: entry.notes }];
+    nps.updatedAt = new Date().toISOString();
+    await putOne('investments', nps);
+    await logActivity('NPS', `Contribution: ${money(amount, state.settings.currency)} to ${nps.name}`);
+    closeModal(); toast('Contribution added');
+    await renderInvestments(); await renderOverview();
+  });
+}
+
+async function npsUpdateValue(nps) {
+  openModal('Update NPS Corpus Value', `<form class="grid">
+    <label>Current Corpus Value <span class="req-star">*</span><input name="currentValue" type="number" min="0" step="0.01" required value="${Number(nps.currentValue||0)}"></label>
+    <label>Date<input name="date" type="date" value="${today()}"></label>
+    <label style="grid-column:1/-1">Notes<input name="notes" placeholder="Optional"></label>
+    <div class="actions" style="grid-column:1/-1"><button class="btn primary">Update Value</button></div>
+  </form>`, async fd => {
+    const val = Number(fd.get('currentValue'));
+    if (val < 0) { toast('Enter a valid value', true); return; }
+    const entry = { id: uid(), date: fd.get('date')||today(), previousValue: nps.currentValue, newValue: val, notes: fd.get('notes')||'', createdAt: new Date().toISOString() };
+    nps.currentValue = val;
+    nps.valueUpdates = [...(nps.valueUpdates||[]), entry];
+    nps.updatedAt = new Date().toISOString();
+    await putOne('investments', nps);
+    await logActivity('NPS', `Value updated to ${money(val, state.settings.currency)} for ${nps.name}`);
+    closeModal(); toast('NPS value updated');
+    await renderInvestments(); await renderOverview();
+  });
+}
+
+function npsHistoryModal(nps) {
+  const totalContrib = (nps.contributions||[]).reduce((s,c) => s + Number(c.amount||0), 0);
+  const gainLoss = Number(nps.currentValue||0) - totalContrib;
+  const rows = [
+    ...(nps.contributions||[]).map(c => ({ date: c.date, type: 'Contribution', amount: c.amount, notes: c.notes })),
+    ...(nps.valueUpdates||[]).map(v => ({ date: v.date, type: 'Value Update', amount: v.newValue, notes: `Prev: ${money(v.previousValue, state.settings.currency)}${v.notes ? ' · '+v.notes : ''}` }))
+  ].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const tableRows = rows.map(r => `<tr><td>${esc(r.date||'')}</td><td>${esc(r.type)}</td><td>${money(r.amount, state.settings.currency)}</td><td>${esc(r.notes||'')}</td></tr>`).join('');
+  openModal(`NPS History — ${esc(nps.name)}`, `
+    <div class="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+      <div class="stat">Total Contributions<b>${money(totalContrib, state.settings.currency)}</b></div>
+      <div class="stat">Current Value<b>${money(nps.currentValue||0, state.settings.currency)}</b></div>
+      <div class="stat">Gain / Loss<b class="${gainLoss>=0?'green':'red'}">${money(gainLoss, state.settings.currency)}</b></div>
+    </div>
+    ${rows.length ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Notes</th></tr></thead><tbody>${tableRows}</tbody></table></div>` : '<div class="empty">No history yet.</div>'}
+  `);
+}
+
 /* ===== Investments (balance trackers only) ===== */
 const INV_TYPES = ['FD','RD','PPF','SSA','NPS','Demat','Gold','Insurance','Other Saving'];
 
@@ -1159,6 +1279,29 @@ async function renderInvestments() {
     html += `<div class="inv-section-head">${esc(t)}</div>`;
     html += grouped[t].map(x => {
       const isIns = x.type === 'Insurance';
+      // VO-16: NPS Demat-style card
+      if (x.type === 'NPS') {
+        const totalContrib = (x.contributions||[]).reduce((s,c) => s + N(c.amount), 0);
+        const gainLoss = N(x.currentValue) - totalContrib;
+        return `<div class="item" style="flex-direction:column;align-items:stretch">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="min-width:0;flex:1">
+              <div class="title">${esc(x.name||'NPS')} <span class="pill" style="font-size:11px">${esc(x.tier||'Tier I')}</span></div>
+              <div class="sub">${esc(x.provider||'')}${x.accountNumber?' · '+esc(x.accountNumber):''}</div>
+              <div class="sub">Total Contributions: <b>${money(totalContrib, state.settings.currency)}</b></div>
+              <div class="sub">Current Value: <b>${money(x.currentValue||0, state.settings.currency)}</b></div>
+              <div class="sub">Gain / Loss: <b class="${gainLoss>=0?'green':'red'}">${money(gainLoss, state.settings.currency)}</b></div>
+            </div>
+            <div class="actions" style="margin-top:0;flex-direction:column;gap:6px">
+              <button class="btn-icon" data-nps-contrib="${x.id}" title="Add Contribution">➕</button>
+              <button class="btn-icon" data-nps-val="${x.id}" title="Update Value">💹</button>
+              <button class="btn-icon" data-nps-hist="${x.id}" title="History">📋</button>
+              <button class="btn-icon" data-invedit="${x.id}" title="Edit">✏️</button>
+              <button class="btn-icon danger" data-invdel="${x.id}" title="Delete">🗑️</button>
+            </div>
+          </div>
+        </div>`;
+      }
       const payments = (x.payments || []).slice().reverse();
       const histLabel = isIns ? 'Premium History' : 'Contribution History';
       const payHtml = payments.length
@@ -1190,13 +1333,25 @@ async function renderInvestments() {
   });
   if (regularRows.length) $('invList').innerHTML = html;
   $('invList').querySelectorAll('[data-invedit]').forEach(b => b.onclick = async () => {
-    const x = await getOne('investments', b.dataset.invedit); if (x) invModal(x);
+    const x = await getOne('investments', b.dataset.invedit);
+    if (!x) return;
+    if (x.type === 'NPS') npsModal(x); else invModal(x);
   });
   $('invList').querySelectorAll('[data-invdel]').forEach(b => b.onclick = async () => {
     if (!confirm('Delete this investment?')) return;
     await delOne('investments', b.dataset.invdel);
     await logActivity('Investment', 'Investment deleted');
     await renderInvestments(); await renderOverview();
+  });
+  // VO-16: NPS action buttons
+  $('invList').querySelectorAll('[data-nps-contrib]').forEach(b => b.onclick = async () => {
+    const x = await getOne('investments', b.dataset.npsContrib); if (x) npsAddContribution(x);
+  });
+  $('invList').querySelectorAll('[data-nps-val]').forEach(b => b.onclick = async () => {
+    const x = await getOne('investments', b.dataset.npsVal); if (x) npsUpdateValue(x);
+  });
+  $('invList').querySelectorAll('[data-nps-hist]').forEach(b => b.onclick = async () => {
+    const x = await getOne('investments', b.dataset.npsHist); if (x) npsHistoryModal(x);
   });
   const goldRows = rows.filter(x => x.type === 'Gold');
   const currentPriceInput = $('currentGoldPricePerGram');
@@ -1237,7 +1392,11 @@ async function renderInvestments() {
   renderDematOverview(dematRows);
 }
 
-$('addInvBtn').onclick = () => invModal();
+$('addInvBtn').onclick = () => {
+  // VO-16: open NPS-specific modal when type is NPS; generic invModal otherwise
+  // We open a type-picker first only if user wants NPS, otherwise use invModal
+  invModal();
+};
 $('addGoldBtn').onclick = () => goldModal();
 $('addDematBtn').onclick = () => dematModal();
 
@@ -1394,6 +1553,8 @@ function invModal(existing = null) {
     <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save</button></div>
   </form>`, async fd => {
     const type = fd.get('type');
+    // VO-16: redirect NPS to dedicated modal
+    if (type === 'NPS') { closeModal(); npsModal(existing); return; }
     const isInsurance = type === 'Insurance';
     const record = {
       id: existing?.id || uid(),

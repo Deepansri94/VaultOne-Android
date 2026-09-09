@@ -7,9 +7,13 @@
 <title>iVault 💰</title>
 <link rel="stylesheet" href="shared.css">
 <style>
-.nav { grid-template-columns: repeat(7, 1fr); }
+.nav { grid-template-columns: repeat(4, 1fr); }
 .sub-view { display: none; }
 .sub-view.active { display: block; }
+/* VO-17: inner segment pill switcher */
+.seg-bar { display: flex; gap: 6px; margin: 0 0 14px; background: #0b1627; border-radius: 999px; padding: 4px; }
+.seg-btn { flex: 1; text-align: center; border: none; background: transparent; color: #8290a5; border-radius: 999px; padding: 8px 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; }
+.seg-btn.active { background: linear-gradient(135deg,#7c3aed,#2563eb); color: #fff; }
 .budget-bar-wrap { margin-top: 8px; }
 .comparison { width: 100%; border-collapse: collapse; font-size: 13px; }
 .comparison th, .comparison td { padding: 9px; border-bottom: 1px solid #ffffff10; text-align: left; }
@@ -128,6 +132,11 @@
 
   <!-- Income sub-view -->
   <div class="sub-view" id="sv-income">
+    <div class="seg-bar">
+      <button class="seg-btn active" data-inner-seg="income" data-group="money">💵 Income</button>
+      <button class="seg-btn" data-inner-seg="expenses" data-group="money">💸 Expenses</button>
+      <button class="seg-btn" data-inner-seg="budget" data-group="money">🧮 Budget</button>
+    </div>
     <div class="card">
       <h3>Add Income</h3>
       <form id="incomeForm" class="grid" autocomplete="off">
@@ -146,6 +155,11 @@
 
   <!-- Expenses sub-view -->
   <div class="sub-view" id="sv-expenses">
+    <div class="seg-bar">
+      <button class="seg-btn" data-inner-seg="income" data-group="money">💵 Income</button>
+      <button class="seg-btn active" data-inner-seg="expenses" data-group="money">💸 Expenses</button>
+      <button class="seg-btn" data-inner-seg="budget" data-group="money">🧮 Budget</button>
+    </div>
     <div class="card">
       <h3>Add Expense</h3>
       <form id="expenseForm" class="grid" autocomplete="off">
@@ -182,6 +196,11 @@
 
   <!-- Budget sub-view -->
   <div class="sub-view" id="sv-budget">
+    <div class="seg-bar">
+      <button class="seg-btn" data-inner-seg="income" data-group="money">💵 Income</button>
+      <button class="seg-btn" data-inner-seg="expenses" data-group="money">💸 Expenses</button>
+      <button class="seg-btn active" data-inner-seg="budget" data-group="money">🧮 Budget</button>
+    </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <h3 style="margin:0">Monthly Budget</h3>
@@ -215,6 +234,10 @@
 
   <!-- Investments sub-view -->
   <div class="sub-view" id="sv-investments">
+    <div class="seg-bar">
+      <button class="seg-btn active" data-inner-seg="investments" data-group="investloans">📈 Invest</button>
+      <button class="seg-btn" data-inner-seg="loans" data-group="investloans">🏦 Loans</button>
+    </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <h3 style="margin:0">Savings &amp; Investments</h3>
@@ -257,6 +280,10 @@
 
   <!-- Loans sub-view -->
   <div class="sub-view" id="sv-loans">
+    <div class="seg-bar">
+      <button class="seg-btn" data-inner-seg="investments" data-group="investloans">📈 Invest</button>
+      <button class="seg-btn active" data-inner-seg="loans" data-group="investloans">🏦 Loans</button>
+    </div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
         <h3 style="margin:0">Loans</h3>
@@ -275,11 +302,8 @@
 <nav class="bottom">
   <div class="nav">
     <button type="button" class="active" data-sv="overview"><span>📊</span>Overview</button>
-    <button type="button" data-sv="income"><span>💵</span>Income</button>
-    <button type="button" data-sv="expenses"><span>💸</span>Expenses</button>
-    <button type="button" data-sv="budget"><span>🧮</span>Budget</button>
-    <button type="button" data-sv="investments"><span>📈</span>Invest</button>
-    <button type="button" data-sv="loans"><span>🏦</span>Loans</button>
+    <button type="button" data-sv="money"><span>💰</span>Money</button>
+    <button type="button" data-sv="investloans"><span>📈</span>Invest &amp; Loans</button>
     <button type="button" data-sv="transactions"><span>🧾</span>Transactions</button>
   </div>
 </nav>
