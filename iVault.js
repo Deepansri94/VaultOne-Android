@@ -1202,7 +1202,7 @@ function npsModal(existing = null) {
     await putOne('investments', record);
     await logActivity('NPS', (existing ? 'NPS updated: ' : 'NPS added: ') + provider);
     closeModal(); toast(existing ? 'NPS updated' : 'NPS saved');
-    await renderInvestments(); await renderOverview();
+    await renderNps(); await renderOverview();
   });
 }
 
@@ -1222,7 +1222,7 @@ async function npsAddContribution(nps) {
     await putOne('investments', nps);
     await logActivity('NPS', `Contribution: ${money(amount, state.settings.currency)} to ${nps.name}`);
     closeModal(); toast('Contribution added');
-    await renderInvestments(); await renderOverview();
+    await renderNps(); await renderOverview();
   });
 }
 
@@ -1242,7 +1242,7 @@ async function npsUpdateValue(nps) {
     await putOne('investments', nps);
     await logActivity('NPS', `Value updated to ${money(val, state.settings.currency)} for ${nps.name}`);
     closeModal(); toast('NPS value updated');
-    await renderInvestments(); await renderOverview();
+    await renderNps(); await renderOverview();
   });
 }
 
@@ -1634,20 +1634,25 @@ async function renderDemat() {
   const portfolioValue = N(state.settings.currentDematPortfolioValue) || rows.reduce((s, r) => s + N(r.currentValue), 0);
   const el = $('dematList');
 
-  const editorHtml = `
-    <div class="actions" style="margin:0 0 12px">
-      <button class="btn btn-icon" id="dematAddBtn" title="Add Demat Account">📊 + Add</button>
-      <button class="btn btn-icon" id="dematUpdateValBtn" type="button" title="Update Portfolio Value">↻ Update Value</button>
-    </div>
-    <div id="dematValueEditor2" style="display:none;align-items:end;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-      <label style="margin:0;flex:1;min-width:220px">Current Portfolio Value
-        <input id="dematPortfolioInput" type="number" min="0" step="0.01" placeholder="e.g. 125000" value="${Number(state.settings.currentDematPortfolioValue || 0) || ''}">
-      </label>
-      <button class="btn primary" id="dematSaveValBtn" type="button">Save</button>
-    </div>`;
-
   const investedValue = rows.reduce((s, r) => s + N(r.investedValue ?? r.purchaseValue ?? r.openingBalance), 0);
   const profitLoss = portfolioValue - investedValue;
+
+  const toolbarHtml = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn primary" id="dematAddBtn">+ Add Account</button>
+      <button class="btn" id="dematUpdateValBtn" type="button">↻ Update Portfolio Value</button>
+    </div>
+    <div id="dematValueEditor2" style="display:none;margin-bottom:14px">
+      <label style="display:block">Current Portfolio Value
+        <input id="dematPortfolioInput" type="number" min="0" step="0.01" placeholder="e.g. 125000"
+          value="${Number(state.settings.currentDematPortfolioValue || 0) || ''}" style="margin-top:6px">
+      </label>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn primary" id="dematSaveValBtn" type="button">Save</button>
+        <button class="btn" id="dematCancelValBtn" type="button">Cancel</button>
+      </div>
+    </div>`;
+
   const summaryHtml = rows.length ? `<div class="stats" style="margin-bottom:14px">
     <div class="stat">Invested<b>${money(investedValue, state.settings.currency)}</b></div>
     <div class="stat">Portfolio<b>${money(portfolioValue, state.settings.currency)}</b></div>
@@ -1656,18 +1661,27 @@ async function renderDemat() {
 
   const listHtml = rows.length
     ? rows.map(r => `<div class="item">
-        <div><div class="title">${esc(r.name || 'Demat Account')}</div><div class="sub">Invested: ${money(r.investedValue ?? r.purchaseValue ?? r.openingBalance, state.settings.currency)}</div></div>
+        <div style="min-width:0;flex:1">
+          <div class="title">${esc(r.name || 'Demat Account')}</div>
+          <div class="sub">Invested: ${money(r.investedValue ?? r.purchaseValue ?? r.openingBalance, state.settings.currency)}</div>
+        </div>
         <b class="${portfolioValue >= investedValue ? 'green' : 'red'}">${money(portfolioValue, state.settings.currency)}</b>
-        <div class="actions"><button class="btn-icon" data-demat-edit="${r.id}" title="Edit">✏️</button><button class="btn-icon danger" data-demat-delete="${r.id}" title="Delete">🗑️</button></div>
+        <div class="actions" style="margin-top:0">
+          <button class="btn-icon" data-demat-edit="${r.id}" title="Edit">✏️</button>
+          <button class="btn-icon danger" data-demat-delete="${r.id}" title="Delete">🗑️</button>
+        </div>
       </div>`).join('')
     : '<div class="empty">No Demat accounts added yet.</div>';
 
-  el.innerHTML = editorHtml + summaryHtml + listHtml;
+  el.innerHTML = toolbarHtml + summaryHtml + listHtml;
 
   el.querySelector('#dematAddBtn')?.addEventListener('click', () => dematModal());
   el.querySelector('#dematUpdateValBtn')?.addEventListener('click', () => {
     const ed = el.querySelector('#dematValueEditor2');
-    if (ed) ed.style.display = ed.style.display === 'none' ? 'flex' : 'none';
+    if (ed) ed.style.display = ed.style.display === 'none' ? 'block' : 'none';
+  });
+  el.querySelector('#dematCancelValBtn')?.addEventListener('click', () => {
+    el.querySelector('#dematValueEditor2').style.display = 'none';
   });
   el.querySelector('#dematSaveValBtn')?.addEventListener('click', async () => {
     const val = Number(el.querySelector('#dematPortfolioInput')?.value || 0);
@@ -1694,50 +1708,48 @@ async function renderNps() {
   const rows = (await getAll('investments')).filter(x => x.type === 'NPS');
   const N = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
   const el = $('npsList');
+  const nps = rows[0] || null; // only one NPS account in India
 
-  const npsBodyHtml = rows.length
-    ? rows.map(x => {
-        const totalContrib = (x.contributions||[]).reduce((s,c) => s + N(c.amount), 0);
-        const gainLoss = N(x.currentValue) - totalContrib;
-        return `<div class="item" style="flex-direction:column;align-items:stretch">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-            <div style="min-width:0;flex:1">
-              <div class="title">${esc(x.name||'NPS')} <span class="pill" style="font-size:11px">${esc(x.tier||'Tier I')}</span></div>
-              <div class="sub">${esc(x.provider||'')}${x.accountNumber?' · '+esc(x.accountNumber):''}</div>
-              <div class="sub">Contributions: <b>${money(totalContrib, state.settings.currency)}</b></div>
-              <div class="sub">Current Value: <b>${money(x.currentValue||0, state.settings.currency)}</b></div>
-              <div class="sub">Gain / Loss: <b class="${gainLoss>=0?'green':'red'}">${money(gainLoss, state.settings.currency)}</b></div>
-            </div>
-            <div class="actions" style="margin-top:0;flex-wrap:wrap;justify-content:flex-end;max-width:160px">
-              <button class="btn-icon" data-nps-contrib="${x.id}" title="Add Contribution">➕</button>
-              <button class="btn-icon" data-nps-val="${x.id}" title="Update Value">💹</button>
-              <button class="btn-icon" data-nps-hist="${x.id}" title="History">📋</button>
-              <button class="btn-icon" data-invedit="${x.id}" title="Edit">✏️</button>
-              <button class="btn-icon danger" data-invdel="${x.id}" title="Delete">🗑️</button>
-            </div>
-          </div>
-        </div>`;
-      }).join('')
-    : '<div class="empty">No NPS accounts added yet.</div>';
+  if (!nps) {
+    // No account yet — show a single setup button
+    el.innerHTML = `<div class="empty" style="text-align:center;padding:30px">
+      <p style="margin:0 0 14px;color:var(--muted)">No NPS account set up yet.</p>
+      <button class="btn primary" id="npsSetupBtn">+ Setup NPS Account</button>
+    </div>`;
+    el.querySelector('#npsSetupBtn')?.addEventListener('click', () => npsModal());
+    return;
+  }
 
-  el.innerHTML = `<div class="actions" style="margin:0 0 12px"><button class="btn primary" id="npsAddBtn" style="padding:6px 12px;font-size:12px">+ Add NPS</button></div>` + npsBodyHtml;
+  const totalContrib = (nps.contributions||[]).reduce((s,c) => s + N(c.amount), 0);
+  const gainLoss = N(nps.currentValue) - totalContrib;
 
-  el.querySelector('#npsAddBtn')?.addEventListener('click', () => npsModal());
-  el.querySelectorAll('[data-nps-contrib]').forEach(b => b.onclick = async () => {
-    const x = await getOne('investments', b.dataset.npsContrib); if (x) npsAddContribution(x);
-  });
-  el.querySelectorAll('[data-nps-val]').forEach(b => b.onclick = async () => {
-    const x = await getOne('investments', b.dataset.npsVal); if (x) npsUpdateValue(x);
-  });
-  el.querySelectorAll('[data-nps-hist]').forEach(b => b.onclick = async () => {
-    const x = await getOne('investments', b.dataset.npsHist); if (x) npsHistoryModal(x);
-  });
-  el.querySelectorAll('[data-invedit]').forEach(b => b.onclick = async () => {
-    const x = await getOne('investments', b.dataset.invedit); if (x) npsModal(x);
-  });
-  el.querySelectorAll('[data-invdel]').forEach(b => b.onclick = async () => {
+  el.innerHTML = `
+    <div class="item" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+        <div style="min-width:0;flex:1">
+          <div class="title">${esc(nps.name||'NPS')} <span class="pill" style="font-size:11px">${esc(nps.tier||'Tier I')}</span></div>
+          <div class="sub">${esc(nps.provider||'')}${nps.accountNumber?' · '+esc(nps.accountNumber):''}</div>
+          <div class="sub">Contributions: <b>${money(totalContrib, state.settings.currency)}</b></div>
+          <div class="sub">Current Value: <b>${money(nps.currentValue||0, state.settings.currency)}</b></div>
+          <div class="sub">Gain / Loss: <b class="${gainLoss>=0?'green':'red'}">${money(gainLoss, state.settings.currency)}</b></div>
+        </div>
+        <div class="actions" style="margin-top:0;flex-wrap:wrap;gap:6px">
+          <button class="btn-icon" id="npsContribBtn" title="Add Contribution">➕</button>
+          <button class="btn-icon" id="npsValBtn" title="Update Value">💹</button>
+          <button class="btn-icon" id="npsHistBtn" title="History">📋</button>
+          <button class="btn-icon" id="npsEditBtn" title="Edit">✏️</button>
+          <button class="btn-icon danger" id="npsDelBtn" title="Delete">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+
+  el.querySelector('#npsContribBtn')?.addEventListener('click', () => npsAddContribution(nps));
+  el.querySelector('#npsValBtn')?.addEventListener('click', () => npsUpdateValue(nps));
+  el.querySelector('#npsHistBtn')?.addEventListener('click', () => npsHistoryModal(nps));
+  el.querySelector('#npsEditBtn')?.addEventListener('click', () => npsModal(nps));
+  el.querySelector('#npsDelBtn')?.addEventListener('click', async () => {
     if (!confirm('Delete this NPS account?')) return;
-    await delOne('investments', b.dataset.invdel);
+    await delOne('investments', nps.id);
     await logActivity('NPS', 'NPS account deleted');
     await renderNps(); await renderOverview();
   });
