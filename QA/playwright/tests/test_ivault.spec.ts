@@ -20,17 +20,22 @@ async function openInvSection(page: Page, key: string) {
   if (isHidden) await page.locator(`[data-inv-sec="${key}"]`).click();
   await expect(body).toBeVisible();
 }
+// Click the seg-btn that lives inside the currently active sub-view (others are in display:none parents)
+async function clickSegBtn(page: Page, seg: string, group: string) {
+  await page.evaluate(({ seg, group }) => {
+    const btn = Array.from(document.querySelectorAll<HTMLElement>(
+      `[data-inner-seg="${seg}"][data-group="${group}"]`
+    )).find(el => el.closest('.sub-view')?.classList.contains('active'));
+    btn?.click();
+  }, { seg, group });
+}
 async function goMoney(page: Page, seg: string) {
   await page.locator('[data-sv="money"]').click();
-  if (seg !== 'income') {
-    await page.locator(`[data-inner-seg="${seg}"][data-group="money"]`).first().click();
-  }
+  if (seg !== 'income') await clickSegBtn(page, seg, 'money');
 }
 async function goInvest(page: Page, seg: string) {
   await page.locator('[data-sv="investloans"]').click();
-  if (seg !== 'investments') {
-    await page.locator(`[data-inner-seg="${seg}"][data-group="investloans"]`).first().click();
-  }
+  if (seg !== 'investments') await clickSegBtn(page, seg, 'investloans');
 }
 
 // ── setup ─────────────────────────────────────────────────────────────────────
@@ -72,24 +77,24 @@ test('outer nav tabs switch sub-views', async ({ page }) => {
 // TC-IV-003b: inner seg pills — money group
 test('inner seg pills switch money sub-views', async ({ page }) => {
   await page.locator('[data-sv="money"]').click();
-  await page.locator('[data-inner-seg="expenses"][data-group="money"]').first().click();
+  await clickSegBtn(page, 'expenses', 'money');
   await expect(page.locator('#sv-expenses')).toHaveClass(/active/);
-  await page.locator('[data-inner-seg="budget"][data-group="money"]').first().click();
+  await clickSegBtn(page, 'budget', 'money');
   await expect(page.locator('#sv-budget')).toHaveClass(/active/);
-  await page.locator('[data-inner-seg="income"][data-group="money"]').first().click();
+  await clickSegBtn(page, 'income', 'money');
   await expect(page.locator('#sv-income')).toHaveClass(/active/);
 });
 
 // TC-IV-003c: inner seg pills — investloans group
 test('inner seg pills switch investloans sub-views', async ({ page }) => {
   await page.locator('[data-sv="investloans"]').click();
-  await page.locator('[data-inner-seg="loans"][data-group="investloans"]').first().click();
+  await clickSegBtn(page, 'loans', 'investloans');
   await expect(page.locator('#sv-loans')).toHaveClass(/active/);
-  await page.locator('[data-inner-seg="demat"][data-group="investloans"]').first().click();
+  await clickSegBtn(page, 'demat', 'investloans');
   await expect(page.locator('#sv-demat')).toHaveClass(/active/);
-  await page.locator('[data-inner-seg="nps"][data-group="investloans"]').first().click();
+  await clickSegBtn(page, 'nps', 'investloans');
   await expect(page.locator('#sv-nps')).toHaveClass(/active/);
-  await page.locator('[data-inner-seg="investments"][data-group="investloans"]').first().click();
+  await clickSegBtn(page, 'investments', 'investloans');
   await expect(page.locator('#sv-investments')).toHaveClass(/active/);
 });
 
@@ -117,7 +122,7 @@ test('income and expense histories keep entry order on the same date', async ({ 
   await expect(page.locator('#incomeList tbody tr').nth(0)).toContainText('Second income');
   await expect(page.locator('#incomeList tbody tr').nth(1)).toContainText('First income');
 
-  await page.locator('[data-inner-seg="expenses"][data-group="money"]').first().click();
+  await clickSegBtn(page, 'expenses', 'money');
   for (const [amount, note] of [['300', 'First expense'], ['400', 'Second expense']]) {
     await page.locator('#expenseForm input[name="amount"]').fill(amount);
     await setDate(page, '#expenseForm input[name="date"]', entryDate);
@@ -209,7 +214,7 @@ test('transactions tab combines income and expenses', async ({ page }) => {
   await page.locator('#incomeForm input[name="note"]').fill('Monthly salary');
   await page.locator('#incomeForm button[type="submit"]').click();
 
-  await page.locator('[data-inner-seg="expenses"][data-group="money"]').first().click();
+  await clickSegBtn(page, 'expenses', 'money');
   await page.locator('#expenseForm input[name="amount"]').fill('1200');
   await setDate(page, '#expenseForm input[name="date"]', '2025-01-16');
   await page.locator('#expenseForm input[name="note"]').fill('Groceries');
@@ -246,7 +251,7 @@ test('budget vs actual includes subcategory rows', async ({ page }) => {
   await setDate(page, '#expenseForm input[name="date"]', today);
   await page.locator('#expenseForm button[type="submit"]').click();
 
-  await page.locator('[data-inner-seg="budget"][data-group="money"]').first().click();
+  await clickSegBtn(page, 'budget', 'money');
   await page.locator('input[name="sub_Household_Rent"]').fill('200');
   await page.locator('input[name="sub_Household_Electricity"]').fill('200');
   await expect(page.locator('input[name="cat_Household"]')).toHaveValue('400');
@@ -296,7 +301,7 @@ test('budget actuals include investment contribution', async ({ page }) => {
   await setDate(page, '#expenseForm input[name="date"]', today);
   await page.locator('#expenseForm button[type="submit"]').click();
 
-  await page.locator('[data-inner-seg="budget"][data-group="money"]').first().click();
+  await clickSegBtn(page, 'budget', 'money');
   await page.locator('input[name="cat_Savings___Investments"]').fill('5000');
   await page.locator('#budgetSaveBtn').click();
   await expect(page.locator('#budgetActuals')).toContainText('Savings');
