@@ -1729,15 +1729,12 @@ async function renderNps() {
 
   el.innerHTML = `
     <div class="item" style="flex-direction:column;align-items:stretch">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
         <div style="min-width:0;flex:1">
           <div class="title">${esc(nps.name||'NPS')} <span class="pill" style="font-size:11px">${esc(nps.tier||'Tier I')}</span></div>
-          <div class="sub">${esc(nps.provider||'')}${nps.accountNumber?' · '+esc(nps.accountNumber):''}</div>
-          <div class="sub">Contributions: <b>${money(totalContrib, state.settings.currency)}</b></div>
-          <div class="sub">Current Value: <b>${money(nps.currentValue||0, state.settings.currency)}</b></div>
-          <div class="sub">Gain / Loss: <b class="${gainLoss>=0?'green':'red'}">${money(gainLoss, state.settings.currency)}</b></div>
+          <div class="sub">${esc(nps.provider||'')} · <b>${money(nps.currentValue||0, state.settings.currency)}</b></div>
         </div>
-        <div class="actions" style="margin-top:0;flex-wrap:wrap;gap:6px">
+        <div class="actions" style="margin-top:0;gap:6px">
           <button class="btn-icon" id="npsContribBtn" title="Add Contribution">➕</button>
           <button class="btn-icon" id="npsValBtn" title="Update Value">💹</button>
           <button class="btn-icon" id="npsHistBtn" title="History">📋</button>
