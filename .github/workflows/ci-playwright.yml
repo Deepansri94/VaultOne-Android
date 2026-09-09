@@ -28,6 +28,7 @@ concurrency:
 
 env:
   NODE_VERSION: '20'
+  PLAYWRIGHT_BROWSERS_PATH: /home/runner/.cache/ms-playwright
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Jobs
@@ -89,8 +90,20 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Cache Playwright Chromium browser
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('QA/playwright/package-lock.json') }}
+
       - name: Install Playwright browsers (Chromium only)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
+
+      - name: Install Chromium system deps (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Run iVault tests
         run: npx playwright test tests/test_ivault.spec.ts --reporter=list,html
@@ -139,8 +152,20 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Cache Playwright Chromium browser
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('QA/playwright/package-lock.json') }}
+
       - name: Install Playwright browsers (Chromium only)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
+
+      - name: Install Chromium system deps (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Run FamilyVault tests
         run: npx playwright test tests/test_family.spec.ts --reporter=list,html
@@ -189,8 +214,20 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      - name: Cache Playwright Chromium browser
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('QA/playwright/package-lock.json') }}
+
       - name: Install Playwright browsers (Chromium only)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install chromium --with-deps
+
+      - name: Install Chromium system deps (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Run PasswordVault tests
         run: npx playwright test tests/test_passwords.spec.ts --reporter=list,html

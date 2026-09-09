@@ -59,16 +59,23 @@ jobs:
       # 4. ANDROID SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+          accept-android-sdk-licenses: true
 
       - name: Install Android SDK components
         shell: bash
         run: |
           set -e
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-${ANDROID_API}" \
-            "build-tools;${BUILD_TOOLS_VERSION}"
+          for attempt in 1 2 3; do
+            echo "SDK install attempt $attempt..."
+            sdkmanager \
+              "platform-tools" \
+              "platforms;android-${ANDROID_API}" \
+              "build-tools;${BUILD_TOOLS_VERSION}" && break
+            [ $attempt -lt 3 ] && echo "Retrying in 15s..." && sleep 15
+          done
           echo "Android SDK installation completed."
 
       # 5. ENVIRONMENT CHECK
