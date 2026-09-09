@@ -46,11 +46,11 @@ jobs:
         shell: bash
         run: |
           set -e
-          for f in index.html shared.js shared.css \
-                    sw.js VaultOne.png \
-                    iVault.html iVault.js \
-                    FamilyVault.html FamilyVault.js \
-                    PasswordVault.html PasswordVault.js; do
+          for f in src/index.html src/shared.js src/shared.css \
+                    src/sw.js assets/VaultOne.png \
+                    src/iVault.html src/iVault.js \
+                    src/FamilyVault.html src/FamilyVault.js \
+                    src/PasswordVault.html src/PasswordVault.js; do
             if [ ! -f "$f" ]; then
               echo "ERROR: Required file missing: $f"
               exit 1
@@ -68,11 +68,11 @@ jobs:
         shell: bash
         run: |
           set -e
-          cp index.html shared.js shared.css \
-             sw.js VaultOne.png \
-             iVault.html iVault.js \
-             FamilyVault.html FamilyVault.js \
-             PasswordVault.html PasswordVault.js \
+          cp src/index.html src/shared.js src/shared.css \
+             src/sw.js assets/VaultOne.png \
+             src/iVault.html src/iVault.js \
+             src/FamilyVault.html src/FamilyVault.js \
+             src/PasswordVault.html src/PasswordVault.js \
              assets/
           ls -lh assets/
 
@@ -81,8 +81,8 @@ jobs:
         shell: bash
         run: |
           set -e
-          if [ -f "./VaultOne.png" ]; then
-            cp "./VaultOne.png" "assets/icon.png"
+          if [ -f "./assets/VaultOne.png" ]; then
+            cp "./assets/VaultOne.png" "assets/icon.png"
           elif [ -f "./assets/icon.png" ]; then
             echo "Using existing assets/icon.png"
           else

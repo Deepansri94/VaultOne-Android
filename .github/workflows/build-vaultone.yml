@@ -88,12 +88,12 @@ jobs:
         run: |
           set -e
           MISSING=""
-          for f in index.html shared.js shared.css \
-                   sw.js VaultOne.png \
-                   iVault.html iVault.js \
-                   FamilyVault.html FamilyVault.js \
-                   PasswordVault.html PasswordVault.js \
-                   jspdf.umd.min.js; do
+          for f in src/index.html src/shared.js src/shared.css \
+                   src/sw.js assets/VaultOne.png \
+                   src/iVault.html src/iVault.js \
+                   src/FamilyVault.html src/FamilyVault.js \
+                   src/PasswordVault.html src/PasswordVault.js \
+                   src/jspdf.umd.min.js; do
             if [ ! -f "./$f" ]; then
               MISSING="$MISSING $f"
             fi
@@ -103,11 +103,11 @@ jobs:
             exit 1
           fi
           echo "All modular app files present."
-           ls -lh index.html shared.js shared.css sw.js VaultOne.png \
-                 iVault.html iVault.js \
-                 FamilyVault.html FamilyVault.js \
-                 PasswordVault.html PasswordVault.js \
-                 jspdf.umd.min.js
+           ls -lh src/index.html src/shared.js src/shared.css src/sw.js assets/VaultOne.png \
+                 src/iVault.html src/iVault.js \
+                 src/FamilyVault.html src/FamilyVault.js \
+                 src/PasswordVault.html src/PasswordVault.js \
+                 src/jspdf.umd.min.js
 
       # 7. CREATE ANDROID PROJECT STRUCTURE
       - name: Create Android project structure
@@ -131,16 +131,16 @@ jobs:
         shell: bash
         run: |
           set -e
-          if [ ! -f "VaultOne.png" ]; then
-            echo "ERROR: VaultOne.png not found in repo root."
+          if [ ! -f "assets/VaultOne.png" ]; then
+            echo "ERROR: assets/VaultOne.png not found."
             exit 1
           fi
           sudo apt-get install -y imagemagick >/dev/null 2>&1
-          convert VaultOne.png -resize 48x48   app/src/main/res/mipmap-mdpi/ic_launcher.png
-          convert VaultOne.png -resize 72x72   app/src/main/res/mipmap-hdpi/ic_launcher.png
-          convert VaultOne.png -resize 96x96   app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          convert VaultOne.png -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          convert VaultOne.png -resize 192x192 app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          convert assets/VaultOne.png -resize 48x48   app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert assets/VaultOne.png -resize 72x72   app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert assets/VaultOne.png -resize 96x96   app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert assets/VaultOne.png -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert assets/VaultOne.png -resize 192x192 app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           echo "App icons generated."
 
       # 9. COPY ALL MODULAR APP FILES INTO ASSETS
@@ -150,20 +150,20 @@ jobs:
         shell: bash
         run: |
           set -e
-          cp index.html          app/src/main/assets/index.html
-          cp shared.js           app/src/main/assets/shared.js
-          cp shared.css          app/src/main/assets/shared.css
-          cp sw.js              app/src/main/assets/sw.js
-          cp VaultOne.png       app/src/main/assets/VaultOne.png
-          cp iVault.html         app/src/main/assets/iVault.html
-          cp iVault.js           app/src/main/assets/iVault.js
-          cp FamilyVault.html    app/src/main/assets/FamilyVault.html
-          cp FamilyVault.js      app/src/main/assets/FamilyVault.js
-          cp PasswordVault.html  app/src/main/assets/PasswordVault.html
-          cp PasswordVault.js    app/src/main/assets/PasswordVault.js
-          cp jspdf.umd.min.js    app/src/main/assets/jspdf.umd.min.js
-          if [ -f "vaultone_seed.json" ]; then
-            cp vaultone_seed.json app/src/main/assets/vaultone_seed.json
+          cp src/index.html          app/src/main/assets/index.html
+          cp src/shared.js           app/src/main/assets/shared.js
+          cp src/shared.css          app/src/main/assets/shared.css
+          cp src/sw.js               app/src/main/assets/sw.js
+          cp assets/VaultOne.png     app/src/main/assets/VaultOne.png
+          cp src/iVault.html         app/src/main/assets/iVault.html
+          cp src/iVault.js           app/src/main/assets/iVault.js
+          cp src/FamilyVault.html    app/src/main/assets/FamilyVault.html
+          cp src/FamilyVault.js      app/src/main/assets/FamilyVault.js
+          cp src/PasswordVault.html  app/src/main/assets/PasswordVault.html
+          cp src/PasswordVault.js    app/src/main/assets/PasswordVault.js
+          cp src/jspdf.umd.min.js    app/src/main/assets/jspdf.umd.min.js
+          if [ -f "data/vaultone_seed.json" ]; then
+            cp data/vaultone_seed.json app/src/main/assets/vaultone_seed.json
             echo "Seed JSON copied."
           fi
           echo "Assets:"
@@ -1099,7 +1099,7 @@ jobs:
           token = os.environ.get('GH_TOKEN', '')
 
           try:
-            with open('release_notes.json') as f:
+            with open('data/release_notes.json') as f:
               data = json.load(f)
             latest = data['releases'][0]
             lines = ['## ' + latest.get('sprint', ''), '']

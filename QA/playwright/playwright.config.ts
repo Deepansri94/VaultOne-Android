@@ -11,10 +11,10 @@ export default defineConfig({
     viewport: { width: 1280, height: 900 },
   },
   webServer: {
-    command: 'npx serve -l 8765 ../..',
+    command: 'npx serve -l 8765 ../../src --no-clipboard',
     url: 'http://127.0.0.1:8765',
-    reuseExistingServer: true,
-    timeout: 15_000,
+    reuseExistingServer: !process.env.CI,
+    timeout: 30_000,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

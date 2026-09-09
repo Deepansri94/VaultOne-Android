@@ -120,19 +120,52 @@ function wireNav() {
   document.querySelectorAll('[data-sv]').forEach(btn => {
     btn.onclick = () => switchSV(btn.dataset.sv);
   });
+  // VO-17: wire inner segment pills
+  document.querySelectorAll('[data-inner-seg]').forEach(btn => {
+    btn.onclick = () => {
+      const seg = btn.dataset.innerSeg;
+      const group = btn.dataset.group;
+      switchSV(group, seg);
+    };
+  });
 }
 
-async function switchSV(id) {
-  _currentSV = id;
-  document.querySelectorAll('.sub-view').forEach(v => v.classList.toggle('active', v.id === 'sv-' + id));
-  document.querySelectorAll('[data-sv]').forEach(b => b.classList.toggle('active', b.dataset.sv === id));
-  if (id === 'overview') await renderOverview();
-  else if (id === 'income') { await renderIncome(); }
-  else if (id === 'expenses') { await renderExpenses(); const catSel = document.querySelector('#expenseForm [name="category"]'); if (catSel) await populateExpLinked(catSel.value); }
-  else if (id === 'transactions') { _txFilter = { fromDate: '', toDate: '', quick: 'last10', page: 1, pageSize: 20, label: '' }; await renderTransactions(); }
-  else if (id === 'budget') await renderBudget();
-  else if (id === 'investments') await renderInvestments();
-  else if (id === 'loans') await renderLoans();
+// VO-17: inner segment state per grouped tab
+const _innerSeg = { money: 'income', investloans: 'investments' };
+
+async function switchSV(id, innerOverride) {
+  const grouped = { money: true, investloans: true };
+  let svId = id;
+  if (id === 'money') {
+    if (innerOverride) _innerSeg.money = innerOverride;
+    svId = _innerSeg.money;
+  } else if (id === 'investloans') {
+    if (innerOverride) _innerSeg.investloans = innerOverride;
+    svId = _innerSeg.investloans;
+  }
+  _currentSV = svId;
+
+  document.querySelectorAll('.sub-view').forEach(v => v.classList.toggle('active', v.id === 'sv-' + svId));
+
+  // highlight outer nav buttons
+  const outerMap = { income: 'money', expenses: 'money', budget: 'money', investments: 'investloans', loans: 'investloans', demat: 'investloans', nps: 'investloans' };
+  const activeOuter = outerMap[svId] || svId;
+  document.querySelectorAll('[data-sv]').forEach(b => b.classList.toggle('active', b.dataset.sv === activeOuter || b.dataset.sv === svId));
+
+  // update inner segment pills
+  document.querySelectorAll('[data-inner-seg]').forEach(b => {
+    b.classList.toggle('active', b.dataset.innerSeg === svId);
+  });
+
+  if (svId === 'overview') await renderOverview();
+  else if (svId === 'income') { await renderIncome(); }
+  else if (svId === 'expenses') { await renderExpenses(); const catSel = document.querySelector('#expenseForm [name="category"]'); if (catSel) await populateExpLinked(catSel.value); }
+  else if (svId === 'transactions') { _txFilter = { fromDate: '', toDate: '', quick: 'last10', page: 1, pageSize: 20, label: '' }; await renderTransactions(); }
+  else if (svId === 'budget') await renderBudget();
+  else if (svId === 'investments') await renderInvestments();
+  else if (svId === 'loans') await renderLoans();
+  else if (svId === 'demat') await renderDemat();
+  else if (svId === 'nps') await renderNps();
 }
 
 function txDateLabel(dateStr) {
@@ -1144,21 +1177,153 @@ $('budgetNext').onclick = () => {
   renderBudget();
 };
 
+/* ===== VO-16: NPS Demat-style helpers ===== */
+function npsModal(existing = null) {
+  openModal(existing ? 'Edit NPS Account' : 'Add NPS Account', `<form class="grid">
+    <label>Provider <span class="req-star">*</span><input name="provider" required value="${esc(existing?.provider || '')}" placeholder="e.g. HDFC Pension"></label>
+    <label>Account Number<input name="accountNumber" value="${esc(existing?.accountNumber || '')}"></label>
+    <label>Tier<select name="tier"><option ${(existing?.tier||'Tier I')==='Tier I'?'selected':''}>Tier I</option><option ${existing?.tier==='Tier II'?'selected':''}>Tier II</option></select></label>
+    <label>Current Corpus Value<input name="currentValue" type="number" min="0" step="0.01" value="${Number(existing?.currentValue||0)}"></label>
+    <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save NPS</button></div>
+  </form>`, async fd => {
+    const provider = String(fd.get('provider')||'').trim();
+    if (!provider) { toast('Enter provider name', true); return; }
+    const record = {
+      id: existing?.id || uid(), type: 'NPS',
+      name: provider, provider,
+      accountNumber: String(fd.get('accountNumber')||'').trim(),
+      tier: fd.get('tier') || 'Tier I',
+      currentValue: Number(fd.get('currentValue')||0),
+      contributions: existing?.contributions || [],
+      valueUpdates: existing?.valueUpdates || [],
+      payments: existing?.payments || [],
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await putOne('investments', record);
+    await logActivity('NPS', (existing ? 'NPS updated: ' : 'NPS added: ') + provider);
+    closeModal(); toast(existing ? 'NPS updated' : 'NPS saved');
+    await renderNps(); await renderOverview();
+  });
+}
+
+async function npsAddContribution(nps) {
+  openModal('Add NPS Contribution', `<form class="grid">
+    <label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0.01" step="0.01" required></label>
+    <label>Date <span class="req-star">*</span><input name="date" type="date" required value="${today()}"></label>
+    <label style="grid-column:1/-1">Notes<input name="notes" placeholder="Optional"></label>
+    <div class="actions" style="grid-column:1/-1"><button class="btn primary">Add Contribution</button></div>
+  </form>`, async fd => {
+    const amount = Number(fd.get('amount'));
+    if (amount <= 0) { toast('Enter a valid amount', true); return; }
+    const entry = { id: uid(), date: fd.get('date')||today(), amount, notes: fd.get('notes')||'', createdAt: new Date().toISOString() };
+    nps.contributions = [...(nps.contributions||[]), entry];
+    nps.payments = [...(nps.payments||[]), { date: entry.date, amount, balance: nps.currentValue, note: entry.notes }];
+    nps.updatedAt = new Date().toISOString();
+    await putOne('investments', nps);
+    await logActivity('NPS', `Contribution: ${money(amount, state.settings.currency)} to ${nps.name}`);
+    closeModal(); toast('Contribution added');
+    await renderNps(); await renderOverview();
+  });
+}
+
+async function npsUpdateValue(nps) {
+  openModal('Update NPS Corpus Value', `<form class="grid">
+    <label>Current Corpus Value <span class="req-star">*</span><input name="currentValue" type="number" min="0" step="0.01" required value="${Number(nps.currentValue||0)}"></label>
+    <label>Date<input name="date" type="date" value="${today()}"></label>
+    <label style="grid-column:1/-1">Notes<input name="notes" placeholder="Optional"></label>
+    <div class="actions" style="grid-column:1/-1"><button class="btn primary">Update Value</button></div>
+  </form>`, async fd => {
+    const val = Number(fd.get('currentValue'));
+    if (val < 0) { toast('Enter a valid value', true); return; }
+    const entry = { id: uid(), date: fd.get('date')||today(), previousValue: nps.currentValue, newValue: val, notes: fd.get('notes')||'', createdAt: new Date().toISOString() };
+    nps.currentValue = val;
+    nps.valueUpdates = [...(nps.valueUpdates||[]), entry];
+    nps.updatedAt = new Date().toISOString();
+    await putOne('investments', nps);
+    await logActivity('NPS', `Value updated to ${money(val, state.settings.currency)} for ${nps.name}`);
+    closeModal(); toast('NPS value updated');
+    await renderNps(); await renderOverview();
+  });
+}
+
+function npsHistoryModal(nps) {
+  const totalContrib = (nps.contributions||[]).reduce((s,c) => s + Number(c.amount||0), 0);
+  const gainLoss = Number(nps.currentValue||0) - totalContrib;
+  const rows = [
+    ...(nps.contributions||[]).map(c => ({ date: c.date, type: 'Contribution', amount: c.amount, notes: c.notes })),
+    ...(nps.valueUpdates||[]).map(v => ({ date: v.date, type: 'Value Update', amount: v.newValue, notes: `Prev: ${money(v.previousValue, state.settings.currency)}${v.notes ? ' · '+v.notes : ''}` }))
+  ].sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const tableRows = rows.map(r => `<tr><td>${esc(r.date||'')}</td><td>${esc(r.type)}</td><td>${money(r.amount, state.settings.currency)}</td><td>${esc(r.notes||'')}</td></tr>`).join('');
+  openModal(`NPS History — ${esc(nps.name)}`, `
+    <div class="stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">
+      <div class="stat">Total Contributions<b>${money(totalContrib, state.settings.currency)}</b></div>
+      <div class="stat">Current Value<b>${money(nps.currentValue||0, state.settings.currency)}</b></div>
+      <div class="stat">Gain / Loss<b class="${gainLoss>=0?'green':'red'}">${money(gainLoss, state.settings.currency)}</b></div>
+    </div>
+    ${rows.length ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Notes</th></tr></thead><tbody>${tableRows}</tbody></table></div>` : '<div class="empty">No history yet.</div>'}
+  `);
+}
+
 /* ===== Investments (balance trackers only) ===== */
 const INV_TYPES = ['FD','RD','PPF','SSA','NPS','Demat','Gold','Insurance','Other Saving'];
 
+/* VO-18: collapsible section state (localStorage) */
+const INV_SEC_KEY = 'vo_inv_sections';
+function _invSecState() {
+  try { return JSON.parse(localStorage.getItem(INV_SEC_KEY) || '{}'); } catch { return {}; }
+}
+function _invSecSave(s) { localStorage.setItem(INV_SEC_KEY, JSON.stringify(s)); }
+function _invSecOpen(key) {
+  const s = _invSecState(); s[key] = true; _invSecSave(s);
+  const body = document.getElementById('inv-sec-body-' + key);
+  const tri  = document.getElementById('inv-sec-tri-' + key);
+  if (body) body.style.display = '';
+  if (tri)  tri.textContent = '▼';
+}
+function _invSecClose(key) {
+  const s = _invSecState(); s[key] = false; _invSecSave(s);
+  const body = document.getElementById('inv-sec-body-' + key);
+  const tri  = document.getElementById('inv-sec-tri-' + key);
+  if (body) body.style.display = 'none';
+  if (tri)  tri.textContent = '▶';
+}
+function _invSecToggle(key) {
+  _invSecState()[key] === false ? _invSecOpen(key) : _invSecClose(key);
+}
+
+/* Build a collapsible section wrapper */
+function invSection(key, icon, title, summary, addBtnHtml, bodyHtml) {
+  const open = _invSecState()[key] !== false; // default open
+  return `
+  <div class="inv-collapse" id="inv-sec-${key}">
+    <div class="inv-collapse-head" data-inv-sec="${key}">
+      <span class="inv-sec-tri" id="inv-sec-tri-${key}">${open ? '▼' : '▶'}</span>
+      <span class="inv-sec-icon">${icon}</span>
+      <span class="inv-sec-title">${title}</span>
+      <span class="inv-sec-summary muted" id="inv-sec-sum-${key}">${summary}</span>
+    </div>
+    <div class="inv-collapse-body" id="inv-sec-body-${key}" style="${open ? '' : 'display:none'}">
+      ${addBtnHtml ? `<div class="actions" style="margin:0 0 12px">${addBtnHtml}</div>` : ''}
+      ${bodyHtml}
+    </div>
+  </div>`;
+}
+
 async function renderInvestments() {
   const rows = await getAll('investments');
-  const regularRows = rows.filter(x => x.type !== 'Gold' && x.type !== 'Demat');
   const N = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
-  if (!regularRows.length) $('invList').innerHTML = '<div class="empty">No savings or investments added yet.</div>';
-  const grouped = {};
-  INV_TYPES.filter(t => t !== 'Gold').forEach(t => { grouped[t] = regularRows.filter(x => x.type === t); });
-  let html = '';
-  INV_TYPES.filter(t => t !== 'Gold').forEach(t => {
-    if (!grouped[t].length) return;
-    html += `<div class="inv-section-head">${esc(t)}</div>`;
-    html += grouped[t].map(x => {
+
+  /* ── Section 1: Savings & Investments (FD/RD/PPF/SSA/Insurance/Other) ── */
+  const savTypes = ['FD','RD','PPF','SSA','Insurance','Other Saving'];
+  const savRows = rows.filter(x => savTypes.includes(x.type));
+  let savHtml = savRows.length ? '' : '<div class="empty">No savings or investments added yet.</div>';
+  const savGrouped = {};
+  savTypes.forEach(t => { savGrouped[t] = savRows.filter(x => x.type === t); });
+  savTypes.forEach(t => {
+    if (!savGrouped[t].length) return;
+    savHtml += `<div class="inv-section-head">${esc(t)}</div>`;
+    savHtml += savGrouped[t].map(x => {
       const isIns = x.type === 'Insurance';
       const payments = (x.payments || []).slice().reverse();
       const histLabel = isIns ? 'Premium History' : 'Contribution History';
@@ -1167,8 +1332,7 @@ async function renderInvestments() {
             <div style="margin-top:6px">${payments.map(p => {
               if (isIns) return `<div style="font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid #ffffff08">Paid ${money(p.amount, state.settings.currency)} on ${esc(p.date)}${p.note ? ' · ' + esc(p.note) : ''}</div>`;
               return `<div style="font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid #ffffff08">Contributed ${money(p.amount || 0, state.settings.currency)} on ${esc(p.date || '')}${Number.isFinite(Number(p.balance ?? p.outstanding)) ? ' · Balance: ' + money(p.balance ?? p.outstanding, state.settings.currency) : ''}</div>`;
-            }).join('')}
-            </div></details>` : '';
+            }).join('')}</div></details>` : '';
       const valueRow = isIns
         ? `<div class="sub">Premium: <b>${money(x.premiumAmount || 0, state.settings.currency)}</b> · ${esc(x.premiumFrequency || 'Yearly')}</div>
            <div class="sub">Next Due: <b class="${x.premiumDueDate ? 'warn' : 'muted'}">${esc(x.premiumDueDate || '—')}</b></div>`
@@ -1180,7 +1344,7 @@ async function renderInvestments() {
             <div class="sub">${esc(x.provider || x.bankName || '')}${x.accountNumber ? ' · ' + esc(x.accountNumber) : ''}</div>
             ${valueRow}
           </div>
-          <div class="actions">
+          <div class="actions" style="margin-top:0">
             <button class="btn-icon" data-invedit="${x.id}" title="Edit">✏️</button>
             <button class="btn-icon danger" data-invdel="${x.id}" title="Delete">🗑️</button>
           </div>
@@ -1189,58 +1353,73 @@ async function renderInvestments() {
       </div>`;
     }).join('');
   });
-  if (regularRows.length) $('invList').innerHTML = html;
-  $('invList').querySelectorAll('[data-invedit]').forEach(b => b.onclick = async () => {
-    const x = await getOne('investments', b.dataset.invedit); if (x) invModal(x);
+  const savTotal = savRows.reduce((s, x) => s + N(x.currentValue), 0);
+  const savSummary = savRows.length ? `${savRows.length} item${savRows.length !== 1 ? 's' : ''} · ${money(savTotal, state.settings.currency)}` : '';
+
+  /* ── Section 2: Gold ── */
+  const goldRows = rows.filter(x => x.type === 'Gold');
+  const currentGoldPrice = N(state.settings.currentGoldPricePerGram);
+  const goldValue = currentGoldPrice > 0
+    ? goldRows.reduce((s, r) => s + N(r.grams) * currentGoldPrice, 0)
+    : goldRows.reduce((s, r) => s + N(r.currentValue), 0);
+  const goldSummary = goldRows.length ? `${goldRows.length} holding${goldRows.length !== 1 ? 's' : ''} · ${money(goldValue, state.settings.currency)}` : '';
+  const goldBodyHtml = `
+    <div id="goldPricePanel" style="margin-bottom:10px">
+      <div id="goldPriceEditor" style="display:none;align-items:end;gap:8px;flex-wrap:wrap">
+        <label style="margin:0;flex:1;min-width:220px">Current Gold Price / Gram
+          <input id="currentGoldPricePerGram" type="number" min="0" step="0.01" placeholder="e.g. 6500">
+        </label>
+        <button class="btn gold" id="saveGoldPriceBtn" type="button">Save Price</button>
+      </div>
+    </div>
+    <div id="goldOverview"></div>`;
+
+  /* ── Assemble 2 collapsible sections (Savings & Gold only) ── */
+  const invEl = $('invList');
+  invEl.innerHTML =
+    invSection('sav',  '📦', 'Savings &amp; Investments', savSummary,
+      `<button class="btn primary" id="addInvBtn" style="padding:6px 12px;font-size:12px">+ Add</button>`, savHtml) +
+    invSection('gold', '🪙', 'Gold', goldSummary,
+      `<button class="btn btn-icon gold" id="addGoldBtn" title="Add Gold">🪙</button>
+       <button class="btn btn-icon gold" id="updateGoldPriceBtn" type="button" title="Update Gold Price">↻</button>`, goldBodyHtml);
+
+  /* ── Wire collapse toggles ── */
+  invEl.querySelectorAll('[data-inv-sec]').forEach(h => h.onclick = () => _invSecToggle(h.dataset.invSec));
+
+  /* ── Wire add buttons ── */
+  invEl.querySelector('#addInvBtn')?.addEventListener('click', () => invModal());
+  invEl.querySelector('#addGoldBtn')?.addEventListener('click', () => goldModal());
+
+  /* ── Wire edit/delete for savings ── */
+  invEl.querySelectorAll('[data-invedit]').forEach(b => b.onclick = async () => {
+    const x = await getOne('investments', b.dataset.invedit);
+    if (!x) return;
+    invModal(x);
   });
-  $('invList').querySelectorAll('[data-invdel]').forEach(b => b.onclick = async () => {
+  invEl.querySelectorAll('[data-invdel]').forEach(b => b.onclick = async () => {
     if (!confirm('Delete this investment?')) return;
     await delOne('investments', b.dataset.invdel);
     await logActivity('Investment', 'Investment deleted');
     await renderInvestments(); await renderOverview();
   });
-  const goldRows = rows.filter(x => x.type === 'Gold');
+
+  /* ── Gold price editor ── */
   const currentPriceInput = $('currentGoldPricePerGram');
   if (currentPriceInput) currentPriceInput.value = Number(state.settings.currentGoldPricePerGram || 0) || '';
-  $('updateGoldPriceBtn').onclick = () => {
-    const editor = $('goldPriceEditor');
-    if (editor) {
-      const isHidden = editor.style.display === 'none';
-      editor.style.display = isHidden ? 'flex' : 'none';
-    }
-  };
-  $('saveGoldPriceBtn').onclick = async () => {
-    const price = Number(currentPriceInput?.value || 0);
+  invEl.querySelector('#updateGoldPriceBtn')?.addEventListener('click', () => {
+    const ed = $('goldPriceEditor'); if (ed) ed.style.display = ed.style.display === 'none' ? 'flex' : 'none';
+  });
+  invEl.querySelector('#saveGoldPriceBtn')?.addEventListener('click', async () => {
+    const price = Number($('currentGoldPricePerGram')?.value || 0);
     if (price <= 0) { toast('Enter a valid current gold price', true); return; }
     state.settings.currentGoldPricePerGram = price;
     await putOne('meta', { ...state.settings, id: 'settings' });
     toast('Current gold price updated');
     $('goldPriceEditor').style.display = 'none';
     renderGoldOverview(goldRows); await renderOverview();
-  };
+  });
   renderGoldOverview(goldRows);
-  const dematRows = rows.filter(x => x.type === 'Demat');
-  const dematValueInput = $('currentDematPortfolioValue');
-  if (dematValueInput) dematValueInput.value = Number(state.settings.currentDematPortfolioValue || 0) || '';
-  $('updateDematValueBtn').onclick = () => {
-    const editor = $('dematValueEditor');
-    if (editor) editor.style.display = editor.style.display === 'none' ? 'flex' : 'none';
-  };
-  $('saveDematValueBtn').onclick = async () => {
-    const value = Number(dematValueInput?.value || 0);
-    if (value <= 0) { toast('Enter a valid portfolio value', true); return; }
-    state.settings.currentDematPortfolioValue = value;
-    await putOne('meta', { ...state.settings, id: 'settings' });
-    $('dematValueEditor').style.display = 'none';
-    toast('Portfolio value updated');
-    renderDematOverview(dematRows); await renderOverview();
-  };
-  renderDematOverview(dematRows);
 }
-
-$('addInvBtn').onclick = () => invModal();
-$('addGoldBtn').onclick = () => goldModal();
-$('addDematBtn').onclick = () => dematModal();
 
 function renderGoldOverview(rows) {
   const totalGrams = rows.reduce((total, row) => total + (Number(row.grams) || 0), 0);
@@ -1324,7 +1503,7 @@ function dematModal(existing = null) {
     });
     await logActivity('Demat', (existing ? 'Demat updated: ' : 'Demat added: ') + name);
     closeModal(); toast(existing ? 'Demat updated' : 'Demat saved');
-    await renderInvestments(); await renderOverview();
+    await renderDemat(); await renderOverview();
   });
 }
 
@@ -1395,6 +1574,8 @@ function invModal(existing = null) {
     <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save</button></div>
   </form>`, async fd => {
     const type = fd.get('type');
+    // VO-16: redirect NPS to dedicated modal
+    if (type === 'NPS') { closeModal(); npsModal(existing); return; }
     const isInsurance = type === 'Insurance';
     const record = {
       id: existing?.id || uid(),
@@ -1447,10 +1628,144 @@ function invModal(existing = null) {
   }, 0);
 }
 
+/* ===== Demat tab ===== */
+async function renderDemat() {
+  const rows = (await getAll('investments')).filter(x => x.type === 'Demat');
+  const N = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+  const portfolioValue = N(state.settings.currentDematPortfolioValue) || rows.reduce((s, r) => s + N(r.currentValue), 0);
+  const el = $('dematList');
+
+  const investedValue = rows.reduce((s, r) => s + N(r.investedValue ?? r.purchaseValue ?? r.openingBalance), 0);
+  const profitLoss = portfolioValue - investedValue;
+
+  const summaryHtml = rows.length ? `<div class="stats" style="margin-bottom:14px">
+    <div class="stat">Invested<b>${money(investedValue, state.settings.currency)}</b></div>
+    <div class="stat">Portfolio<b>${money(portfolioValue, state.settings.currency)}</b></div>
+    <div class="stat">P&amp;L<b class="${profitLoss >= 0 ? 'green' : 'red'}">${money(profitLoss, state.settings.currency)}</b></div>
+  </div>` : '';
+
+  const editorHtml = `
+    <div id="dematValueEditor2" style="display:none;margin-bottom:14px">
+      <label style="display:block">Current Portfolio Value
+        <input id="dematPortfolioInput" type="number" min="0" step="0.01" placeholder="e.g. 125000"
+          value="${Number(state.settings.currentDematPortfolioValue || 0) || ''}" style="margin-top:6px">
+      </label>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <button class="btn primary" id="dematSaveValBtn" type="button">Save</button>
+        <button class="btn" id="dematCancelValBtn" type="button">Cancel</button>
+      </div>
+    </div>`;
+
+  const listHtml = rows.length
+    ? rows.map(r => `<div class="item">
+        <div style="min-width:0;flex:1">
+          <div class="title">${esc(r.name || 'Demat Account')}</div>
+          <div class="sub">Invested: ${money(r.investedValue ?? r.purchaseValue ?? r.openingBalance, state.settings.currency)}</div>
+        </div>
+        <b class="${portfolioValue >= investedValue ? 'green' : 'red'}">${money(portfolioValue, state.settings.currency)}</b>
+        <div class="actions" style="margin-top:0">
+          <button class="btn-icon" data-demat-edit="${r.id}" title="Edit">✏️</button>
+          <button class="btn-icon danger" data-demat-delete="${r.id}" title="Delete">🗑️</button>
+        </div>
+      </div>`).join('')
+    : '<div class="empty">No Demat accounts added yet.</div>';
+
+  el.innerHTML = editorHtml + summaryHtml + listHtml;
+
+  // Wire static header buttons (defined in HTML)
+  const dematAddBtn = $('dematAddBtn');
+  const dematUpdateValBtn = $('dematUpdateValBtn');
+  if (dematAddBtn) dematAddBtn.onclick = () => dematModal();
+  if (dematUpdateValBtn) dematUpdateValBtn.onclick = () => {
+    const ed = $('dematValueEditor2');
+    if (ed) ed.style.display = ed.style.display === 'none' ? 'block' : 'none';
+  };
+
+  // Wire dynamic buttons inside dematList (use onclick to avoid stale addEventListener across re-renders)
+  const dematSaveValBtn = el.querySelector('#dematSaveValBtn');
+  if (dematSaveValBtn) dematSaveValBtn.onclick = async () => {
+    const val = Number($('dematPortfolioInput')?.value || 0);
+    if (val <= 0) { toast('Enter a valid portfolio value', true); return; }
+    state.settings.currentDematPortfolioValue = val;
+    await putOne('meta', { ...state.settings, id: 'settings' });
+    $('dematValueEditor2').style.display = 'none';
+    toast('Portfolio value updated');
+    await renderDemat(); await renderOverview();
+  };
+  const dematCancelValBtn = el.querySelector('#dematCancelValBtn');
+  if (dematCancelValBtn) dematCancelValBtn.onclick = () => {
+    $('dematValueEditor2').style.display = 'none';
+  };
+  el.querySelectorAll('[data-demat-edit]').forEach(b => b.onclick = async () => {
+    const r = await getOne('investments', b.dataset.dematEdit); if (r) dematModal(r);
+  });
+  el.querySelectorAll('[data-demat-delete]').forEach(b => b.onclick = async () => {
+    if (!confirm('Delete this Demat account?')) return;
+    await delOne('investments', b.dataset.dematDelete);
+    await logActivity('Demat', 'Demat account deleted');
+    await renderDemat(); await renderOverview();
+  });
+}
+
+/* ===== NPS tab ===== */
+async function renderNps() {
+  const rows = (await getAll('investments')).filter(x => x.type === 'NPS');
+  const N = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+  const el = $('npsList');
+  const nps = rows[0] || null; // only one NPS account in India
+
+  if (!nps) {
+    // No account yet — show a single setup button
+    el.innerHTML = `<div class="empty" style="text-align:center;padding:30px">
+      <p style="margin:0 0 14px;color:var(--muted)">No NPS account set up yet.</p>
+      <button class="btn primary" id="npsSetupBtn">+ Setup NPS Account</button>
+    </div>`;
+    el.querySelector('#npsSetupBtn')?.addEventListener('click', () => npsModal());
+    return;
+  }
+
+  const totalContrib = (nps.contributions||[]).reduce((s,c) => s + N(c.amount), 0);
+  const gainLoss = N(nps.currentValue) - totalContrib;
+
+  el.innerHTML = `
+    <div class="item" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+        <div style="min-width:0;flex:1">
+          <div class="title">${esc(nps.name||'NPS')} <span class="pill" style="font-size:11px">${esc(nps.tier||'Tier I')}</span></div>
+          <div class="sub">${esc(nps.provider||'')}${nps.accountNumber?' · '+esc(nps.accountNumber):''}</div>
+          <div class="sub">Contributions: <b>${money(totalContrib, state.settings.currency)}</b></div>
+          <div class="sub">Current Value: <b>${money(nps.currentValue||0, state.settings.currency)}</b></div>
+          <div class="sub">Gain / Loss: <b class="${gainLoss>=0?'green':'red'}">${money(gainLoss, state.settings.currency)}</b></div>
+        </div>
+        <div class="actions" style="margin-top:0;flex-wrap:wrap;gap:6px">
+          <button class="btn-icon" id="npsContribBtn" title="Add Contribution">➕</button>
+          <button class="btn-icon" id="npsValBtn" title="Update Value">💹</button>
+          <button class="btn-icon" id="npsHistBtn" title="History">📋</button>
+          <button class="btn-icon" id="npsEditBtn" title="Edit">✏️</button>
+          <button class="btn-icon danger" id="npsDelBtn" title="Delete">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+
+  el.querySelector('#npsContribBtn')?.addEventListener('click', () => npsAddContribution(nps));
+  el.querySelector('#npsValBtn')?.addEventListener('click', () => npsUpdateValue(nps));
+  el.querySelector('#npsHistBtn')?.addEventListener('click', () => npsHistoryModal(nps));
+  el.querySelector('#npsEditBtn')?.addEventListener('click', () => npsModal(nps));
+  el.querySelector('#npsDelBtn')?.addEventListener('click', async () => {
+    if (!confirm('Delete this NPS account?')) return;
+    await delOne('investments', nps.id);
+    await logActivity('NPS', 'NPS account deleted');
+    await renderNps(); await renderOverview();
+  });
+}
+
 /* ===== Loans (balance trackers only) ===== */
 async function renderLoans() {
   const rows = await getAll('loans');
   const N = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+  // Wire the static Add Loan btn each time the tab renders
+  const addLoanBtn = $('addLoanBtn');
+  if (addLoanBtn) addLoanBtn.onclick = () => loanModal();
   if (!rows.length) { $('loanList').innerHTML = '<div class="empty">No loans added yet.</div>'; return; }
   $('loanList').innerHTML = rows.map(x => {
     const out = x.status === 'Settled' ? 0 : N(x.outstanding);
@@ -1484,8 +1799,6 @@ async function renderLoans() {
     await renderLoans(); await renderOverview();
   });
 }
-
-$('addLoanBtn').onclick = () => loanModal();
 
 function loanModal(existing = null) {
   const typeOpts = ['Personal Loan','Home Loan','Vehicle Loan','Gold Loan','Education Loan','Other'].map(t => `<option ${existing?.loanType === t ? 'selected' : ''}>${t}</option>`).join('');

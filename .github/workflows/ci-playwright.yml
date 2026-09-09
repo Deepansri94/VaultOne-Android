@@ -49,11 +49,11 @@ jobs:
           set -e
           MISSING=""
           for f in \
-            index.html shared.js shared.css sw.js VaultOne.png \
-            iVault.html iVault.js \
-            FamilyVault.html FamilyVault.js \
-            PasswordVault.html PasswordVault.js \
-            jspdf.umd.min.js; do
+            src/index.html src/shared.js src/shared.css src/sw.js assets/VaultOne.png \
+            src/iVault.html src/iVault.js \
+            src/FamilyVault.html src/FamilyVault.js \
+            src/PasswordVault.html src/PasswordVault.js \
+            src/jspdf.umd.min.js; do
             if [ ! -f "./$f" ]; then
               MISSING="$MISSING $f"
             fi
@@ -63,7 +63,7 @@ jobs:
             exit 1
           fi
           echo "✅ All required source files present."
-          ls -lh index.html shared.js shared.css iVault.html FamilyVault.html PasswordVault.html
+          ls -lh src/index.html src/shared.js src/shared.css src/iVault.html src/FamilyVault.html src/PasswordVault.html
 
   # ── Job 2a: iVault tests ─────────────────────────────────────────────────
   test-ivault:

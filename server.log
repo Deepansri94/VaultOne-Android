@@ -1,0 +1,15 @@
+
+  VaultOne Board API  →  http://localhost:3001
+  Board UI            →  http://localhost:3001/JiraBoard.html
+
+SyntaxError: Unterminated string in JSON at position 173 (line 1 column 174)
+    at JSON.parse (<anonymous>)
+    at parse (c:\Users\deepancg\OneDrive - Capgemini\Documents\MyWorkspace\VaultOne-Updated\node_modules\body-parser\lib\types\json.js:96:19)
+    at c:\Users\deepancg\OneDrive - Capgemini\Documents\MyWorkspace\VaultOne-Updated\node_modules\body-parser\lib\read.js:128:18
+    at AsyncResource.runInAsyncScope (node:async_hooks:226:14)
+    at invokeCallback (c:\Users\deepancg\OneDrive - Capgemini\Documents\MyWorkspace\VaultOne-Updated\node_modules\raw-body\index.js:238:16)
+    at done (c:\Users\deepancg\OneDrive - Capgemini\Documents\MyWorkspace\VaultOne-Updated\node_modules\raw-body\index.js:227:7)
+    at IncomingMessage.onEnd (c:\Users\deepancg\OneDrive - Capgemini\Documents\MyWorkspace\VaultOne-Updated\node_modules\raw-body\index.js:287:7)
+    at IncomingMessage.emit (node:events:514:20)
+    at endReadableNT (node:internal/streams/readable:1772:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
