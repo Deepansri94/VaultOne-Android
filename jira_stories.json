@@ -173,11 +173,11 @@
       "description": "## Bug Report\n\n**Module:** iVault → Budget\n\n**Summary:**\nThe Budget Actual column does not update when a Personal Loan EMI payment is made or when a Savings & Investment transaction (FD, RD, PPF, SSA, NPS, Demat, etc.) is recorded. Only regular Expense transactions appear to feed into the Budget Actual figures.\n\n**Steps to Reproduce:**\n1. Create a monthly budget with amounts set for the 'Loans & Financial' and 'Savings & Investments' categories.\n2. Record a Personal Loan EMI payment under the Loans section.\n3. Record an investment contribution (e.g. RD monthly deposit or NPS contribution) under Savings & Investments.\n4. Navigate to Budget → current month → Budgeted vs Actual table.\n\n**Expected Result:**\n- The 'Loans & Financial' Actual column should reflect the EMI amount paid for the Personal Loan.\n- The 'Savings & Investments' Actual column should reflect the investment contribution amount.\n\n**Actual Result:**\n- Both Actual values remain ₹0 regardless of payments made.\n- Only transactions created via the Expenses module appear in Budget Actual.\n\n**Root Cause (suspected):**\nThe budget actual aggregation logic queries only the `expenses` store. Loan EMI payments and investment contributions write to the `transactions` store (or `loans`/`investments` stores) but are not mapped to a budget category, so they are excluded from the Actual calculation.\n\n**Fix Guidance:**\n- Loan EMI payments should be mapped to the 'Loans & Financial' budget category and included in the Actual aggregation.\n- Investment contributions (RD, PPF, SSA, NPS, Demat buy) should be mapped to the 'Savings & Investments' budget category and included in the Actual aggregation.\n- The aggregation should query the unified `transactions` store filtered by month and category mapping, not just the `expenses` store.",
       "type": "bug",
       "priority": "High",
-      "status": "inprogress",
+      "status": "done",
       "assignee": "Deepan",
       "sprint": "Sprint 4",
       "createdAt": "2025-07-14T09:00:00.000Z",
-      "updatedAt": "2026-09-07T07:27:36.485Z",
+      "updatedAt": "2026-09-07T10:43:40.880Z",
       "projectId": "proj-vo"
     },
     {
@@ -186,11 +186,11 @@
       "description": "## Story\n\n**Module:** iVault → Savings & Investments\n\n**Background:**\nLoan payment history is already tracked — each EMI payment is recorded with date, principal, interest, and outstanding balance. Users want the same contribution/transaction history for all investment types so they can audit their investment activity over time.\n\n**User Story:**\nAs a user, I want to see a full contribution/transaction history for each investment record (FD, RD, PPF, SSA, NPS, Demat, Other Saving) so that I can track every payment I have made and verify my investment growth.\n\n**Acceptance Criteria:**\n\n- **FD:** Show a single lump-sum deposit entry on the start date with the principal amount.\n- **RD:** Show each monthly contribution entry with date and amount. Running total balance shown.\n- **PPF:** Show each contribution entry (date, amount). Annual interest credit entries shown separately.\n- **SSA:** Show each contribution entry (date, amount). Annual interest credit entries shown separately.\n- **NPS:** Show each monthly contribution entry (date, amount, tier — Tier I / Tier II).\n- **Demat:** Show each buy/sell lot entry (date, stock, qty, price, transaction type). P&L updated per entry.\n- **Other Saving:** Show manual value update entries (date, previous value, new value).\n\n**UI:**\n- Each investment card/row should have a 'History' button (📋) that opens a modal or expandable panel.\n- History table columns: Date | Type | Amount | Notes | Balance/Value after transaction.\n- Sorted newest first. Paginated at 10 rows.\n- History entries stored in the existing `transactions` store with `referenceId` pointing to the investment record.",
       "type": "story",
       "priority": "Medium",
-      "status": "inprogress",
+      "status": "done",
       "assignee": "",
       "sprint": "Sprint 4",
       "createdAt": "2025-07-14T09:05:00.000Z",
-      "updatedAt": "2026-09-07T07:08:29.276Z",
+      "updatedAt": "2026-09-07T10:43:42.589Z",
       "projectId": "proj-vo"
     },
     {
@@ -199,11 +199,11 @@
       "description": "## Bug Report\n\n**Module:** iVault → Expenses\n\n**Summary:**\nTapping the FAB (+) button to save a new Expense entry throws a JavaScript error and the record is not saved. A toast message displays: \"Could not save: Cannot read properties of undefined (reading 'transaction')\".\n\n**Steps to Reproduce:**\n1. Open iVault → Expenses.\n2. Tap the FAB (+) button to open the Add Expense form.\n3. Fill in all required fields (amount, category, date, bank account).\n4. Tap Save.\n\n**Expected Result:**\nExpense is saved to IndexedDB, bank account balance decreases, a transaction record is created, and the expense list refreshes.\n\n**Actual Result:**\nToast error shown: \"Could not save: Cannot read properties of undefined (reading 'transaction')\". No record is saved. Bank balance unchanged.\n\n**Error Details:**\n```\nTypeError: Cannot read properties of undefined (reading 'transaction')\n```\nThis error occurs when code attempts to call `.transaction()` on the `db` object, which is `undefined` at the time of the call. This means the IndexedDB connection (`db`) has not been initialised or has been lost before the save handler runs.\n\n**Root Cause (suspected):**\n- The `db` variable is `undefined` when the Expense save function executes.\n- Likely causes:\n  1. The `openDB()` / `initDB()` call is not awaited before the FAB save handler fires.\n  2. The `db` reference is scoped incorrectly and is not accessible inside the Expenses module's save function.\n  3. A page navigation or module switch is re-initialising the module without re-opening the DB connection.\n\n**Fix Guidance:**\n- Ensure `db` is initialised and awaited at app startup before any store operation is attempted.\n- Add a guard in the save handler: if `db` is falsy, call `openDB()` and retry.\n- Verify the `db` variable is shared correctly across all modules (iVault, FamilyVault, etc.) via `shared.js` or a global singleton pattern.\n- Add a try/catch around all IndexedDB `.transaction()` calls with a user-friendly fallback message.",
       "type": "bug",
       "priority": "High",
-      "status": "inprogress",
+      "status": "done",
       "assignee": "Deepan",
       "sprint": "Sprint 4",
       "createdAt": "2025-07-14T09:10:00.000Z",
-      "updatedAt": "2026-09-07T07:08:30.926Z",
+      "updatedAt": "2026-09-07T10:43:44.298Z",
       "projectId": "proj-vo",
       "author": "Deepan"
     },
@@ -214,11 +214,11 @@
       "description": "Can we show the Release Notes to the application after updating the application to new version.\nAnd I need to show App Version in index.html",
       "type": "story",
       "priority": "Low",
-      "status": "inprogress",
+      "status": "done",
       "assignee": "",
       "sprint": "Mobile Application Versioning",
       "createdAt": "2026-09-07T07:20:52.869Z",
-      "updatedAt": "2026-09-07T09:24:25.758Z"
+      "updatedAt": "2026-09-07T10:43:45.993Z"
     },
     {
       "id": "VO-15",
@@ -227,15 +227,41 @@
       "description": "Can we add the Test script in Build yml file, So that we can Achive CI CD process with Unit Testing.",
       "type": "story",
       "priority": "Medium",
-      "status": "inprogress",
+      "status": "done",
       "assignee": "",
       "sprint": "Mobile Application Versioning",
       "createdAt": "2026-09-07T07:56:14.052Z",
-      "updatedAt": "2026-09-07T09:24:25.447Z"
+      "updatedAt": "2026-09-07T10:43:47.487Z"
+    },
+    {
+      "id": "VO-16",
+      "projectId": "proj-vo",
+      "title": "NPS Account — Demat-style contribution and current value tracking",
+      "description": "## Story\n\n**Module:** iVault → Savings & Investments → NPS\n\n**User Story:**\nAs a user, I want to manage my NPS account on the Investment tab the same way I manage Demat holdings — I enter a contribution amount (like buying a lot) and I update the current value manually (like updating the current price), so I can track my NPS corpus growth over time.\n\n**Acceptance Criteria:**\n\n- **Add NPS Account** — fields: Provider, Account Number, Tier (Tier I / Tier II).\n- **Add Contribution** — enter Contribution Amount and Contribution Date (like a Demat buy lot). Each contribution is stored as a separate entry.\n- **Update Current Value** — user can manually enter the current corpus value at any time (like updating current price in Demat). The latest entered value is used as the current value.\n- **P&L Display** — Current Value minus Total Contributions = Gain/Loss shown per account.\n- **History (📋)** — modal listing all contribution entries (Date | Amount | Notes) and current value updates, sorted newest first.\n- **Totals** — Total Contributions and Current Value shown on the investment card.\n- **Transactions store** — each contribution and value update recorded in the transactions store with referenceId pointing to the NPS record.\n- **Net Worth** — Current Value of NPS accounts included in total assets.",
+      "type": "story",
+      "priority": "Medium",
+      "status": "todo",
+      "assignee": "Deepan",
+      "sprint": "Sprint 6",
+      "createdAt": "2026-09-09T09:50:18.169Z",
+      "updatedAt": "2026-09-09T10:03:31.693Z"
+    },
+    {
+      "id": "VO-17",
+      "projectId": "proj-vo",
+      "title": "iVault — Consolidate 7 tabs into 4 grouped tabs",
+      "description": "## Story\n\n**Module:** iVault → Bottom Navigation\n\n**Current State:**\n7 separate tabs in the bottom nav:\nOverview | Income | Expenses | Budget | Invest | Loans | Transactions\n\n**User Story:**\nAs a user, I want the iVault bottom nav to be consolidated from 7 tabs into 4 tabs so the navigation is cleaner and less cluttered, especially on mobile.\n\n**Desired Tab Structure:**\n\n| Tab | Label | Icon | Contains |\n|---|---|---|---|\n| 1 | Overview | 📊 | Existing Overview sub-view (net worth, budget summary, cash position) |\n| 2 | Money | 💰 | Income + Expenses + Budget (sub-tabs or segmented control inside) |\n| 3 | Invest & Loans | 📈 | Investments (FD, RD, PPF, SSA, NPS, Demat, Gold) + Loans |\n| 4 | Transactions | 🧾 | Existing Transactions sub-view |\n\n**Acceptance Criteria:**\n\n- Bottom nav shows exactly 4 buttons: Overview, Money, Invest & Loans, Transactions.\n- CSS grid updated from `repeat(7, 1fr)` to `repeat(4, 1fr)`.\n- **Money tab** — contains a secondary segmented control (pill switcher) at the top with 3 options: Income | Expenses | Budget. Defaults to Income when tab is first opened.\n- **Invest & Loans tab** — contains a secondary segmented control with 2 options: Invest | Loans. Defaults to Invest when tab is first opened.\n- Active tab and active inner segment are both visually highlighted.\n- All existing sub-view functionality (forms, lists, modals) remains unchanged — only the navigation grouping changes.\n- Deep-link support: switching to a tab programmatically (e.g. from Overview budget card) still works by targeting the correct tab + inner segment.",
+      "type": "story",
+      "priority": "Medium",
+      "status": "todo",
+      "assignee": "Deepan",
+      "sprint": "Sprint 6",
+      "createdAt": "2026-09-09T10:01:26.284Z",
+      "updatedAt": "2026-09-09T10:03:33.289Z"
     }
   ],
   "counters": {
-    "proj-vo": 2
+    "proj-vo": 17
   },
   "versions": [
     {
@@ -243,9 +269,18 @@
       "projectId": "proj-vo",
       "name": "Sprint 5",
       "description": "Mobile Application Versioning",
-      "releaseDate": "2026-09-30",
-      "released": false,
+      "releaseDate": "2026-09-07",
+      "released": true,
       "createdAt": "2026-09-07T07:33:13.409Z"
+    },
+    {
+      "id": "v-mttxjyi7",
+      "projectId": "proj-vo",
+      "name": "Sprint 6",
+      "description": "",
+      "releaseDate": "2026-09-09",
+      "released": false,
+      "createdAt": "2026-09-09T10:02:55.471Z"
     }
   ]
 }

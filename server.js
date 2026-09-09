@@ -138,7 +138,11 @@ app.post('/api/issues', (req, res) => {
   const projectId = req.body.projectId || 'proj-vo';
   const project   = (db.projects || []).find(p => p.id === projectId);
   const key       = project ? project.key : 'VO';
-  db.counters[projectId] = (db.counters[projectId] || 0) + 1;
+  const maxNum = (db.issues || [])
+    .filter(i => i.projectId === projectId)
+    .map(i => parseInt((i.id || '').split('-')[1]) || 0)
+    .reduce((a, b) => Math.max(a, b), db.counters[projectId] || 0);
+  db.counters[projectId] = maxNum + 1;
   const now   = new Date().toISOString();
   const issue = {
     id:          `${key}-${db.counters[projectId]}`,
