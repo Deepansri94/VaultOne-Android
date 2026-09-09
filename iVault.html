@@ -14,6 +14,15 @@
 .seg-bar { display: flex; gap: 6px; margin: 0 0 14px; background: #0b1627; border-radius: 999px; padding: 4px; }
 .seg-btn { flex: 1; text-align: center; border: none; background: transparent; color: #8290a5; border-radius: 999px; padding: 8px 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s, color .15s; }
 .seg-btn.active { background: linear-gradient(135deg,#7c3aed,#2563eb); color: #fff; }
+/* VO-18: collapsible investment sections */
+.inv-collapse { border: 1px solid #ffffff10; border-radius: 18px; margin-bottom: 10px; overflow: hidden; }
+.inv-collapse-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; cursor: pointer; background: #0b1728; user-select: none; flex-wrap: wrap; }
+.inv-collapse-head:hover { background: #0d1e35; }
+.inv-sec-tri { font-size: 11px; color: #64748b; flex: 0 0 auto; transition: transform .15s; }
+.inv-sec-icon { font-size: 18px; flex: 0 0 auto; }
+.inv-sec-title { font-size: 14px; font-weight: 800; color: #e2e8f0; }
+.inv-sec-summary { font-size: 12px; }
+.inv-collapse-body { padding: 12px 14px; background: #0a1322; }
 .budget-bar-wrap { margin-top: 8px; }
 .comparison { width: 100%; border-collapse: collapse; font-size: 13px; }
 .comparison th, .comparison td { padding: 9px; border-bottom: 1px solid #ffffff10; text-align: left; }
@@ -239,42 +248,8 @@
       <button class="seg-btn" data-inner-seg="loans" data-group="investloans">🏦 Loans</button>
     </div>
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-        <h3 style="margin:0">Savings &amp; Investments</h3>
-        <button class="btn primary" id="addInvBtn">+ Add</button>
-      </div>
-      <div id="invList" style="margin-top:14px"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #ffffff10">
-        <h3 style="margin:0">Gold</h3>
-        <div class="actions" style="margin-top:0;gap:6px;justify-content:flex-end">
-          <button class="btn btn-icon gold" id="addGoldBtn" title="Add Gold" aria-label="Add Gold">🪙</button>
-          <button class="btn btn-icon gold" id="updateGoldPriceBtn" type="button" title="Update Gold Price" aria-label="Update Gold Price">↻</button>
-        </div>
-      </div>
-      <div id="goldPricePanel" style="margin-top:14px;padding-top:14px;border-top:1px solid #ffffff10">
-        
-        <div id="goldPriceEditor" style="display:none;align-items:end;gap:8px;flex-wrap:wrap;margin-top:10px">
-          <label style="margin:0;flex:1;min-width:220px">Current Gold Price / Gram
-            <input id="currentGoldPricePerGram" type="number" min="0" step="0.01" placeholder="e.g. 6500">
-          </label>
-          <button class="btn gold" id="saveGoldPriceBtn" type="button">Save Price</button>
-        </div>
-      </div>
-      <div id="goldOverview" style="margin-top:14px"></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #ffffff10">
-        <h3 style="margin:0">Demat</h3>
-        <div class="actions" style="margin-top:0;gap:6px;justify-content:flex-end">
-          <button class="btn btn-icon" id="addDematBtn" title="Add Demat Account" aria-label="Add Demat Account">📊</button>
-          <button class="btn btn-icon" id="updateDematValueBtn" type="button" title="Update Portfolio Value" aria-label="Update Portfolio Value">↻</button>
-        </div>
-      </div>
-      <div id="dematValueEditor" style="display:none;align-items:end;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <label style="margin:0;flex:1;min-width:220px">Current Portfolio Value
-          <input id="currentDematPortfolioValue" type="number" min="0" step="0.01" placeholder="e.g. 125000">
-        </label>
-        <button class="btn" id="saveDematValueBtn" type="button">Save Value</button>
-      </div>
-      <div id="dematOverview" style="margin-top:14px"></div>
+      <h3 style="margin:0 0 14px">Savings &amp; Investments</h3>
+      <div id="invList"></div>
     </div>
   </div>
 

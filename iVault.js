@@ -1266,42 +1266,64 @@ function npsHistoryModal(nps) {
 /* ===== Investments (balance trackers only) ===== */
 const INV_TYPES = ['FD','RD','PPF','SSA','NPS','Demat','Gold','Insurance','Other Saving'];
 
+/* VO-18: collapsible section state (localStorage) */
+const INV_SEC_KEY = 'vo_inv_sections';
+function _invSecState() {
+  try { return JSON.parse(localStorage.getItem(INV_SEC_KEY) || '{}'); } catch { return {}; }
+}
+function _invSecSave(s) { localStorage.setItem(INV_SEC_KEY, JSON.stringify(s)); }
+function _invSecOpen(key) {
+  const s = _invSecState(); s[key] = true; _invSecSave(s);
+  const body = document.getElementById('inv-sec-body-' + key);
+  const tri  = document.getElementById('inv-sec-tri-' + key);
+  if (body) body.style.display = '';
+  if (tri)  tri.textContent = '▼';
+}
+function _invSecClose(key) {
+  const s = _invSecState(); s[key] = false; _invSecSave(s);
+  const body = document.getElementById('inv-sec-body-' + key);
+  const tri  = document.getElementById('inv-sec-tri-' + key);
+  if (body) body.style.display = 'none';
+  if (tri)  tri.textContent = '▶';
+}
+function _invSecToggle(key) {
+  _invSecState()[key] === false ? _invSecOpen(key) : _invSecClose(key);
+}
+
+/* Build a collapsible section wrapper */
+function invSection(key, icon, title, summary, addBtnHtml, bodyHtml) {
+  const open = _invSecState()[key] !== false; // default open
+  return `
+  <div class="inv-collapse" id="inv-sec-${key}">
+    <div class="inv-collapse-head" data-inv-sec="${key}">
+      <span class="inv-sec-tri" id="inv-sec-tri-${key}">${open ? '▼' : '▶'}</span>
+      <span class="inv-sec-icon">${icon}</span>
+      <span class="inv-sec-title">${title}</span>
+      <span class="inv-sec-summary muted" id="inv-sec-sum-${key}">${summary}</span>
+      <span style="flex:1"></span>
+      ${addBtnHtml}
+    </div>
+    <div class="inv-collapse-body" id="inv-sec-body-${key}" style="${open ? '' : 'display:none'}">
+      ${bodyHtml}
+    </div>
+  </div>`;
+}
+
 async function renderInvestments() {
   const rows = await getAll('investments');
-  const regularRows = rows.filter(x => x.type !== 'Gold' && x.type !== 'Demat');
   const N = v => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
-  if (!regularRows.length) $('invList').innerHTML = '<div class="empty">No savings or investments added yet.</div>';
-  const grouped = {};
-  INV_TYPES.filter(t => t !== 'Gold').forEach(t => { grouped[t] = regularRows.filter(x => x.type === t); });
-  let html = '';
-  INV_TYPES.filter(t => t !== 'Gold').forEach(t => {
-    if (!grouped[t].length) return;
-    html += `<div class="inv-section-head">${esc(t)}</div>`;
-    html += grouped[t].map(x => {
+
+  /* ── Section 1: Savings & Investments (FD/RD/PPF/SSA/Insurance/Other) ── */
+  const savTypes = ['FD','RD','PPF','SSA','Insurance','Other Saving'];
+  const savRows = rows.filter(x => savTypes.includes(x.type));
+  let savHtml = savRows.length ? '' : '<div class="empty">No savings or investments added yet.</div>';
+  const savGrouped = {};
+  savTypes.forEach(t => { savGrouped[t] = savRows.filter(x => x.type === t); });
+  savTypes.forEach(t => {
+    if (!savGrouped[t].length) return;
+    savHtml += `<div class="inv-section-head">${esc(t)}</div>`;
+    savHtml += savGrouped[t].map(x => {
       const isIns = x.type === 'Insurance';
-      // VO-16: NPS Demat-style card
-      if (x.type === 'NPS') {
-        const totalContrib = (x.contributions||[]).reduce((s,c) => s + N(c.amount), 0);
-        const gainLoss = N(x.currentValue) - totalContrib;
-        return `<div class="item" style="flex-direction:column;align-items:stretch">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div style="min-width:0;flex:1">
-              <div class="title">${esc(x.name||'NPS')} <span class="pill" style="font-size:11px">${esc(x.tier||'Tier I')}</span></div>
-              <div class="sub">${esc(x.provider||'')}${x.accountNumber?' · '+esc(x.accountNumber):''}</div>
-              <div class="sub">Total Contributions: <b>${money(totalContrib, state.settings.currency)}</b></div>
-              <div class="sub">Current Value: <b>${money(x.currentValue||0, state.settings.currency)}</b></div>
-              <div class="sub">Gain / Loss: <b class="${gainLoss>=0?'green':'red'}">${money(gainLoss, state.settings.currency)}</b></div>
-            </div>
-            <div class="actions" style="margin-top:0;flex-direction:column;gap:6px">
-              <button class="btn-icon" data-nps-contrib="${x.id}" title="Add Contribution">➕</button>
-              <button class="btn-icon" data-nps-val="${x.id}" title="Update Value">💹</button>
-              <button class="btn-icon" data-nps-hist="${x.id}" title="History">📋</button>
-              <button class="btn-icon" data-invedit="${x.id}" title="Edit">✏️</button>
-              <button class="btn-icon danger" data-invdel="${x.id}" title="Delete">🗑️</button>
-            </div>
-          </div>
-        </div>`;
-      }
       const payments = (x.payments || []).slice().reverse();
       const histLabel = isIns ? 'Premium History' : 'Contribution History';
       const payHtml = payments.length
@@ -1309,8 +1331,7 @@ async function renderInvestments() {
             <div style="margin-top:6px">${payments.map(p => {
               if (isIns) return `<div style="font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid #ffffff08">Paid ${money(p.amount, state.settings.currency)} on ${esc(p.date)}${p.note ? ' · ' + esc(p.note) : ''}</div>`;
               return `<div style="font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid #ffffff08">Contributed ${money(p.amount || 0, state.settings.currency)} on ${esc(p.date || '')}${Number.isFinite(Number(p.balance ?? p.outstanding)) ? ' · Balance: ' + money(p.balance ?? p.outstanding, state.settings.currency) : ''}</div>`;
-            }).join('')}
-            </div></details>` : '';
+            }).join('')}</div></details>` : '';
       const valueRow = isIns
         ? `<div class="sub">Premium: <b>${money(x.premiumAmount || 0, state.settings.currency)}</b> · ${esc(x.premiumFrequency || 'Yearly')}</div>
            <div class="sub">Next Due: <b class="${x.premiumDueDate ? 'warn' : 'muted'}">${esc(x.premiumDueDate || '—')}</b></div>`
@@ -1322,7 +1343,7 @@ async function renderInvestments() {
             <div class="sub">${esc(x.provider || x.bankName || '')}${x.accountNumber ? ' · ' + esc(x.accountNumber) : ''}</div>
             ${valueRow}
           </div>
-          <div class="actions">
+          <div class="actions" style="margin-top:0">
             <button class="btn-icon" data-invedit="${x.id}" title="Edit">✏️</button>
             <button class="btn-icon danger" data-invdel="${x.id}" title="Delete">🗑️</button>
           </div>
@@ -1331,29 +1352,152 @@ async function renderInvestments() {
       </div>`;
     }).join('');
   });
-  if (regularRows.length) $('invList').innerHTML = html;
-  $('invList').querySelectorAll('[data-invedit]').forEach(b => b.onclick = async () => {
+  const savTotal = savRows.reduce((s, x) => s + N(x.currentValue), 0);
+  const savSummary = savRows.length ? `${savRows.length} item${savRows.length !== 1 ? 's' : ''} · ${money(savTotal, state.settings.currency)}` : '';
+
+  /* ── Section 2: Gold ── */
+  const goldRows = rows.filter(x => x.type === 'Gold');
+  const currentGoldPrice = N(state.settings.currentGoldPricePerGram);
+  const goldValue = currentGoldPrice > 0
+    ? goldRows.reduce((s, r) => s + N(r.grams) * currentGoldPrice, 0)
+    : goldRows.reduce((s, r) => s + N(r.currentValue), 0);
+  const goldSummary = goldRows.length ? `${goldRows.length} holding${goldRows.length !== 1 ? 's' : ''} · ${money(goldValue, state.settings.currency)}` : '';
+  const goldBodyHtml = `
+    <div id="goldPricePanel" style="margin-bottom:10px">
+      <div id="goldPriceEditor" style="display:none;align-items:end;gap:8px;flex-wrap:wrap">
+        <label style="margin:0;flex:1;min-width:220px">Current Gold Price / Gram
+          <input id="currentGoldPricePerGram" type="number" min="0" step="0.01" placeholder="e.g. 6500">
+        </label>
+        <button class="btn gold" id="saveGoldPriceBtn" type="button">Save Price</button>
+      </div>
+    </div>
+    <div id="goldOverview"></div>`;
+
+  /* ── Section 3: Demat ── */
+  const dematRows = rows.filter(x => x.type === 'Demat');
+  const portfolioValue = N(state.settings.currentDematPortfolioValue) || dematRows.reduce((s, r) => s + N(r.currentValue), 0);
+  const dematSummary = dematRows.length ? `${dematRows.length} account${dematRows.length !== 1 ? 's' : ''} · ${money(portfolioValue, state.settings.currency)}` : '';
+  const dematBodyHtml = `
+    <div id="dematValueEditor" style="display:none;align-items:end;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <label style="margin:0;flex:1;min-width:220px">Current Portfolio Value
+        <input id="currentDematPortfolioValue" type="number" min="0" step="0.01" placeholder="e.g. 125000">
+      </label>
+      <button class="btn" id="saveDematValueBtn" type="button">Save Value</button>
+    </div>
+    <div id="dematOverview"></div>`;
+
+  /* ── Section 4: NPS ── */
+  const npsRows = rows.filter(x => x.type === 'NPS');
+  const npsTotal = npsRows.reduce((s, x) => s + N(x.currentValue), 0);
+  const npsSummary = npsRows.length ? `${npsRows.length} account${npsRows.length !== 1 ? 's' : ''} · ${money(npsTotal, state.settings.currency)}` : '';
+  const npsBodyHtml = npsRows.length
+    ? npsRows.map(x => {
+        const totalContrib = (x.contributions||[]).reduce((s,c) => s + N(c.amount), 0);
+        const gainLoss = N(x.currentValue) - totalContrib;
+        return `<div class="item" style="flex-direction:column;align-items:stretch">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div style="min-width:0;flex:1">
+              <div class="title">${esc(x.name||'NPS')} <span class="pill" style="font-size:11px">${esc(x.tier||'Tier I')}</span></div>
+              <div class="sub">${esc(x.provider||'')}${x.accountNumber?' · '+esc(x.accountNumber):''}</div>
+              <div class="sub">Contributions: <b>${money(totalContrib, state.settings.currency)}</b></div>
+              <div class="sub">Current Value: <b>${money(x.currentValue||0, state.settings.currency)}</b></div>
+              <div class="sub">Gain / Loss: <b class="${gainLoss>=0?'green':'red'}">${money(gainLoss, state.settings.currency)}</b></div>
+            </div>
+            <div class="actions" style="margin-top:0;flex-wrap:wrap;justify-content:flex-end;max-width:160px">
+              <button class="btn-icon" data-nps-contrib="${x.id}" title="Add Contribution">➕</button>
+              <button class="btn-icon" data-nps-val="${x.id}" title="Update Value">💹</button>
+              <button class="btn-icon" data-nps-hist="${x.id}" title="History">📋</button>
+              <button class="btn-icon" data-invedit="${x.id}" title="Edit">✏️</button>
+              <button class="btn-icon danger" data-invdel="${x.id}" title="Delete">🗑️</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">No NPS accounts added yet.</div>';
+
+  /* ── Assemble all 4 collapsible sections ── */
+  const invEl = $('invList');
+  invEl.innerHTML =
+    invSection('sav',  '📦', 'Savings &amp; Investments', savSummary,
+      `<button class="btn primary" id="addInvBtn" style="padding:6px 12px;font-size:12px">+ Add</button>`, savHtml) +
+    invSection('gold', '🪙', 'Gold', goldSummary,
+      `<button class="btn btn-icon gold" id="addGoldBtn" title="Add Gold">🪙</button>
+       <button class="btn btn-icon gold" id="updateGoldPriceBtn" type="button" title="Update Gold Price">↻</button>`, goldBodyHtml) +
+    invSection('demat','📊', 'Demat', dematSummary,
+      `<button class="btn btn-icon" id="addDematBtn" title="Add Demat Account">📊</button>
+       <button class="btn btn-icon" id="updateDematValueBtn" type="button" title="Update Portfolio Value">↻</button>`, dematBodyHtml) +
+    invSection('nps',  '🏛️', 'NPS', npsSummary,
+      `<button class="btn primary" id="addNpsBtn" style="padding:6px 12px;font-size:12px">+ Add NPS</button>`, npsBodyHtml);
+
+  /* ── Wire collapse toggles ── */
+  invEl.querySelectorAll('[data-inv-sec]').forEach(h => h.onclick = () => _invSecToggle(h.dataset.invSec));
+
+  /* ── Wire add buttons ── */
+  invEl.querySelector('#addInvBtn')?.addEventListener('click', () => invModal());
+  invEl.querySelector('#addNpsBtn')?.addEventListener('click', () => npsModal());
+  invEl.querySelector('#addGoldBtn')?.addEventListener('click', () => goldModal());
+  invEl.querySelector('#addDematBtn')?.addEventListener('click', () => dematModal());
+
+  /* ── Wire edit/delete for savings ── */
+  invEl.querySelectorAll('[data-invedit]').forEach(b => b.onclick = async () => {
     const x = await getOne('investments', b.dataset.invedit);
     if (!x) return;
     if (x.type === 'NPS') npsModal(x); else invModal(x);
   });
-  $('invList').querySelectorAll('[data-invdel]').forEach(b => b.onclick = async () => {
+  invEl.querySelectorAll('[data-invdel]').forEach(b => b.onclick = async () => {
     if (!confirm('Delete this investment?')) return;
     await delOne('investments', b.dataset.invdel);
     await logActivity('Investment', 'Investment deleted');
     await renderInvestments(); await renderOverview();
   });
-  // VO-16: NPS action buttons
-  $('invList').querySelectorAll('[data-nps-contrib]').forEach(b => b.onclick = async () => {
+
+  /* ── Wire NPS action buttons ── */
+  invEl.querySelectorAll('[data-nps-contrib]').forEach(b => b.onclick = async () => {
     const x = await getOne('investments', b.dataset.npsContrib); if (x) npsAddContribution(x);
   });
-  $('invList').querySelectorAll('[data-nps-val]').forEach(b => b.onclick = async () => {
+  invEl.querySelectorAll('[data-nps-val]').forEach(b => b.onclick = async () => {
     const x = await getOne('investments', b.dataset.npsVal); if (x) npsUpdateValue(x);
   });
-  $('invList').querySelectorAll('[data-nps-hist]').forEach(b => b.onclick = async () => {
+  invEl.querySelectorAll('[data-nps-hist]').forEach(b => b.onclick = async () => {
     const x = await getOne('investments', b.dataset.npsHist); if (x) npsHistoryModal(x);
   });
-  const goldRows = rows.filter(x => x.type === 'Gold');
+
+  /* ── Gold price editor ── */
+  const currentPriceInput = $('currentGoldPricePerGram');
+  if (currentPriceInput) currentPriceInput.value = Number(state.settings.currentGoldPricePerGram || 0) || '';
+  invEl.querySelector('#updateGoldPriceBtn')?.addEventListener('click', () => {
+    const ed = $('goldPriceEditor'); if (ed) ed.style.display = ed.style.display === 'none' ? 'flex' : 'none';
+  });
+  invEl.querySelector('#saveGoldPriceBtn')?.addEventListener('click', async () => {
+    const price = Number($('currentGoldPricePerGram')?.value || 0);
+    if (price <= 0) { toast('Enter a valid current gold price', true); return; }
+    state.settings.currentGoldPricePerGram = price;
+    await putOne('meta', { ...state.settings, id: 'settings' });
+    toast('Current gold price updated');
+    $('goldPriceEditor').style.display = 'none';
+    renderGoldOverview(goldRows); await renderOverview();
+  });
+  renderGoldOverview(goldRows);
+
+  /* ── Demat value editor ── */
+  const dematValueInput = $('currentDematPortfolioValue');
+  if (dematValueInput) dematValueInput.value = Number(state.settings.currentDematPortfolioValue || 0) || '';
+  invEl.querySelector('#updateDematValueBtn')?.addEventListener('click', () => {
+    const ed = $('dematValueEditor'); if (ed) ed.style.display = ed.style.display === 'none' ? 'flex' : 'none';
+  });
+  invEl.querySelector('#saveDematValueBtn')?.addEventListener('click', async () => {
+    const value = Number($('currentDematPortfolioValue')?.value || 0);
+    if (value <= 0) { toast('Enter a valid portfolio value', true); return; }
+    state.settings.currentDematPortfolioValue = value;
+    await putOne('meta', { ...state.settings, id: 'settings' });
+    $('dematValueEditor').style.display = 'none';
+    toast('Portfolio value updated');
+    renderDematOverview(dematRows); await renderOverview();
+  });
+  renderDematOverview(dematRows);
+}
+
+
   const currentPriceInput = $('currentGoldPricePerGram');
   if (currentPriceInput) currentPriceInput.value = Number(state.settings.currentGoldPricePerGram || 0) || '';
   $('updateGoldPriceBtn').onclick = () => {
@@ -1392,11 +1536,7 @@ async function renderInvestments() {
   renderDematOverview(dematRows);
 }
 
-$('addInvBtn').onclick = () => {
-  // VO-16: open NPS-specific modal when type is NPS; generic invModal otherwise
-  // We open a type-picker first only if user wants NPS, otherwise use invModal
-  invModal();
-};
+$('addInvBtn').onclick = () => invModal();
 $('addGoldBtn').onclick = () => goldModal();
 $('addDematBtn').onclick = () => dematModal();
 
