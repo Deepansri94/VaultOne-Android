@@ -11,7 +11,7 @@ export default defineConfig({
     viewport: { width: 1280, height: 900 },
   },
   webServer: {
-    command: 'npx serve -l 8765 ../..',
+    command: 'npx serve -l 8765 ../../src',
     url: 'http://127.0.0.1:8765',
     reuseExistingServer: true,
     timeout: 15_000,

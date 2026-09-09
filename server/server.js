@@ -5,7 +5,7 @@ const path    = require('path');
 
 const app     = express();
 const PORT    = 3001;
-const DB_FILE = path.join(__dirname, 'jira_stories.json');
+const DB_FILE = path.join(__dirname, '..', 'tools', 'jira_stories.json');
 
 app.use(cors());
 app.use(express.json());
