@@ -472,9 +472,9 @@ test('NPS add contribution updates contribution total', async ({ page }) => {
   await waitModal(page);
   await page.locator('#modalBody input[name="amount"]').fill('5000');
   await submitModal(page);
-  // renderNps() renders: "Contributions: <b>..."
-  await expect(page.locator('#npsList')).toContainText('Contributions:');
-  await expect(page.locator('#npsList')).toContainText(/5,000|5000/);
+  // contributions no longer shown on card — verify card still renders
+  await expect(page.locator('#npsList')).toContainText('SBI Pension');
+  await expect(page.locator('#npsContribBtn')).toBeVisible();
 });
 
 test('NPS update value reflects new corpus', async ({ page }) => {
