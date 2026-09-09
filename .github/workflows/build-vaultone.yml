@@ -1085,8 +1085,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          TAG="build-${VERSION_CODE}"
-          RELEASE_NAME="VaultOne ${VERSION_NAME}"
+          export TAG="build-${VERSION_CODE}"
+          export RELEASE_NAME="VaultOne ${VERSION_NAME}"
 
           # Build release body + payload from release_notes.json
           python3 - <<'PYEOF'
@@ -1120,6 +1120,28 @@ jobs:
           print(body)
           PYEOF
 
+          # Delete existing release + tag if they already exist (idempotent re-run)
+          EXISTING_ID=$(curl -sS \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || true)
+          if [ -n "$EXISTING_ID" ]; then
+            echo "Deleting existing release id=${EXISTING_ID} for tag ${TAG}"
+            curl -sS -X DELETE \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/${EXISTING_ID}"
+            curl -sS -X DELETE \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}"
+            echo "Existing release and tag deleted."
+          fi
+
           # Create release
           RELEASE_RESPONSE=$(curl -sS -X POST \
             -H "Authorization: Bearer ${GH_TOKEN}" \
@@ -1128,7 +1150,6 @@ jobs:
             -H "Content-Type: application/json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" \
             --data-binary @/tmp/release_payload.json)
-
 
           echo "Release API response: $RELEASE_RESPONSE"
 

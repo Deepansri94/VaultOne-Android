@@ -572,9 +572,10 @@ async function addCashWallet() {
     await logActivity('Cash Wallet', `Wallet created: ${name}`);
     closeModal(); toast('Cash wallet created'); await renderCashWallets();
   });
-  setTimeout(() => $('walletCategorySelect')?.addEventListener('change', event => {
+  const catSel = $('walletCategorySelect');
+  if (catSel) catSel.addEventListener('change', event => {
     $('walletSubcategorySelect').innerHTML = walletSubcategoryOptions(event.target.value, '');
-  }), 0);
+  });
 }
 
 async function addCashToWallet() {
