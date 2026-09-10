@@ -758,6 +758,10 @@ async function populateExpLinked(category) {
       if (loan && budgetSubcatSel) {
         const mapped = LOAN_TYPE_TO_SUBCAT[loan.loanType] || '';
         if (mapped) budgetSubcatSel.value = mapped;
+        if (loan.emi > 0) {
+          const amtEl = document.querySelector('#expenseForm [name="amount"]');
+          if (amtEl) amtEl.value = loan.emi;
+        }
       }
     });
   } else if (category === 'Savings & Investments') {
@@ -785,6 +789,10 @@ async function populateExpLinked(category) {
       if (inv && budgetSubcatSel) {
         const mapped = INV_TYPE_TO_SUBCAT[inv.type] || '';
         if (mapped) budgetSubcatSel.value = mapped;
+        const amtEl = document.querySelector('#expenseForm [name="amount"]');
+        if (amtEl) {
+          if (inv.type === 'Insurance' && inv.premiumAmount > 0) amtEl.value = inv.premiumAmount;
+        }
       }
     });
   } else {
