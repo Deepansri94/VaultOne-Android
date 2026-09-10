@@ -12,7 +12,7 @@ const BUDGET_SUBCATS = {
   'Health & Emergency':['Medicine / Pharmacy','Doctor / Hospital','Emergency Fund'],
   'Loans & Financial':['Home Loan EMI','Car / Bike Loan','Personal Loan','Credit Card'],
   'Family / Religious / Social':['Festivals / Pooja','Gifts / Events','Donations','School / Tuition'],
-  'Savings & Investments':['SIP / Mutual Fund','PPF / RD','Insurance Premium','FD'],
+  'Savings & Investments':['SIP / Mutual Fund','PPF','RD','SSA','Insurance Premium','FD'],
   'Other':['Miscellaneous','Subscriptions','Clothing','Home Maintenance']
 };
 
@@ -770,6 +770,15 @@ async function populateExpLinked(category) {
         BUDGET_SUBCATS['Savings & Investments'].map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
       budgetSubcatLabel.style.display = '';
     }
+    // Auto-select budget subcat when investment is picked
+    const INV_TYPE_TO_SUBCAT = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund' };
+    linkedSel.addEventListener('change', async () => {
+      const inv = invs.find(x => x.id === linkedSel.value);
+      if (inv && budgetSubcatSel) {
+        const mapped = INV_TYPE_TO_SUBCAT[inv.type] || '';
+        if (mapped) budgetSubcatSel.value = mapped;
+      }
+    });
   } else {
     linkedLabel.style.display = 'none';
     if (budgetSubcatLabel) budgetSubcatLabel.style.display = 'none';
