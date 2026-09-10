@@ -737,6 +737,8 @@ async function populateExpLinked(category) {
   const linkedSel = $('expLinkedSelect');
   const subcatLabel = $('expSubcatLabel');
   const subcatSel = $('expSubcatSelect');
+  const budgetSubcatLabel = $('expBudgetSubcatLabel');
+  const budgetSubcatSel = $('expBudgetSubcatSelect');
   if (!linkedLabel || !linkedSel || !subcatSel) return;
 
   if (category === 'Loans & Financial') {
@@ -745,6 +747,11 @@ async function populateExpLinked(category) {
       loans.map(l => `<option value="${l.id}">${esc(l.name || l.loanType)} · Outstanding: ${money(l.outstanding, state.settings.currency)}</option>`).join('');
     linkedLabel.style.display = '';
     subcatLabel.style.display = 'none';
+    if (budgetSubcatLabel) {
+      budgetSubcatSel.innerHTML = '<option value="">-- select --</option>' +
+        BUDGET_SUBCATS['Loans & Financial'].map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+      budgetSubcatLabel.style.display = '';
+    }
   } else if (category === 'Savings & Investments') {
     const invs = (await getAll('investments')).filter(x => INV_LINKABLE.includes(x.type));
     linkedSel.innerHTML = '<option value="">— select investment/insurance —</option>' +
@@ -758,8 +765,14 @@ async function populateExpLinked(category) {
       }).join('');
     linkedLabel.style.display = '';
     subcatLabel.style.display = 'none';
+    if (budgetSubcatLabel) {
+      budgetSubcatSel.innerHTML = '<option value="">-- select --</option>' +
+        BUDGET_SUBCATS['Savings & Investments'].map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+      budgetSubcatLabel.style.display = '';
+    }
   } else {
     linkedLabel.style.display = 'none';
+    if (budgetSubcatLabel) budgetSubcatLabel.style.display = 'none';
     subcatLabel.style.display = '';
     const subs = getSubcats(category);
     subcatSel.innerHTML = '<option value="">-- select --</option>' +
@@ -806,7 +819,7 @@ $('expenseForm').onsubmit = async e => {
   const category = fd.get('category') || '';
   const linkedId = fd.get('linkedId') || '';
   const date = fd.get('date') || today();
-  let subcategory = fd.get('subcategory') || '';
+  let subcategory = fd.get('budgetSubcat') || fd.get('subcategory') || '';
   let paidMsg = '';
   if (category === 'Loans & Financial' && linkedId) {
     const loan = await getOne('loans', linkedId);
@@ -879,6 +892,7 @@ $('expenseForm').onsubmit = async e => {
   form.querySelector('[name="date"]').value = today();
   $('expSubcatLabel').style.display = '';
   $('expLinkedLabel').style.display = 'none';
+  if ($('expBudgetSubcatLabel')) $('expBudgetSubcatLabel').style.display = 'none';
   const _ec2 = form.querySelector('[name="category"]');
   if (_ec2) { _ec2.value = 'Household'; await populateExpLinked('Household'); }
   await renderExpenses(); await renderOverview();
