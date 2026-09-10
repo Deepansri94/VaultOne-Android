@@ -12,7 +12,7 @@ const BUDGET_SUBCATS = {
   'Health & Emergency':['Medicine / Pharmacy','Doctor / Hospital','Emergency Fund'],
   'Loans & Financial':['Home Loan EMI','Car / Bike Loan','Personal Loan','Credit Card'],
   'Family / Religious / Social':['Festivals / Pooja','Gifts / Events','Donations','School / Tuition'],
-  'Savings & Investments':['SIP / Mutual Fund','PPF / RD','Insurance Premium','FD'],
+  'Savings & Investments':['SIP / Mutual Fund','PPF','RD','SSA','Insurance Premium','FD'],
   'Other':['Miscellaneous','Subscriptions','Clothing','Home Maintenance']
 };
 
@@ -721,7 +721,7 @@ async function renderExpenses() {
 }
 
 /* ===== Expense form — dynamic sub-category ===== */
-const INV_LINKABLE = ['RD','PPF','SSA','NPS','Demat','Insurance','Other Saving'];
+const INV_LINKABLE = ['RD','PPF','SSA','Demat','Insurance','Other Saving'];
 
 // Returns current sub-cats for a category (merges defaults + any user-added ones stored in meta)
 function getSubcats(category) {
@@ -737,6 +737,8 @@ async function populateExpLinked(category) {
   const linkedSel = $('expLinkedSelect');
   const subcatLabel = $('expSubcatLabel');
   const subcatSel = $('expSubcatSelect');
+  const budgetSubcatLabel = $('expBudgetSubcatLabel');
+  const budgetSubcatSel = $('expBudgetSubcatSelect');
   if (!linkedLabel || !linkedSel || !subcatSel) return;
 
   if (category === 'Loans & Financial') {
@@ -745,6 +747,23 @@ async function populateExpLinked(category) {
       loans.map(l => `<option value="${l.id}">${esc(l.name || l.loanType)} · Outstanding: ${money(l.outstanding, state.settings.currency)}</option>`).join('');
     linkedLabel.style.display = '';
     subcatLabel.style.display = 'none';
+    if (budgetSubcatLabel) {
+      budgetSubcatSel.innerHTML = '<option value="">-- select --</option>' +
+        BUDGET_SUBCATS['Loans & Financial'].map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+      budgetSubcatLabel.style.display = '';
+    }
+    const LOAN_TYPE_TO_SUBCAT = { 'Home Loan': 'Home Loan EMI', 'Vehicle Loan': 'Car / Bike Loan', 'Personal Loan': 'Personal Loan', 'Gold Loan': 'Personal Loan', 'Education Loan': 'Personal Loan', 'Other': 'Personal Loan' };
+    linkedSel.addEventListener('change', () => {
+      const loan = loans.find(l => l.id === linkedSel.value);
+      if (loan && budgetSubcatSel) {
+        const mapped = LOAN_TYPE_TO_SUBCAT[loan.loanType] || '';
+        if (mapped) budgetSubcatSel.value = mapped;
+        if (loan.emi > 0) {
+          const amtEl = document.querySelector('#expenseForm [name="amount"]');
+          if (amtEl) amtEl.value = loan.emi;
+        }
+      }
+    });
   } else if (category === 'Savings & Investments') {
     const invs = (await getAll('investments')).filter(x => INV_LINKABLE.includes(x.type));
     linkedSel.innerHTML = '<option value="">— select investment/insurance —</option>' +
@@ -758,8 +777,28 @@ async function populateExpLinked(category) {
       }).join('');
     linkedLabel.style.display = '';
     subcatLabel.style.display = 'none';
+    if (budgetSubcatLabel) {
+      budgetSubcatSel.innerHTML = '<option value="">-- select --</option>' +
+        BUDGET_SUBCATS['Savings & Investments'].map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+      budgetSubcatLabel.style.display = '';
+    }
+    // Auto-select budget subcat when investment is picked
+    const INV_TYPE_TO_SUBCAT = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund' };
+    linkedSel.addEventListener('change', async () => {
+      const inv = invs.find(x => x.id === linkedSel.value);
+      if (inv && budgetSubcatSel) {
+        const mapped = INV_TYPE_TO_SUBCAT[inv.type] || '';
+        if (mapped) budgetSubcatSel.value = mapped;
+        const amtEl = document.querySelector('#expenseForm [name="amount"]');
+        if (amtEl) {
+          if (inv.type === 'RD' && inv.monthlyInstalment > 0) amtEl.value = inv.monthlyInstalment;
+          else if (inv.type === 'Insurance' && inv.premiumAmount > 0) amtEl.value = inv.premiumAmount;
+        }
+      }
+    });
   } else {
     linkedLabel.style.display = 'none';
+    if (budgetSubcatLabel) budgetSubcatLabel.style.display = 'none';
     subcatLabel.style.display = '';
     const subs = getSubcats(category);
     subcatSel.innerHTML = '<option value="">-- select --</option>' +
@@ -806,7 +845,7 @@ $('expenseForm').onsubmit = async e => {
   const category = fd.get('category') || '';
   const linkedId = fd.get('linkedId') || '';
   const date = fd.get('date') || today();
-  let subcategory = fd.get('subcategory') || '';
+  let subcategory = fd.get('budgetSubcat') || fd.get('subcategory') || '';
   let paidMsg = '';
   if (category === 'Loans & Financial' && linkedId) {
     const loan = await getOne('loans', linkedId);
@@ -818,7 +857,8 @@ $('expenseForm').onsubmit = async e => {
   } else if (category === 'Savings & Investments' && linkedId) {
     const inv = await getOne('investments', linkedId);
     if (inv) {
-      subcategory = inv.name || inv.type;
+      // Keep budgetSubcat if user selected one; only fall back to inv.name if not
+      if (!subcategory) subcategory = inv.name || inv.type;
       if (inv.type === 'Insurance') {
         // Record premium payment and advance due date
         if (!inv.payments) inv.payments = [];
@@ -879,6 +919,7 @@ $('expenseForm').onsubmit = async e => {
   form.querySelector('[name="date"]').value = today();
   $('expSubcatLabel').style.display = '';
   $('expLinkedLabel').style.display = 'none';
+  if ($('expBudgetSubcatLabel')) $('expBudgetSubcatLabel').style.display = 'none';
   const _ec2 = form.querySelector('[name="category"]');
   if (_ec2) { _ec2.value = 'Household'; await populateExpLinked('Household'); }
   await renderExpenses(); await renderOverview();
@@ -1566,6 +1607,7 @@ function invModal(existing = null) {
     <label>Provider / Insurer<input name="provider" value="${esc(existing?.provider || existing?.bankName || '')}"></label>
     <label>Account / Policy Number<input name="accountNumber" value="${esc(existing?.accountNumber || '')}"></label>
     <label id="invCurrValLabel" ${isIns ? 'style="display:none"' : ''}>Current Value <span class="req-star">*</span><input name="currentValue" type="number" min="0" step="0.01" value="${Number(existing?.currentValue || 0)}"></label>
+    <label id="invMonthlyLabel" ${existing?.type !== 'RD' ? 'style="display:none"' : ''}>Monthly Instalment<input name="monthlyInstalment" type="number" min="0" step="0.01" value="${Number(existing?.monthlyInstalment || 0)}"></label>
     <label id="invPremiumLabel" ${!isIns ? 'style="display:none"' : ''}>Premium Amount <span class="req-star">*</span><input name="premiumAmount" type="number" min="0" step="0.01" value="${Number(existing?.premiumAmount || 0)}"></label>
     <label id="invFreqLabel" ${!isIns ? 'style="display:none"' : ''}>Premium Frequency<select name="premiumFrequency">${freqOpts}</select></label>
     <label id="invPremDueLabel" ${!isIns ? 'style="display:none"' : ''}>Next Premium Due Date<input name="premiumDueDate" type="date" value="${esc(existing?.premiumDueDate || '')}"></label>
@@ -1585,6 +1627,7 @@ function invModal(existing = null) {
       provider: fd.get('provider').trim(), bankName: fd.get('provider').trim(),
       accountNumber: fd.get('accountNumber').trim(),
       currentValue: isInsurance ? 0 : Number(fd.get('currentValue') || 0),
+      monthlyInstalment: type === 'RD' ? Number(fd.get('monthlyInstalment') || 0) : undefined,
       premiumAmount: isInsurance ? Number(fd.get('premiumAmount') || 0) : undefined,
       premiumFrequency: isInsurance ? fd.get('premiumFrequency') : undefined,
       premiumDueDate: isInsurance ? (fd.get('premiumDueDate') || '') : undefined,
@@ -1621,7 +1664,9 @@ function invModal(existing = null) {
     if (!sel) return;
     sel.addEventListener('change', () => {
       const ins = sel.value === 'Insurance';
+      const isRD = sel.value === 'RD';
       document.getElementById('invCurrValLabel').style.display  = ins ? 'none' : '';
+      document.getElementById('invMonthlyLabel').style.display  = isRD ? '' : 'none';
       document.getElementById('invPremiumLabel').style.display  = ins ? '' : 'none';
       document.getElementById('invFreqLabel').style.display     = ins ? '' : 'none';
       document.getElementById('invPremDueLabel').style.display  = ins ? '' : 'none';
