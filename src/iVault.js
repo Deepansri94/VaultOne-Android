@@ -1030,17 +1030,41 @@ async function renderBudget() {
   const [exp, loans, invs] = await Promise.all([getAll('expenses'), getAll('loans'), getAll('investments')]);
   const mExp = exp.filter(x => (x.date || '').startsWith(month));
   const actuals = {};
-  BUDGET_CATS.forEach(c => { actuals[c] = mExp.filter(x => x.category === c).reduce((a, b) => a + Number(b.amount || 0), 0); });
-  // VO-11: Add loan EMI payments made this month to 'Loans & Financial'
-  loans.forEach(loan => {
-    (loan.payments || []).forEach(p => {
-      if ((p.date || '').startsWith(month)) actuals['Loans & Financial'] = (actuals['Loans & Financial'] || 0) + Number(p.emi || 0);
+  const actualSubs = {}; // { 'Loans & Financial': { 'SBI Home Loan': 5000, ... }, ... }
+  BUDGET_CATS.forEach(c => {
+    actuals[c] = mExp.filter(x => x.category === c).reduce((a, b) => a + Number(b.amount || 0), 0);
+    actualSubs[c] = {};
+    mExp.filter(x => x.category === c && x.subcategory).forEach(x => {
+      actualSubs[c][x.subcategory] = (actualSubs[c][x.subcategory] || 0) + Number(x.amount || 0);
     });
   });
-  // VO-11: Add investment contributions made this month to 'Savings & Investments'
+  // VO-11: Add loan EMI payments made this month to 'Loans & Financial' (per loan name)
+  loans.forEach(loan => {
+    const name = loan.name || loan.loanType || 'Loan';
+    (loan.payments || []).forEach(p => {
+      if ((p.date || '').startsWith(month)) {
+        const amt = Number(p.emi || 0);
+        // Only add if not already counted via expense record (expense form records both)
+        const alreadyCounted = mExp.some(x => x.category === 'Loans & Financial' && x.subcategory === name && (x.date || '').startsWith(month));
+        if (!alreadyCounted) {
+          actuals['Loans & Financial'] = (actuals['Loans & Financial'] || 0) + amt;
+          actualSubs['Loans & Financial'][name] = (actualSubs['Loans & Financial'][name] || 0) + amt;
+        }
+      }
+    });
+  });
+  // VO-11: Add investment contributions made this month to 'Savings & Investments' (per investment name)
   invs.forEach(inv => {
+    const name = inv.name || inv.type || 'Investment';
     (inv.payments || []).forEach(p => {
-      if ((p.date || '').startsWith(month)) actuals['Savings & Investments'] = (actuals['Savings & Investments'] || 0) + Number(p.amount || 0);
+      if ((p.date || '').startsWith(month)) {
+        const amt = Number(p.amount || 0);
+        const alreadyCounted = mExp.some(x => x.category === 'Savings & Investments' && x.subcategory === name && (x.date || '').startsWith(month));
+        if (!alreadyCounted) {
+          actuals['Savings & Investments'] = (actuals['Savings & Investments'] || 0) + amt;
+          actualSubs['Savings & Investments'][name] = (actualSubs['Savings & Investments'][name] || 0) + amt;
+        }
+      }
     });
   });
   const bt = BUDGET_CATS.reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
@@ -1069,15 +1093,30 @@ async function renderBudget() {
       const diff = budgeted - actual;
       const cls = diff >= 0 ? 'good' : 'bad';
       const categoryRow = `<tr><td>${esc(c)}</td><td>${money(budgeted, state.settings.currency)}</td><td>${money(actual, state.settings.currency)}</td><td class="${cls}">${money(diff, state.settings.currency)}</td></tr>`;
-      const subcategoryRows = getSubcats(c).map(s => {
-        const subBudgeted = Number(cats[c + '.' + s] || 0);
-        const subActual = mExp
-          .filter(x => x.category === c && x.subcategory === s)
-          .reduce((total, x) => total + Number(x.amount || 0), 0);
-        const subDiff = subBudgeted - subActual;
-        const subCls = subDiff >= 0 ? 'good' : 'bad';
-        return `<tr><td style="padding-left:24px;color:#94a3b8">${esc(s)}</td><td>${money(subBudgeted, state.settings.currency)}</td><td>${money(subActual, state.settings.currency)}</td><td class="${subCls}">${money(subDiff, state.settings.currency)}</td></tr>`;
-      }).join('');
+      let subcategoryRows = '';
+      if (c === 'Loans & Financial' || c === 'Savings & Investments') {
+        // Show dynamic subcategories from actual spending (loan/investment names)
+        const dynSubs = actualSubs[c] || {};
+        const budgetedSubs = Object.keys(cats).filter(k => k.startsWith(c + '.')).map(k => k.slice(c.length + 1));
+        const allSubs = [...new Set([...budgetedSubs, ...Object.keys(dynSubs)])];
+        subcategoryRows = allSubs.map(s => {
+          const subBudgeted = Number(cats[c + '.' + s] || 0);
+          const subActual = dynSubs[s] || 0;
+          const subDiff = subBudgeted - subActual;
+          const subCls = subDiff >= 0 ? 'good' : 'bad';
+          return `<tr><td style="padding-left:24px;color:#94a3b8">${esc(s)}</td><td>${money(subBudgeted, state.settings.currency)}</td><td>${money(subActual, state.settings.currency)}</td><td class="${subCls}">${money(subDiff, state.settings.currency)}</td></tr>`;
+        }).join('');
+      } else {
+        subcategoryRows = getSubcats(c).map(s => {
+          const subBudgeted = Number(cats[c + '.' + s] || 0);
+          const subActual = mExp
+            .filter(x => x.category === c && x.subcategory === s)
+            .reduce((total, x) => total + Number(x.amount || 0), 0);
+          const subDiff = subBudgeted - subActual;
+          const subCls = subDiff >= 0 ? 'good' : 'bad';
+          return `<tr><td style="padding-left:24px;color:#94a3b8">${esc(s)}</td><td>${money(subBudgeted, state.settings.currency)}</td><td>${money(subActual, state.settings.currency)}</td><td class="${subCls}">${money(subDiff, state.settings.currency)}</td></tr>`;
+        }).join('');
+      }
       return categoryRow + subcategoryRows;
     }).join('');
     $('budgetActuals').innerHTML = `<div class="table-wrap"><table class="comparison">
