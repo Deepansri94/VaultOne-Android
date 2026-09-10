@@ -721,7 +721,7 @@ async function renderExpenses() {
 }
 
 /* ===== Expense form — dynamic sub-category ===== */
-const INV_LINKABLE = ['RD','PPF','SSA','NPS','Demat','Insurance','Other Saving'];
+const INV_LINKABLE = ['RD','PPF','SSA','Demat','Insurance','Other Saving'];
 
 // Returns current sub-cats for a category (merges defaults + any user-added ones stored in meta)
 function getSubcats(category) {
@@ -791,7 +791,8 @@ async function populateExpLinked(category) {
         if (mapped) budgetSubcatSel.value = mapped;
         const amtEl = document.querySelector('#expenseForm [name="amount"]');
         if (amtEl) {
-          if (inv.type === 'Insurance' && inv.premiumAmount > 0) amtEl.value = inv.premiumAmount;
+          if (inv.type === 'RD' && inv.monthlyInstalment > 0) amtEl.value = inv.monthlyInstalment;
+          else if (inv.type === 'Insurance' && inv.premiumAmount > 0) amtEl.value = inv.premiumAmount;
         }
       }
     });
@@ -1606,6 +1607,7 @@ function invModal(existing = null) {
     <label>Provider / Insurer<input name="provider" value="${esc(existing?.provider || existing?.bankName || '')}"></label>
     <label>Account / Policy Number<input name="accountNumber" value="${esc(existing?.accountNumber || '')}"></label>
     <label id="invCurrValLabel" ${isIns ? 'style="display:none"' : ''}>Current Value <span class="req-star">*</span><input name="currentValue" type="number" min="0" step="0.01" value="${Number(existing?.currentValue || 0)}"></label>
+    <label id="invMonthlyLabel" ${existing?.type !== 'RD' ? 'style="display:none"' : ''}>Monthly Instalment<input name="monthlyInstalment" type="number" min="0" step="0.01" value="${Number(existing?.monthlyInstalment || 0)}"></label>
     <label id="invPremiumLabel" ${!isIns ? 'style="display:none"' : ''}>Premium Amount <span class="req-star">*</span><input name="premiumAmount" type="number" min="0" step="0.01" value="${Number(existing?.premiumAmount || 0)}"></label>
     <label id="invFreqLabel" ${!isIns ? 'style="display:none"' : ''}>Premium Frequency<select name="premiumFrequency">${freqOpts}</select></label>
     <label id="invPremDueLabel" ${!isIns ? 'style="display:none"' : ''}>Next Premium Due Date<input name="premiumDueDate" type="date" value="${esc(existing?.premiumDueDate || '')}"></label>
@@ -1625,6 +1627,7 @@ function invModal(existing = null) {
       provider: fd.get('provider').trim(), bankName: fd.get('provider').trim(),
       accountNumber: fd.get('accountNumber').trim(),
       currentValue: isInsurance ? 0 : Number(fd.get('currentValue') || 0),
+      monthlyInstalment: type === 'RD' ? Number(fd.get('monthlyInstalment') || 0) : undefined,
       premiumAmount: isInsurance ? Number(fd.get('premiumAmount') || 0) : undefined,
       premiumFrequency: isInsurance ? fd.get('premiumFrequency') : undefined,
       premiumDueDate: isInsurance ? (fd.get('premiumDueDate') || '') : undefined,
@@ -1661,7 +1664,9 @@ function invModal(existing = null) {
     if (!sel) return;
     sel.addEventListener('change', () => {
       const ins = sel.value === 'Insurance';
+      const isRD = sel.value === 'RD';
       document.getElementById('invCurrValLabel').style.display  = ins ? 'none' : '';
+      document.getElementById('invMonthlyLabel').style.display  = isRD ? '' : 'none';
       document.getElementById('invPremiumLabel').style.display  = ins ? '' : 'none';
       document.getElementById('invFreqLabel').style.display     = ins ? '' : 'none';
       document.getElementById('invPremDueLabel').style.display  = ins ? '' : 'none';
