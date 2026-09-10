@@ -752,6 +752,14 @@ async function populateExpLinked(category) {
         BUDGET_SUBCATS['Loans & Financial'].map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
       budgetSubcatLabel.style.display = '';
     }
+    const LOAN_TYPE_TO_SUBCAT = { 'Home Loan': 'Home Loan EMI', 'Vehicle Loan': 'Car / Bike Loan', 'Personal Loan': 'Personal Loan', 'Gold Loan': 'Personal Loan', 'Education Loan': 'Personal Loan', 'Other': 'Personal Loan' };
+    linkedSel.addEventListener('change', () => {
+      const loan = loans.find(l => l.id === linkedSel.value);
+      if (loan && budgetSubcatSel) {
+        const mapped = LOAN_TYPE_TO_SUBCAT[loan.loanType] || '';
+        if (mapped) budgetSubcatSel.value = mapped;
+      }
+    });
   } else if (category === 'Savings & Investments') {
     const invs = (await getAll('investments')).filter(x => INV_LINKABLE.includes(x.type));
     linkedSel.innerHTML = '<option value="">— select investment/insurance —</option>' +
