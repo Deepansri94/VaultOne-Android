@@ -1180,6 +1180,7 @@ $('budgetNext').onclick = () => {
 /* ===== VO-16: NPS Demat-style helpers ===== */
 function npsModal(existing = null) {
   openModal(existing ? 'Edit NPS Account' : 'Add NPS Account', `<form class="grid">
+    <label>Account Holder Name<input name="holderName" value="${esc(existing?.holderName || '')}" placeholder="e.g. John Doe"></label>
     <label>Provider <span class="req-star">*</span><input name="provider" required value="${esc(existing?.provider || '')}" placeholder="e.g. HDFC Pension"></label>
     <label>Account Number<input name="accountNumber" value="${esc(existing?.accountNumber || '')}"></label>
     <label>Tier<select name="tier"><option ${(existing?.tier||'Tier I')==='Tier I'?'selected':''}>Tier I</option><option ${existing?.tier==='Tier II'?'selected':''}>Tier II</option></select></label>
@@ -1187,10 +1188,11 @@ function npsModal(existing = null) {
     <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save NPS</button></div>
   </form>`, async fd => {
     const provider = String(fd.get('provider')||'').trim();
+    const holderName = String(fd.get('holderName')||'').trim();
     if (!provider) { toast('Enter provider name', true); return; }
     const record = {
       id: existing?.id || uid(), type: 'NPS',
-      name: provider, provider,
+      name: provider, provider, holderName,
       accountNumber: String(fd.get('accountNumber')||'').trim(),
       tier: fd.get('tier') || 'Tier I',
       currentValue: Number(fd.get('currentValue')||0),
@@ -1380,8 +1382,8 @@ async function renderInvestments() {
     invSection('sav',  '📦', 'Savings &amp; Investments', savSummary,
       `<button class="btn primary" id="addInvBtn" style="padding:6px 12px;font-size:12px">+ Add</button>`, savHtml) +
     invSection('gold', '🪙', 'Gold', goldSummary,
-      `<button class="btn btn-icon gold" id="addGoldBtn" title="Add Gold">🪙</button>
-       <button class="btn btn-icon gold" id="updateGoldPriceBtn" type="button" title="Update Gold Price">↻</button>`, goldBodyHtml);
+      `<button class="btn-icon gold" id="addGoldBtn" title="Add Gold">🪙</button>
+       <button class="btn-icon gold" id="updateGoldPriceBtn" type="button" title="Update Gold Price">↻</button>`, goldBodyHtml);
 
   /* ── Wire collapse toggles ── */
   invEl.querySelectorAll('[data-inv-sec]').forEach(h => h.onclick = () => _invSecToggle(h.dataset.invSec));
@@ -1728,19 +1730,19 @@ async function renderNps() {
   const gainLoss = N(nps.currentValue) - totalContrib;
 
   el.innerHTML = `
-    <div class="item" style="flex-direction:column;align-items:stretch">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <div style="min-width:0;flex:1">
-          <div class="title">${esc(nps.name||'NPS')} <span class="pill" style="font-size:11px">${esc(nps.tier||'Tier I')}</span></div>
-          <div class="sub">${esc(nps.provider||'')} · <b>${money(nps.currentValue||0, state.settings.currency)}</b></div>
-        </div>
-        <div class="actions" style="margin-top:0;gap:6px">
-          <button class="btn-icon" id="npsContribBtn" title="Add Contribution">➕</button>
-          <button class="btn-icon" id="npsValBtn" title="Update Value">💹</button>
-          <button class="btn-icon" id="npsHistBtn" title="History">📋</button>
-          <button class="btn-icon" id="npsEditBtn" title="Edit">✏️</button>
-          <button class="btn-icon danger" id="npsDelBtn" title="Delete">🗑️</button>
-        </div>
+    <div class="item" style="flex-direction:column;align-items:stretch;gap:10px">
+      <div class="title">${esc(nps.name||'NPS')} <span class="pill" style="font-size:11px">${esc(nps.tier||'Tier I')}</span></div>
+      <div style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:6px">
+        <button class="btn-icon" id="npsContribBtn" title="Add Contribution">➕</button>
+        <button class="btn-icon" id="npsValBtn" title="Update Value">💹</button>
+        <button class="btn-icon" id="npsHistBtn" title="History">📋</button>
+        <button class="btn-icon" id="npsEditBtn" title="Edit">✏️</button>
+        <button class="btn-icon danger" id="npsDelBtn" title="Delete">🗑️</button>
+      </div>
+      <div class="stats">
+        <div class="stat">Contribution Value<b>${money(totalContrib, state.settings.currency)}</b></div>
+        <div class="stat">Current Value<b>${money(N(nps.currentValue), state.settings.currency)}</b></div>
+        <div class="stat">P/L<b class="${gainLoss>=0?'green':'red'}">${money(gainLoss, state.settings.currency)}</b></div>
       </div>
     </div>`;
 
