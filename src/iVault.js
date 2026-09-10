@@ -1040,8 +1040,8 @@ async function renderBudget() {
     if (budgetEditBtn) budgetEditBtn.style.display = 'none';
   }
 
-  // Actuals — query expenses only (expense records are the single source of truth)
-  const [exp] = await Promise.all([getAll('expenses')]);
+  // Actuals — query expenses + loan EMI payments + investment contributions
+  const [exp, loans, invs] = await Promise.all([getAll('expenses'), getAll('loans'), getAll('investments')]);
   const mExp = exp.filter(x => (x.date || '').startsWith(month));
   const actuals = {};
   const actualSubs = {}; // { 'Loans & Financial': { 'SBI Home Loan': 5000, ... }, ... }
@@ -1050,6 +1050,35 @@ async function renderBudget() {
     actualSubs[c] = {};
     mExp.filter(x => x.category === c && x.subcategory).forEach(x => {
       actualSubs[c][x.subcategory] = (actualSubs[c][x.subcategory] || 0) + Number(x.amount || 0);
+    });
+  });
+  // VO-11: Add loan EMI payments made this month to 'Loans & Financial' (per loan name)
+  loans.forEach(loan => {
+    const name = loan.name || loan.loanType || 'Loan';
+    (loan.payments || []).forEach(p => {
+      if ((p.date || '').startsWith(month)) {
+        const amt = Number(p.emi || 0);
+        // Only add if not already counted via expense record (expense form records both)
+        const alreadyCounted = mExp.some(x => x.category === 'Loans & Financial' && x.subcategory === name && (x.date || '').startsWith(month));
+        if (!alreadyCounted) {
+          actuals['Loans & Financial'] = (actuals['Loans & Financial'] || 0) + amt;
+          actualSubs['Loans & Financial'][name] = (actualSubs['Loans & Financial'][name] || 0) + amt;
+        }
+      }
+    });
+  });
+  // VO-11: Add investment contributions made this month to 'Savings & Investments' (per investment name)
+  invs.forEach(inv => {
+    const name = inv.name || inv.type || 'Investment';
+    (inv.payments || []).forEach(p => {
+      if ((p.date || '').startsWith(month)) {
+        const amt = Number(p.amount || 0);
+        const alreadyCounted = mExp.some(x => x.category === 'Savings & Investments' && x.subcategory === name && (x.date || '').startsWith(month));
+        if (!alreadyCounted) {
+          actuals['Savings & Investments'] = (actuals['Savings & Investments'] || 0) + amt;
+          actualSubs['Savings & Investments'][name] = (actualSubs['Savings & Investments'][name] || 0) + amt;
+        }
+      }
     });
   });
   const bt = BUDGET_CATS.reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
