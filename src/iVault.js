@@ -831,7 +831,8 @@ $('expenseForm').onsubmit = async e => {
   } else if (category === 'Savings & Investments' && linkedId) {
     const inv = await getOne('investments', linkedId);
     if (inv) {
-      subcategory = inv.name || inv.type;
+      // Keep budgetSubcat if user selected one; only fall back to inv.name if not
+      if (!subcategory) subcategory = inv.name || inv.type;
       if (inv.type === 'Insurance') {
         // Record premium payment and advance due date
         if (!inv.payments) inv.payments = [];
