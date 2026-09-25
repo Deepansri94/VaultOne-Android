@@ -75,13 +75,14 @@ $('modal')?.addEventListener('click', e => { if (e.target.id === 'modal') closeM
 let db;
 function txStore(store, mode = 'readonly') { return db.transaction(store, mode).objectStore(store); }
 function req(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
-async function getAll(store) { return req(txStore(store).getAll()); }
-async function getOne(store, id) { return req(txStore(store).get(id)); }
-async function putOne(store, obj) { return req(txStore(store, 'readwrite').put(obj)); }
-async function delOne(store, id) { return req(txStore(store, 'readwrite').delete(id)); }
-async function clearStore(store) { return req(txStore(store, 'readwrite').clear()); }
+window.getAll     = async function(store)         { return req(txStore(store).getAll()); };
+window.getOne     = async function(store, id)     { return req(txStore(store).get(id)); };
+window.putOne     = async function(store, obj)    { return req(txStore(store, 'readwrite').put(obj)); };
+window.delOne     = async function(store, id)     { return req(txStore(store, 'readwrite').delete(id)); };
+window.clearStore = async function(store)         { return req(txStore(store, 'readwrite').clear()); };
+window.bulkPut    = async function(store, records){ for (const r of records) await window.putOne(store, r); };
 
-async function openDB(dbName, version, stores) {
+window.openDB = async function(dbName, version, stores) {
   return new Promise((resolve, reject) => {
     const r = indexedDB.open(dbName, version);
     r.onupgradeneeded = e => {
@@ -95,7 +96,7 @@ async function openDB(dbName, version, stores) {
     };
     r.onerror = () => reject(r.error);
   });
-}
+};
 
 /* ===== Activity log ===== */
 async function logActivity(type, text) {
