@@ -7,6 +7,8 @@ on:
     branches:
       - main
       - feature/github-pages
+    tags:
+      - 'v*'
 
 permissions:
     contents: write
@@ -18,7 +20,7 @@ env:
     ANDROID_API: '35'
     BUILD_TOOLS_VERSION: '35.0.0'
     VERSION_CODE: ${{ github.run_number }}
-    VERSION_NAME: '2.${{ github.run_number }}'
+    VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('2.{0}', github.run_number) }}
 
 jobs:
 
@@ -1094,7 +1096,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          export TAG="build-${VERSION_CODE}"
+          export TAG="${VERSION_NAME}"
           export RELEASE_NAME="VaultOne ${VERSION_NAME}"
 
           # Build release body + payload from release_notes.json
