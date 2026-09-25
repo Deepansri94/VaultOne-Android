@@ -7,16 +7,29 @@
 <title>FamilyVault 📁</title>
 <link rel="stylesheet" href="shared.css">
 <style>
-.member-card { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; padding:15px; border:1px solid #ffffff10; background:#0a1525; border-radius:18px; }
-.member-meta { color:var(--muted); font-size:13px; margin-top:4px; }
-.member-age { color:var(--cyan); font-weight:800; margin-top:5px; }
-.status-active { color:var(--green); font-weight:700; }
-.status-inactive { color:#94a3b8; font-weight:700; }
+/* ── Tree ── */
+.tree-hh { border:1px solid #ffffff12; border-radius:14px; margin-bottom:10px; overflow:hidden; background:#0a1525; }
+.tree-hh-hdr { display:flex; justify-content:space-between; align-items:flex-start; padding:11px 14px; background:#0e1a2c; cursor:pointer; user-select:none; gap:8px; }
+.tree-hh-hdr:hover { background:#111f33; }
+.tree-kids { }
+.tree-person { border-top:1px solid #ffffff0a; }
+.tree-person-hdr { display:flex; justify-content:space-between; align-items:flex-start; padding:8px 12px 8px 22px; cursor:pointer; user-select:none; gap:8px; }
+.tree-person-hdr:hover { background:#0d1929; }
+.tree-doc { display:flex; justify-content:space-between; align-items:center; padding:6px 12px; border-top:1px solid #ffffff07; background:#080f1c; gap:8px; }
+.tree-empty { padding:6px 22px; font-size:12px; color:#475569; border-top:1px solid #ffffff07; }
+.tree-branch { color:#7c3aed; font-size:11px; margin-right:4px; }
+.tree-pname { font-size:13px; }
+.tree-meta { color:#64748b; font-size:11px; margin-left:4px; }
+.tree-age { color:#38bdf8; font-size:11px; display:block; margin-top:2px; }
+.tree-addr { font-size:10px; color:#475569; margin-top:2px; }
+.tree-chev { font-size:11px; color:#475569; flex-shrink:0; margin-top:2px; }
+.tree-status { font-size:10px; margin-left:4px; }
+.tree-status.active { color:#34d399; }
+.tree-status.inactive { color:#64748b; }
+/* ── Doc toolbar ── */
 .doc-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
 .doc-toolbar input { flex:1; min-width:140px; }
 .doc-toolbar select { flex:0 0 auto; padding:8px 10px; border-radius:8px; border:1px solid #ffffff18; background:#0a1525; color:#fff; font-size:13px; margin-top:0; width:auto; }
-.exp-warn { color:var(--red); }
-@media(max-width:600px){ .member-card { flex-direction:column; } }
 </style>
 </head>
 <body>
@@ -26,7 +39,7 @@
   <div class="brand">
     <div class="brand-left">
       <a class="home-btn" href="index.html" title="VaultOne Home">🏠</a>
-      <div><h1>FamilyVault 📁</h1><small id="profileLine">Documents · People · Offline-first</small></div>
+      <div><h1>FamilyVault 📁</h1><small id="profileLine">Documents · People · Cloud-synced</small></div>
     </div>
     <div class="actions">
       <button class="iconbtn" id="settingsBtn" title="Settings">⚙️</button>
@@ -58,7 +71,7 @@
   <!-- Hero -->
   <div class="hero">
     <h2>FamilyVault 📁</h2>
-    <p class="muted">People, households, vehicles and documents — stored locally.</p>
+    <p class="muted">People, households, vehicles and documents — synced to Google Sheets.</p>
     <div class="actions">
       <button class="btn" id="addPersonBtn">👤 + Person</button>
       <button class="btn" id="addHouseBtn">🏠 + Household</button>
@@ -91,10 +104,10 @@
         <div class="family-tile-label">Documents</div>
       </div>
     </div>
-    <!-- Sub-panel -->
-    <div id="familySubPanel" style="display:none;margin-top:14px">
-      <div class="doc-toolbar" id="docToolbar" style="display:none">
-        <input id="docSearch" placeholder="Search documents...">
+    <!-- Tree panel — always visible -->
+    <div id="familySubPanel" style="margin-top:14px">
+      <div class="doc-toolbar" id="docToolbar">
+        <input id="docSearch" placeholder="🔍 Search people, households, documents...">
         <select id="docTypeFilter">
           <option value="">All Types</option>
           <option>Aadhaar</option><option>PAN</option><option>Passport</option>
@@ -137,6 +150,7 @@
 
 <div id="toast" class="toast"></div>
 
+<script src="api.js"></script>
 <script src="shared.js"></script>
 <script src="FamilyVault.js"></script>
 </body>

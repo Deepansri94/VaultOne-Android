@@ -124,7 +124,7 @@ let state = { settings: { id: 'settings', name: '', currency: 'INR', pinHash: ''
 
 function applySettings() {
   const s = state.settings;
-  $('profileLine').textContent = s.name ? s.name + ' · Encrypted' : 'Encrypted · Offline-first';
+  $('profileLine').textContent = s.name ? s.name + ' · Encrypted' : 'Encrypted · Cloud-synced';
 }
 
 /* ===== Crypto ===== */

@@ -40,7 +40,7 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
   </div>
   <div class="logo">🔐</div>
   <h1>VaultOne</h1>
-  <p class="sub">Offline-first · All data stays on your device</p>
+  <p class="sub">Google Sheets · All data synced to your sheet</p>
   <div class="apps">
     <a class="app-btn" href="iVault.html">
       <div class="app-icon purple">💰</div>
@@ -63,12 +63,37 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
         <div class="app-desc">Encrypted local password manager</div>
       </div>
     </a>
+    <button class="app-btn" id="migrateBtn" style="width:100%;cursor:pointer">
+      <div class="app-icon" style="background:#34d39922">🚀</div>
+      <div class="app-info">
+        <div class="app-name">Migrate to Google Sheets</div>
+        <div class="app-desc">One-time migration from IndexedDB</div>
+      </div>
+    </button>
   </div>
   <div class="footer">
     VaultOne <span id="appVersionLabel">...</span> · No server · No cloud
     <button id="releaseNotesBtn" title="What's new" style="
       background:none;border:none;color:var(--purple);font-size:11px;
       cursor:pointer;padding:0 4px;text-decoration:underline;vertical-align:middle">What's new</button>
+  </div>
+</div>
+
+<!-- Migrate Modal -->
+<div id="migrateModal" class="modal">
+  <div class="sheet" style="border-radius:26px 26px 0 0;max-width:600px;margin:0 auto">
+    <div class="modal-head">
+      <h3>🚀 Migrate to Google Sheets</h3>
+      <button class="iconbtn" id="migrateModalClose">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">One-time migration — copies all IndexedDB data from this device to your Google Sheet.</p>
+    <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Web App URL</label>
+    <input id="migrateUrlInput" placeholder="https://script.google.com/macros/s/..." style="width:100%;margin-bottom:14px">
+    <div class="actions" style="margin-bottom:14px">
+      <button class="btn primary" id="migrateStartBtn">Start Migration</button>
+      <button class="btn" id="migrateTestBtn">Test Connection</button>
+    </div>
+    <div id="migrateLog" style="background:#0b1627;border:1px solid #ffffff14;border-radius:12px;padding:14px;font-size:12px;font-family:monospace;min-height:160px;max-height:320px;overflow-y:auto;white-space:pre-wrap;color:#94a3b8">Ready. Enter your Web App URL and click Start Migration.</div>
   </div>
 </div>
 
@@ -112,6 +137,7 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 </div>
 
 <div id="toast" class="toast"></div>
+<script src="api.js"></script>
 <script src="shared.js"></script>
 <script>
 'use strict';
@@ -233,12 +259,103 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
 
 })();
 
-/* ===== Index page: open iVaultDB so shared.js Notes IIFE can use it ===== */
-(async function () {
-  const DB_NAME = 'iVaultDB';
-  const STORES = ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes','cashWallets'];
-  await openDB(DB_NAME, 2, STORES);
+/* ===== Migrate Panel ===== */
+(function () {
+  const DATABASES = [
+    { name: 'iVaultDB',       version: 2, stores: ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes','cashWallets'] },
+    { name: 'FamilyVaultDB',  version: 1, stores: ['meta','persons','households','vehicles','documents','reminders','activity','notes'] },
+    { name: 'PasswordVaultDB',version: 1, stores: ['meta','passwords','reminders','activity','notes'] }
+  ];
+  const STORE_MAP = { cashWallets: 'cash_wallets' };
+
+  const modal   = document.getElementById('migrateModal');
+  const logEl   = document.getElementById('migrateLog');
+
+  function mprint(msg, cls) {
+    const d = document.createElement('div');
+    if (cls) d.style.color = cls === 'ok' ? '#34d399' : cls === 'err' ? '#f87171' : '#fbbf24';
+    d.textContent = msg;
+    logEl.appendChild(d);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  async function mApiCall(url, payload) {
+    const res = await fetch(url + '?p=' + encodeURIComponent(JSON.stringify(payload)), { redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data && data.error) throw new Error(data.error);
+    return data;
+  }
+
+  function openIDB(dbName, version, storeNames) {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open(dbName, version);
+      r.onupgradeneeded = e => { const d = e.target.result; storeNames.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); }); };
+      r.onsuccess = () => res(r.result);
+      r.onerror   = () => rej(r.error);
+    });
+  }
+
+  function idbGetAll(db, store) {
+    return new Promise((res, rej) => {
+      const req = db.transaction(store, 'readonly').objectStore(store).getAll();
+      req.onsuccess = () => res(req.result);
+      req.onerror   = () => rej(req.error);
+    });
+  }
+
+  async function migrateDB(url, { name, version, stores }) {
+    mprint('\n📦 Opening ' + name + '…');
+    let db;
+    try { db = await openIDB(name, version, stores); } catch (e) { mprint('❌ Could not open ' + name + ': ' + e.message, 'err'); return; }
+    mprint('✅ ' + name + ' opened', 'ok');
+    for (const store of stores) {
+      try {
+        const rows = await idbGetAll(db, store);
+        if (!rows.length) { mprint('⏭  ' + store + ': empty, skipped', 'warn'); continue; }
+        if (store === 'meta') {
+          const settings = rows.find(r => r.id === 'settings') || rows[0];
+          const kvRecords = Object.entries(settings).map(([k, v]) => ({ id: k, key: k, value: typeof v === 'object' ? JSON.stringify(v) : String(v ?? '') }));
+          const sheetsStore = '_Meta_' + name.replace('DB', '');
+          await mApiCall(url, { action: 'clearStore', store: sheetsStore });
+          await mApiCall(url, { action: 'bulkPut',   store: sheetsStore, records: kvRecords });
+          mprint('✅ ' + store + ' (' + name + '): ' + kvRecords.length + ' keys migrated', 'ok');
+          continue;
+        }
+        const records = rows.map(({ fileBlob, fileBytes, ...rest }) => rest);
+        const sheetsStore = STORE_MAP[store] || store;
+        await mApiCall(url, { action: 'clearStore', store: sheetsStore });
+        await mApiCall(url, { action: 'bulkPut',   store: sheetsStore, records });
+        mprint('✅ ' + store + ': ' + records.length + ' records migrated', 'ok');
+      } catch (e) { mprint('❌ ' + store + ': ' + e.message, 'err'); }
+    }
+    db.close();
+  }
+
+  document.getElementById('migrateBtn').onclick = () => modal.classList.add('open');
+  document.getElementById('migrateModalClose').onclick = () => modal.classList.remove('open');
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+  document.getElementById('migrateTestBtn').onclick = async () => {
+    const url = document.getElementById('migrateUrlInput').value.trim();
+    if (!url) { mprint('⚠️ Enter a URL first.', 'warn'); return; }
+    try { await mApiCall(url, { action: 'ping' }); mprint('✅ Connection OK', 'ok'); }
+    catch (e) { mprint('❌ ' + e.message, 'err'); }
+  };
+
+  document.getElementById('migrateStartBtn').onclick = async () => {
+    logEl.innerHTML = '';
+    const url = document.getElementById('migrateUrlInput').value.trim();
+    if (!url) { mprint('⚠️ Enter your Web App URL first.', 'warn'); return; }
+    for (const dbDef of DATABASES) await migrateDB(url, dbDef);
+    localStorage.setItem('vaultone_webappurl', url);
+    mprint('');
+    mprint('🎉 Migration complete! Your Web App URL has been saved.', 'ok');
+    mprint('You can now use VaultOne — it will read from Google Sheets.', 'ok');
+  };
 })();
+
+/* openDB is a no-op in Sheets mode — api.js handles it */
 
 /* ===== Quick Add Expense FAB ===== */
 (function(){

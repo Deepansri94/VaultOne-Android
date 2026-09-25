@@ -110,7 +110,7 @@ let _budgetEditMode = false; // true only when user explicitly clicks Edit
 
 function applySettings() {
   const s = state.settings;
-  $('profileLine').textContent = s.name ? s.name + ' · iVault' : 'Personal Finance · Offline-first';
+  $('profileLine').textContent = s.name ? s.name + ' · iVault' : 'Personal Finance · Cloud-synced';
   if ($('profileName')) $('profileName').value = s.name || '';
   if ($('profileCurrency')) $('profileCurrency').value = s.currency || 'INR';
 }
@@ -825,7 +825,7 @@ $('incomeForm').onsubmit = async e => {
   const fd = new FormData(form);
   const amount = Number(fd.get('amount'));
   if (amount <= 0) { toast('Enter a valid amount', true); return; }
-  if (!db) { toast('Database not ready. Please reload the page.', true); return; }
+  /* db sentinel set by api.js */
   await putOne('income', { id: uid(), type: fd.get('type'), amount, date: fd.get('date') || today(), note: fd.get('note') || '', createdAt: new Date().toISOString() });
   await logActivity('Income', 'Income saved');
   toast('Income saved');
@@ -841,7 +841,7 @@ $('expenseForm').onsubmit = async e => {
   const fd = new FormData(form);
   const amount = Number(fd.get('amount'));
   if (amount <= 0) { toast('Enter a valid amount', true); return; }
-  if (!db) { toast('Database not ready. Please reload the page.', true); return; }
+  /* db sentinel set by api.js */
   const category = fd.get('category') || '';
   const linkedId = fd.get('linkedId') || '';
   const date = fd.get('date') || today();

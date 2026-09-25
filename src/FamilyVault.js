@@ -18,7 +18,6 @@ let _activeTile = null;
     await refreshFamily();
     renderBellReminders();
     updateNotificationStatus();
-    // Inject FamilyVault-specific settings section
     appendSettingsPanelSection(`
       <hr style="border-color:#ffffff12;margin:16px 0">
       <h4 style="margin:0 0 12px;font-size:14px;color:#94a3b8">💾 Backup &amp; Restore</h4>
@@ -79,7 +78,7 @@ let _activeTile = null;
 
 function applySettings() {
   const s = state.settings;
-  $('profileLine').textContent = s.name ? s.name + ' · FamilyVault' : 'Documents · People · Offline-first';
+  $('profileLine').textContent = s.name ? s.name + ' · FamilyVault' : 'Documents · People · Cloud-synced';
 }
 
 async function refreshFamily() {
@@ -91,42 +90,25 @@ async function refreshFamily() {
   $('cntHouses').textContent = households.length;
   $('cntVehicles').textContent = vehicles.length;
   $('cntDocs').textContent = documents.length;
-
-  // Rewire tile clicks
-  document.querySelectorAll('.family-tile').forEach(tile => {
-    tile.onclick = () => {
-      const type = tile.dataset.tile;
-      const panel = $('familySubPanel');
-      const wasActive = tile.classList.contains('active');
-      document.querySelectorAll('.family-tile').forEach(t => t.classList.remove('active'));
-      if (wasActive) { tile.classList.add('active'); panel.style.display = 'block'; showTileContent(type); return; }
-      tile.classList.add('active');
-      panel.style.display = 'block';
-      _activeTile = type;
-      showTileContent(type);
-    };
-  });
-
-  // Restore active tile
-  if (_activeTile) {
-    const tile = document.querySelector(`.family-tile[data-tile="${_activeTile}"]`);
-    if (tile) { tile.classList.add('active'); $('familySubPanel').style.display = 'block'; showTileContent(_activeTile); }
-  }
+  $('familySubPanel').style.display = 'block';
+  $('docToolbar').style.display = 'flex';
+  renderTree();
 }
 
-function showTileContent(type) {
-  const toolbar = $('docToolbar');
-  toolbar.style.display = type === 'documents' ? 'flex' : 'none';
-  if (type === 'people') renderPeople();
-  else if (type === 'households') renderHouseholds();
-  else if (type === 'vehicles') renderVehicles();
-  else if (type === 'documents') { applyDocFilters(); }
-}
+function showTileContent() { renderTree(); }
 
 /* ===== Helpers ===== */
+function _cleanDate(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : s;
+}
+
 function formatAge(dob) {
-  if (!dob) return 'DOB not set';
-  const birth = new Date(dob + 'T00:00:00');
+  const clean = _cleanDate(dob);
+  if (!clean) return 'DOB not set';
+  const birth = new Date(clean + 'T00:00:00');
   if (Number.isNaN(birth.getTime())) return 'Invalid DOB';
   const now = new Date();
   if (birth > now) return 'DOB is in the future';
@@ -147,24 +129,159 @@ function maskDocNum(v) {
 
 function calcExpiry(d) { const n = daysUntil(d); return n !== null && n <= 30; }
 
-/* ===== People ===== */
-function renderPeople() {
+/* ===== Tree View ===== */
+function renderTree() {
   const list = $('familyList');
-  const { persons } = _cache;
-  if (!persons.length) { list.innerHTML = '<div class="empty">No people added yet.</div>'; return; }
-  list.innerHTML = persons.map(p => `<div class="member-card">
-    <div>
-      <div class="title">👤 ${esc(p.name || 'Person')}</div>
-      <div class="member-meta">${esc(p.relation || 'Member')} · ${esc(p.householdName || 'No household')}</div>
-      <div class="member-meta">${p.dob ? 'DOB: ' + esc(p.dob) : 'DOB: Not set'} · ${esc(p.gender || '')}</div>
-      <div class="member-age">${p.dob ? '🎂 ' + formatAge(p.dob) : ''}</div>
-      <div class="${p.status === 'Inactive' ? 'status-inactive' : 'status-active'}">${p.status === 'Inactive' ? '⚪ Inactive' : '🟢 Active'}</div>
-    </div>
-    <div class="actions">
-      <button class="btn-icon" data-pedit="${p.id}" title="Edit">✏️</button>
-      <button class="btn-icon danger" data-pdel="${p.id}" title="Delete">🗑️</button>
-    </div>
-  </div>`).join('');
+  const { persons, households, vehicles, documents } = _cache;
+  const q = ($('docSearch')?.value || '').toLowerCase();
+
+  if (!households.length && !persons.length && !vehicles.length) {
+    list.innerHTML = '<div class="empty">No records yet. Add a household first, then people.</div>';
+    return;
+  }
+
+  let html = '';
+
+  // Households
+  households.forEach((hh, hi) => {
+    const members = persons.filter(p => p.householdId === hh.id);
+    const hhdocs  = documents.filter(d => d.ownerType === 'Household' && d.householdId === hh.id);
+    if (q) {
+      const hhMatch  = [hh.name, hh.description, hh.address].some(v => String(v||'').toLowerCase().includes(q));
+      const memMatch = members.some(p => [p.name, p.relation].some(v => String(v||'').toLowerCase().includes(q)));
+      if (!hhMatch && !memMatch) return;
+    }
+    const hhId = 'hh_' + hi;
+    html += `<div class="tree-hh">
+      <div class="tree-hh-hdr" data-toggle="${hhId}">
+        <div>
+          <b>🏠 ${esc(hh.name)}</b>
+          ${hh.description ? `<span class="tree-meta"> · ${esc(hh.description)}</span>` : ''}
+          ${hh.address ? `<div class="tree-addr">${esc(hh.address.split('\n')[0])}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn-icon" data-hedit="${hh.id}" title="Edit household">✏️</button>
+          <span class="tree-chev" id="chev_${hhId}">▼</span>
+        </div>
+      </div>
+      <div class="tree-kids" id="kids_${hhId}">`;
+
+    hhdocs.forEach(d => { html += docRow(d, 24); });
+
+    members.forEach((p, pi) => {
+      const pdocs = documents.filter(d => d.ownerType === 'Person' && d.personId === p.id);
+      const pId = hhId + '_p' + pi;
+      const dobClean = _cleanDate(p.dob);
+      html += `<div class="tree-person">
+        <div class="tree-person-hdr" data-toggle="${pId}">
+          <div>
+            <span class="tree-branch">└─</span>
+            <b class="tree-pname">${esc(p.name)}</b>
+            <span class="tree-meta">${esc(p.relation)}${p.gender ? ' · ' + esc(p.gender) : ''}${dobClean ? ' · ' + dobClean : ''}</span>
+            <span class="tree-age">${dobClean ? '🎂 ' + formatAge(dobClean) : ''}</span>
+            <span class="tree-status ${p.status === 'Inactive' ? 'inactive' : 'active'}">${p.status === 'Inactive' ? '⚪' : '🟢'}</span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="btn-icon" data-pedit="${p.id}" title="Edit person">✏️</button>
+            <button class="btn-icon danger" data-pdel="${p.id}" title="Delete">🗑️</button>
+            <span class="tree-chev" id="chev_${pId}">${pdocs.length ? '▼' : ''}</span>
+          </div>
+        </div>`;
+      if (pdocs.length) {
+        html += `<div class="tree-kids" id="kids_${pId}">`;
+        pdocs.forEach(d => { html += docRow(d, 44); });
+        html += `</div>`;
+      }
+      html += `</div>`;
+    });
+
+    if (!members.length && !hhdocs.length)
+      html += `<div class="tree-empty">No members or documents</div>`;
+
+    html += `</div></div>`;
+  });
+
+  // Unassigned people
+  const unassigned = persons.filter(p => !p.householdId || !households.find(h => h.id === p.householdId));
+  if (unassigned.length) {
+    html += `<div class="tree-hh">
+      <div class="tree-hh-hdr" data-toggle="ua">
+        <b>👤 Unassigned People (${unassigned.length})</b>
+        <span class="tree-chev" id="chev_ua">▼</span>
+      </div>
+      <div class="tree-kids" id="kids_ua">`;
+    unassigned.forEach(p => {
+      const dobClean = _cleanDate(p.dob);
+      html += `<div class="tree-person">
+        <div class="tree-person-hdr" style="cursor:default">
+          <div>
+            <b class="tree-pname">${esc(p.name)}</b>
+            <span class="tree-meta">${esc(p.relation)}${dobClean ? ' · ' + dobClean : ''}</span>
+            <span class="tree-age">${dobClean ? '🎂 ' + formatAge(dobClean) : ''}</span>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn-icon" data-pedit="${p.id}">✏️</button>
+            <button class="btn-icon danger" data-pdel="${p.id}">🗑️</button>
+          </div>
+        </div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  // Vehicles — each vehicle is collapsible and shows its own docs underneath
+  if (vehicles.length) {
+    html += `<div class="tree-hh">
+      <div class="tree-hh-hdr" data-toggle="veh">
+        <b>🚗 Vehicles (${vehicles.length})</b>
+        <span class="tree-chev" id="chev_veh">▼</span>
+      </div>
+      <div class="tree-kids" id="kids_veh">`;
+    vehicles.forEach((v, vi) => {
+      const vdocs = documents.filter(d => d.ownerType === 'Vehicle' && d.vehicleId === v.id);
+      const vId = 'veh_' + vi;
+      html += `<div class="tree-person">
+        <div class="tree-person-hdr" data-toggle="${vId}">
+          <div>
+            <span class="tree-branch">└─</span>
+            <b style="font-size:13px">${esc(v.name || v.registrationNumber)}</b>
+            <span class="tree-meta">${esc(v.type || '')}${v.make ? ' · ' + esc(v.make) : ''}${v.model ? ' ' + esc(v.model) : ''}${v.year ? ' (' + esc(v.year) + ')' : ''}</span>
+            <div style="font-size:11px;color:#64748b;margin-top:2px">Reg: ${esc(v.registrationNumber || '—')} · Owner: ${esc(v.ownerPersonName || '—')}</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="btn-icon" data-vedit="${v.id}" title="Edit">✏️</button>
+            <button class="btn-icon danger" data-vdel="${v.id}" title="Delete">🗑️</button>
+            <button class="btn-icon" data-vdocadd="${v.id}" title="Add vehicle document">📄+</button>
+            <span class="tree-chev" id="chev_${vId}">${vdocs.length ? '▼' : ''}</span>
+          </div>
+        </div>`;
+      if (vdocs.length) {
+        html += `<div class="tree-kids" id="kids_${vId}">`;
+        vdocs.forEach(d => { html += docRow(d, 44); });
+        html += `</div>`;
+      }
+      html += `</div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  list.innerHTML = html || '<div class="empty">No results.</div>';
+
+  // Collapse toggles
+  list.querySelectorAll('[data-toggle]').forEach(hdr => {
+    hdr.style.cursor = 'pointer';
+    hdr.onclick = e => {
+      if (e.target.closest('button')) return;
+      const id = hdr.dataset.toggle;
+      const kids = document.getElementById('kids_' + id);
+      const chev = document.getElementById('chev_' + id);
+      if (!kids) return;
+      const collapsed = kids.style.display === 'none';
+      kids.style.display = collapsed ? '' : 'none';
+      if (chev) chev.textContent = collapsed ? '▼' : '▶';
+    };
+  });
+
   list.querySelectorAll('[data-pedit]').forEach(b => b.onclick = () => personModal(_cache.persons.find(x => x.id === b.dataset.pedit)));
   list.querySelectorAll('[data-pdel]').forEach(b => b.onclick = async () => {
     const p = _cache.persons.find(x => x.id === b.dataset.pdel);
@@ -173,7 +290,46 @@ function renderPeople() {
     await logActivity('Family', 'Person deleted');
     await refreshFamily();
   });
+  list.querySelectorAll('[data-hedit]').forEach(b => b.onclick = () => householdModal(_cache.households.find(x => x.id === b.dataset.hedit)));
+  list.querySelectorAll('[data-vedit]').forEach(b => b.onclick = () => vehicleModal(_cache.vehicles.find(x => x.id === b.dataset.vedit)));
+  list.querySelectorAll('[data-vdocadd]').forEach(b => b.onclick = () => docModal(null, b.dataset.vdocadd));
+  list.querySelectorAll('[data-vdel]').forEach(b => b.onclick = async () => {
+    if (!confirm('Delete this vehicle?')) return;
+    await delOne('vehicles', b.dataset.vdel);
+    await logActivity('Family', 'Vehicle deleted');
+    await refreshFamily();
+  });
+  list.querySelectorAll('[data-dedit]').forEach(b => b.onclick = () => docModal(_cache.documents.find(x => x.id === b.dataset.dedit)));
+  list.querySelectorAll('[data-ddel]').forEach(b => b.onclick = async () => {
+    if (!confirm('Delete this document?')) return;
+    await delOne('documents', b.dataset.ddel);
+    await logActivity('Document', 'Document deleted');
+    await refreshFamily();
+  });
+  list.querySelectorAll('[data-dview]').forEach(b => b.onclick = () => docDetails(b.dataset.dview));
 }
+
+function docRow(d, indent) {
+  const warn = d.expiryDate && calcExpiry(_cleanDate(d.expiryDate));
+  const exp = _cleanDate(d.expiryDate);
+  return `<div class="tree-doc" style="padding-left:${indent}px">
+    <div>
+      <span class="tree-branch">└─</span>
+      <b style="font-size:11px">${esc(d.title)}</b>
+      <span class="tree-meta">${esc(d.type || '')}</span>
+      ${exp ? `<span style="font-size:10px;color:#94a3b8">${exp}</span>` : ''}
+      ${warn ? `<span style="color:#d97706;font-size:10px;font-weight:700"> ⚠️ Expiring</span>` : ''}
+    </div>
+    <div style="display:flex;gap:4px">
+      <button class="btn-icon" data-dview="${d.id}" title="Details">👁️</button>
+      <button class="btn-icon" data-dedit="${d.id}" title="Edit">✏️</button>
+      <button class="btn-icon danger" data-ddel="${d.id}" title="Delete">🗑️</button>
+    </div>
+  </div>`;
+}
+
+/* ===== People ===== */
+function renderPeople() { renderTree(); }
 
 function personModal(existing = null) {
   const { households } = _cache;
@@ -186,7 +342,7 @@ function personModal(existing = null) {
         <option value="">Select household</option>${hOpts}
       </select>
     </label>
-    <label>Date of Birth<input name="dob" type="date" value="${esc(existing?.dob || '')}"></label>
+    <label>Date of Birth<input name="dob" type="date" value="${esc(_cleanDate(existing?.dob || ''))}"></label>
     <label>Gender<select name="gender">
       <option value="">Select</option>
       <option ${existing?.gender === 'Male' ? 'selected' : ''}>Male</option>
@@ -211,7 +367,6 @@ function personModal(existing = null) {
     };
     await putOne('persons', record);
     await logActivity('Family', (existing ? 'Person updated: ' : 'Person added: ') + record.name);
-    // Auto-create/update birthday reminder
     if (record.dob && record.status === 'Active') {
       const remId = 'bday-' + record.id;
       const [, mm, dd] = record.dob.split('-');
@@ -238,33 +393,7 @@ function personModal(existing = null) {
 $('addPersonBtn').onclick = () => personModal();
 
 /* ===== Households ===== */
-function renderHouseholds() {
-  const list = $('familyList');
-  const { households } = _cache;
-  if (!households.length) { list.innerHTML = '<div class="empty">No households added yet.</div>'; return; }
-  list.innerHTML = households.map(h => `<div class="item">
-    <div style="min-width:0;flex:1">
-      <div class="title">🏠 ${esc(h.name)}</div>
-      <div class="sub">${esc(h.description || '')}${h.address ? ' · ' + esc(h.address.split('\n')[0]) : ''}</div>
-    </div>
-    <div class="actions">
-      <button class="btn-icon" data-hedit="${h.id}" title="Edit">✏️</button>
-      <button class="btn-icon danger" data-hdel="${h.id}" title="Delete">🗑️</button>
-    </div>
-  </div>`).join('');
-  list.querySelectorAll('[data-hedit]').forEach(b => b.onclick = () => householdModal(_cache.households.find(x => x.id === b.dataset.hedit)));
-  list.querySelectorAll('[data-hdel]').forEach(b => b.onclick = async () => {
-    const id = b.dataset.hdel;
-    const members = _cache.persons.filter(x => x.householdId === id).length;
-    const docs = _cache.documents.filter(x => x.householdId === id).length;
-    if (members || docs) { toast(`Cannot delete: ${members} member(s) and ${docs} document(s) linked.`, true); return; }
-    const h = _cache.households.find(x => x.id === id);
-    if (!confirm(`Delete ${h?.name || 'this household'}?`)) return;
-    await delOne('households', id);
-    await logActivity('Family', 'Household deleted');
-    await refreshFamily();
-  });
-}
+function renderHouseholds() { renderTree(); }
 
 function householdModal(existing = null) {
   openModal(existing ? 'Edit Household' : 'Add Household', `<form class="grid">
@@ -290,29 +419,7 @@ function householdModal(existing = null) {
 $('addHouseBtn').onclick = () => householdModal();
 
 /* ===== Vehicles ===== */
-function renderVehicles() {
-  const list = $('familyList');
-  const { vehicles } = _cache;
-  if (!vehicles.length) { list.innerHTML = '<div class="empty">No vehicles added yet.</div>'; return; }
-  list.innerHTML = vehicles.map(v => `<div class="item">
-    <div style="min-width:0;flex:1">
-      <div class="title">🚗 ${esc(v.name || v.registrationNumber || 'Vehicle')}</div>
-      <div class="sub">${esc(v.type || 'Vehicle')} · ${esc(v.make || '')} ${esc(v.model || '')} · Reg: ${esc(v.registrationNumber || 'Not set')}</div>
-      <div class="sub">Owner: ${esc(v.ownerPersonName || 'Not assigned')}</div>
-    </div>
-    <div class="actions">
-      <button class="btn-icon" data-vedit="${v.id}" title="Edit">✏️</button>
-      <button class="btn-icon danger" data-vdel="${v.id}" title="Delete">🗑️</button>
-    </div>
-  </div>`).join('');
-  list.querySelectorAll('[data-vedit]').forEach(b => b.onclick = () => vehicleModal(_cache.vehicles.find(x => x.id === b.dataset.vedit)));
-  list.querySelectorAll('[data-vdel]').forEach(b => b.onclick = async () => {
-    if (!confirm('Delete this vehicle?')) return;
-    await delOne('vehicles', b.dataset.vdel);
-    await logActivity('Family', 'Vehicle deleted');
-    await refreshFamily();
-  });
-}
+function renderVehicles() { renderTree(); }
 
 function vehicleModal(existing = null) {
   const { persons } = _cache;
@@ -350,104 +457,84 @@ function vehicleModal(existing = null) {
 $('addVehicleBtn').onclick = () => vehicleModal();
 
 /* ===== Documents ===== */
-function applyDocFilters() {
-  const q = ($('docSearch')?.value || '').toLowerCase();
-  const typeF = $('docTypeFilter')?.value || '';
-  const filtered = _cache.documents.filter(d => {
-    const matchQ = !q || [d.title, d.type, d.category, d.personName, d.householdName].some(x => String(x || '').toLowerCase().includes(q));
-    const matchT = !typeF || d.type === typeF;
-    return matchQ && matchT;
-  });
-  renderDocTable(filtered);
-}
+function applyDocFilters() { renderTree(); }
+$('docSearch').oninput = () => renderTree();
+$('docTypeFilter').onchange = () => renderTree();
 
-$('docSearch').oninput = () => { getPage('docs').page = 1; applyDocFilters(); };
-$('docTypeFilter').onchange = () => { getPage('docs').page = 1; applyDocFilters(); };
+const VEHICLE_DOC_TYPES = [
+  'Registration Certificate','Pollution Certificate','Road Tax',
+  'Fitness Certificate','Insurance','Driving Licence','Vehicle','Other'
+];
+const GENERAL_DOC_TYPES = [
+  'Aadhaar','PAN','Passport','Driving Licence','Ration Card','Insurance',
+  'Registration Certificate','Pollution Certificate','Road Tax','Fitness Certificate',
+  'Education','Employment','Property','Vehicle','Certificate','Other'
+];
 
-function renderDocTable(docs) {
-  const host = $('familyList');
-  if (!docs.length) { host.innerHTML = '<div class="empty">No documents found.</div>'; return; }
-  _pgRender['docs'] = () => renderDocTable(docs);
-  const { pageRows, totalPages, page, total } = paginate('docs', docs);
-  const st = getPage('docs');
-  const rows = pageRows.map(d => {
-    const warn = d.expiryDate && calcExpiry(d.expiryDate) ? ' ⚠️' : '';
-    return `<tr>
-      <td>${esc(d.title)}${warn}</td>
-      <td>${esc(d.type || '—')}</td>
-      <td>${esc(d.personName || d.householdName || '—')}</td>
-      <td>${esc(d.expiryDate || '—')}</td>
-      <td><div class="table-actions">
-        <button class="btn-icon" data-dview="${d.id}" title="Details">👁️</button>
-        <button class="btn-icon" data-dedit="${d.id}" title="Edit">✏️</button>
-        <button class="btn-icon danger" data-ddel="${d.id}" title="Delete">🗑️</button>
-      </div></td>
-    </tr>`;
-  }).join('');
-  host.innerHTML = `<div class="table-wrap"><table class="data-table">
-    <thead><tr><th>Title</th><th>Type</th><th>Owner</th><th>Expiry</th><th>Actions</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>` + paginationHtml('docs', page, totalPages, total, st.pageSize);
-  host.querySelectorAll('[data-dview]').forEach(b => b.onclick = () => docDetails(b.dataset.dview));
-  host.querySelectorAll('[data-dedit]').forEach(b => b.onclick = () => docModal(_cache.documents.find(x => x.id === b.dataset.dedit)));
-  host.querySelectorAll('[data-ddel]').forEach(b => b.onclick = async () => {
-    if (!confirm('Delete this document?')) return;
-    await delOne('documents', b.dataset.ddel);
-    await logActivity('Document', 'Document deleted');
-    await refreshFamily(); applyDocFilters();
-  });
-}
-
-function docModal(existing = null) {
-  const { persons, households } = _cache;
+function docModal(existing = null, presetVehicleId = null) {
+  const { persons, households, vehicles } = _cache;
   const pOpts = persons.map(p => `<option value="${p.id}" ${existing?.personId === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
   const hOpts = households.map(h => `<option value="${h.id}" ${existing?.householdId === h.id ? 'selected' : ''}>${esc(h.name)}</option>`).join('');
-  const typeOpts = ['Aadhaar','PAN','Passport','Driving Licence','Ration Card','Insurance','Education','Employment','Property','Vehicle','Certificate','Other'].map(t => `<option ${existing?.type === t ? 'selected' : ''}>${t}</option>`).join('');
+  const vOpts = vehicles.map(v => `<option value="${v.id}" ${(existing?.vehicleId || presetVehicleId) === v.id ? 'selected' : ''}>${esc(v.name || v.registrationNumber)}</option>`).join('');
+  const typeOpts = GENERAL_DOC_TYPES.map(t => `<option ${existing?.type === t ? 'selected' : ''}>${t}</option>`).join('');
+  const presetOwner = existing?.ownerType || (presetVehicleId ? 'Vehicle' : '');
+
   openModal(existing ? 'Edit Document' : 'Add Document', `<form class="grid">
     <label>Document Name <span class="req-star">*</span><input name="title" required value="${esc(existing?.title || '')}"></label>
     <label>Type <span class="req-star">*</span><select name="type" required><option value="">Select type</option>${typeOpts}</select></label>
     <label>Owner Type <span class="req-star">*</span>
       <select name="ownerType" id="ownerTypeSelect" required>
         <option value="">Select</option>
-        <option ${existing?.ownerType === 'Person' ? 'selected' : ''}>Person</option>
-        <option ${existing?.ownerType === 'Household' ? 'selected' : ''}>Household</option>
+        <option ${presetOwner === 'Person'    ? 'selected' : ''}>Person</option>
+        <option ${presetOwner === 'Household' ? 'selected' : ''}>Household</option>
+        <option ${presetOwner === 'Vehicle'   ? 'selected' : ''}>Vehicle</option>
       </select>
     </label>
-    <label id="personSelWrap">Person<select name="personId"><option value="">Select person</option>${pOpts}</select></label>
-    <label id="houseSelWrap" style="display:none">Household<select name="householdId"><option value="">Select household</option>${hOpts}</select></label>
+    <label id="personSelWrap"  ${presetOwner && presetOwner !== 'Person'    ? 'style="display:none"' : ''}>Person<select name="personId"><option value="">Select person</option>${pOpts}</select></label>
+    <label id="houseSelWrap"   ${presetOwner !== 'Household' ? 'style="display:none"' : ''}>Household<select name="householdId"><option value="">Select household</option>${hOpts}</select></label>
+    <label id="vehicleSelWrap" ${presetOwner !== 'Vehicle'   ? 'style="display:none"' : ''}>Vehicle<select name="vehicleId"><option value="">Select vehicle</option>${vOpts}</select></label>
     <label>Document Number <span class="req-star">*</span><input name="documentNumber" required value="${esc(existing?.documentNumber || '')}"></label>
-    <label>Issue Date<input name="issueDate" type="date" value="${esc(existing?.issueDate || '')}"></label>
-    <label>Expiry Date<input name="expiryDate" type="date" value="${esc(existing?.expiryDate || '')}"></label>
+    <label>Issue Date<input name="issueDate" type="date" value="${esc(_cleanDate(existing?.issueDate || ''))}"></label>
+    <label>Expiry Date<input name="expiryDate" type="date" value="${esc(_cleanDate(existing?.expiryDate || ''))}"></label>
     <label style="grid-column:1/-1">Notes<textarea name="notes">${esc(existing?.notes || '')}</textarea></label>
     <div class="actions" style="grid-column:1/-1"><button class="btn primary">Save Document</button></div>
   </form>`, async fd => {
     const ownerType = fd.get('ownerType');
-    const p = ownerType === 'Person' ? persons.find(x => x.id === fd.get('personId')) : null;
+    const p = ownerType === 'Person'    ? persons.find(x => x.id === fd.get('personId'))       : null;
     const h = ownerType === 'Household' ? households.find(x => x.id === fd.get('householdId')) : null;
-    if (ownerType === 'Person' && !p) { toast('Select a person', true); return; }
+    const v = ownerType === 'Vehicle'   ? vehicles.find(x => x.id === fd.get('vehicleId'))     : null;
+    if (ownerType === 'Person'    && !p) { toast('Select a person', true); return; }
     if (ownerType === 'Household' && !h) { toast('Select a household', true); return; }
+    if (ownerType === 'Vehicle'   && !v) { toast('Select a vehicle', true); return; }
     const record = {
       id: existing?.id || uid(),
       title: fd.get('title').trim(), type: fd.get('type'), ownerType,
       personId: p?.id || '', personName: p?.name || '',
       householdId: h?.id || '', householdName: h?.name || '',
+      vehicleId: v?.id || '', vehicleName: v ? (v.name || v.registrationNumber) : '',
       documentNumber: fd.get('documentNumber').trim(),
       issueDate: fd.get('issueDate') || '', expiryDate: fd.get('expiryDate') || '',
       notes: fd.get('notes').trim(),
       createdAt: existing?.createdAt || new Date().toISOString(),
       modifiedAt: new Date().toISOString()
     };
-    await putOne('documents', record);
+    const _docRecord = { ...record }; delete _docRecord.fileBlob; delete _docRecord.fileBytes;
+    await putOne('documents', _docRecord);
     await logActivity('Document', (existing ? 'Document updated: ' : 'Document added: ') + record.title);
     closeModal(); toast(existing ? 'Document updated' : 'Document added');
-    await refreshFamily(); applyDocFilters();
+    await refreshFamily();
   });
   setTimeout(() => {
     const ot = document.getElementById('ownerTypeSelect');
     const pW = document.getElementById('personSelWrap');
     const hW = document.getElementById('houseSelWrap');
-    const sync = () => { const isPerson = ot.value === 'Person'; pW.style.display = isPerson ? 'block' : 'none'; hW.style.display = isPerson ? 'none' : 'block'; };
-    ot?.addEventListener('change', sync); sync();
+    const vW = document.getElementById('vehicleSelWrap');
+    const sync = () => {
+      pW.style.display = ot.value === 'Person'    ? '' : 'none';
+      hW.style.display = ot.value === 'Household' ? '' : 'none';
+      vW.style.display = ot.value === 'Vehicle'   ? '' : 'none';
+    };
+    ot?.addEventListener('change', sync);
   }, 0);
 }
 
@@ -456,12 +543,13 @@ function docDetails(id) {
   if (!d) return;
   const raw = String(d.documentNumber || '').trim();
   const masked = maskDocNum(raw);
+  const owner = d.ownerType === 'Vehicle' ? (d.vehicleName || '—') : (d.personName || d.householdName || '—');
   openModal('Document Details', `<div class="card">
     <div class="title">${esc(d.title)}</div>
     <div class="sub">${esc(d.type || 'Other')}</div>
   </div>
   <div class="detail-grid">
-    <div class="detail-row"><small>Owner</small><b>${esc(d.personName || d.householdName || '—')}</b></div>
+    <div class="detail-row"><small>Owner</small><b>${esc(owner)}</b></div>
     <div class="detail-row"><small>Owner Type</small><b>${esc(d.ownerType || '—')}</b></div>
     <div class="detail-row"><small>Document Number</small>
       <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
@@ -469,8 +557,8 @@ function docDetails(id) {
         ${raw ? '<button type="button" class="btn-icon" id="toggleDocNum">👁️</button>' : ''}
       </div>
     </div>
-    <div class="detail-row"><small>Issue Date</small><b>${esc(d.issueDate || '—')}</b></div>
-    <div class="detail-row"><small>Expiry Date</small><b>${esc(d.expiryDate || '—')}</b></div>
+    <div class="detail-row"><small>Issue Date</small><b>${esc(_cleanDate(d.issueDate) || '—')}</b></div>
+    <div class="detail-row"><small>Expiry Date</small><b>${esc(_cleanDate(d.expiryDate) || '—')}</b></div>
     <div class="detail-row"><small>Notes</small><b>${esc(d.notes || '—')}</b></div>
   </div>
   <div class="actions" style="margin-top:12px"><button class="btn" id="docDetailClose">Close</button></div>`);
@@ -486,5 +574,3 @@ function docDetails(id) {
 }
 
 $('addDocBtn').onclick = () => docModal();
-
-
