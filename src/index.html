@@ -283,15 +283,34 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
     logEl.scrollTop = logEl.scrollHeight;
   }
 
-  async function mApiCall(url, payload) {
-    const res = await fetch(url, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    });
+  const _delay = ms => new Promise(r => setTimeout(r, ms));
+
+  async function mApiCall(url, payload, attempt = 0) {
+    await _delay(attempt === 0 ? 300 : 800);  // throttle: 300ms first call, 800ms on retry
+    let res;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      if (attempt < 3) return mApiCall(url, payload, attempt + 1);
+      throw e;
+    }
+    // 404 / 5xx — Apps Script redirect dropped the body, retry
+    if ((res.status === 404 || res.status >= 500) && attempt < 3) {
+      mprint('⚠️  ' + payload.action + '/' + (payload.store||'') + ': HTTP ' + res.status + ', retrying…', 'warn');
+      return mApiCall(url, payload, attempt + 1);
+    }
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
+    // Empty body / unknown action — retry
+    if (data && data.error && data.error.startsWith('Unknown action') && attempt < 3) {
+      mprint('⚠️  ' + payload.action + '/' + (payload.store||'') + ': empty body received, retrying…', 'warn');
+      return mApiCall(url, payload, attempt + 1);
+    }
     if (data && data.error) throw new Error(data.error);
     return data;
   }
