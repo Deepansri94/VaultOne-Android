@@ -280,7 +280,12 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
   }
 
   async function mApiCall(url, payload) {
-    const res = await fetch(url + '?p=' + encodeURIComponent(JSON.stringify(payload)), { redirect: 'follow' });
+    const res = await fetch(url, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (data && data.error) throw new Error(data.error);
