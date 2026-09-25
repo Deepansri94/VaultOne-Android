@@ -7,8 +7,6 @@ on:
     branches:
       - main
       - feature/github-pages
-    tags:
-      - 'v*'
 
 permissions:
     contents: write
@@ -20,7 +18,7 @@ env:
     ANDROID_API: '35'
     BUILD_TOOLS_VERSION: '35.0.0'
     VERSION_CODE: ${{ github.run_number }}
-    VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('2.{0}', github.run_number) }}
+    VERSION_NAME: '2.${{ github.run_number }}'
 
 jobs:
 
@@ -515,6 +513,7 @@ jobs:
               // ── Auto-update ──────────────────────────────────────────────
               private static final String RELEASES_API =
                   "https://api.github.com/repos/Deepansri94/VaultOne-Android/releases/latest";
+              private static final int CURRENT_VERSION_CODE = BuildConfig.VERSION_CODE;
 
               private void checkForUpdate() {
                   new Thread(() -> {
@@ -533,49 +532,27 @@ jobs:
                           br.close();
                           conn.disconnect();
                           String json = sb.toString();
+                          // tag_name is "build-{versionCode}"
                           String tag = parseStringField(json, "tag_name");
                           String remoteName = parseStringField(json, "name");
+                          int remoteCode = tag.startsWith("build-")
+                              ? Integer.parseInt(tag.substring(6)) : -1;
+                          // Extract APK browser_download_url from assets array. Fall back to
+                          // the deterministic GitHub release URL if parsing changes upstream.
                           String apkUrl = parseApkUrl(json);
-                          if (!isHttpUrl(apkUrl)) {
+                          if (!isHttpUrl(apkUrl) && tag.startsWith("build-")) {
                               apkUrl = "https://github.com/Deepansri94/VaultOne-Android/releases/download/"
                                   + tag + "/VaultOne.apk";
                           }
-                          if (isNewerVersion(tag, BuildConfig.VERSION_NAME) && isHttpUrl(apkUrl)) {
+                          if (remoteCode > CURRENT_VERSION_CODE && apkUrl != null) {
                               final String finalUrl = apkUrl;
                               final String finalName = remoteName;
                               runOnUiThread(() -> showUpdateDialog(finalName, finalUrl));
                           }
                       } catch (Exception e) {
-                          // No network or rate-limited — silently skip
+                          // No network or token invalid — silently skip
                       }
                   }).start();
-              }
-
-              /** Returns true if remoteTag is a higher semver than currentVersion.
-               *  Strips leading 'v' from both before comparing. */
-              private boolean isNewerVersion(String remoteTag, String currentVersion) {
-                  try {
-                      int[] remote  = parseSemver(remoteTag);
-                      int[] current = parseSemver(currentVersion);
-                      for (int i = 0; i < Math.max(remote.length, current.length); i++) {
-                          int r = i < remote.length  ? remote[i]  : 0;
-                          int c = i < current.length ? current[i] : 0;
-                          if (r > c) return true;
-                          if (r < c) return false;
-                      }
-                      return false; // equal
-                  } catch (Exception e) { return false; }
-              }
-
-              private int[] parseSemver(String v) {
-                  if (v == null) return new int[]{0};
-                  v = v.trim().replaceAll("^[vV]", "");
-                  String[] parts = v.split("[.\\-]");
-                  int[] nums = new int[parts.length];
-                  for (int i = 0; i < parts.length; i++) {
-                      try { nums[i] = Integer.parseInt(parts[i]); } catch (Exception e) { nums[i] = 0; }
-                  }
-                  return nums;
               }
 
               private String parseApkUrl(String json) {
@@ -1110,15 +1087,14 @@ jobs:
             app/build/outputs/logs/**
           if-no-files-found: ignore
 
-      # 28. CREATE GITHUB RELEASE AND UPLOAD APK (only on v* tag pushes)
+      # 28. CREATE GITHUB RELEASE AND UPLOAD APK
       - name: Create GitHub Release and upload APK
-        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          export TAG="${VERSION_NAME}"
+          export TAG="build-${VERSION_CODE}"
           export RELEASE_NAME="VaultOne ${VERSION_NAME}"
 
           # Build release body + payload from release_notes.json
