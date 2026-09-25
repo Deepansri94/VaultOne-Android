@@ -85,7 +85,7 @@ jobs:
           set -e
           MISSING=""
           for f in src/index.html src/shared.js src/shared.css \
-                   src/config.js src/sw.js assets/VaultOne.png \
+                   src/config.js src/api.js src/sw.js assets/VaultOne.png \
                    src/iVault.html src/iVault.js \
                    src/FamilyVault.html src/FamilyVault.js \
                    src/PasswordVault.html src/PasswordVault.js \
@@ -160,6 +160,7 @@ jobs:
           set -e
           cp src/index.html          app/src/main/assets/index.html
           cp src/config.js            app/src/main/assets/config.js
+          cp src/api.js               app/src/main/assets/api.js
           cp src/shared.js           app/src/main/assets/shared.js
           cp src/shared.css          app/src/main/assets/shared.css
           cp src/sw.js               app/src/main/assets/sw.js
