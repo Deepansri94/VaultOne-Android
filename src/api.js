@@ -80,28 +80,41 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  setTimeout(() => {
+  function _buildUrlPanel() {
     const extra = document.getElementById('spModuleExtra');
     if (!extra) return;
     const saved = _apiUrl();
     extra.innerHTML = `
       <hr style="border-color:#ffffff12;margin:16px 0">
-      <h4 style="margin:0 0 10px;font-size:14px;color:#94a3b8">☁️ Google Sheets Sync</h4>
-      <label style="display:block;margin-bottom:10px">Web App URL
-        <input id="spWebAppUrl" placeholder="https://script.google.com/macros/s/..."
-               value="${saved || ''}" style="margin-top:4px;font-size:12px">
-      </label>
-      <div class="actions" style="margin-top:0">
-        <button class="btn primary" id="spWebAppSave" style="font-size:12px;padding:6px 14px">Save URL</button>
-        <button class="btn" id="spWebAppTest" style="font-size:12px;padding:6px 14px">Test Connection</button>
+      <h4 style="margin:0 0 6px;font-size:14px;color:#94a3b8">☁️ Google Sheets Sync</h4>
+      <div id="spWebAppConnected" style="display:${saved ? 'flex' : 'none'};align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:#34d399">
+        ✅ Connected
+        <button class="btn" id="spWebAppChange" style="font-size:11px;padding:4px 10px">Change URL</button>
+      </div>
+      <div id="spWebAppForm" style="display:${saved ? 'none' : 'block'}">
+        <label style="display:block;margin-bottom:10px">Web App URL
+          <input id="spWebAppUrl" placeholder="https://script.google.com/macros/s/..."
+                 value="${saved || ''}" style="margin-top:4px;font-size:12px">
+        </label>
+        <div class="actions" style="margin-top:0">
+          <button class="btn primary" id="spWebAppSave" style="font-size:12px;padding:6px 14px">Save URL</button>
+          <button class="btn" id="spWebAppTest" style="font-size:12px;padding:6px 14px">Test Connection</button>
+        </div>
       </div>
       <div id="spWebAppStatus" style="font-size:12px;margin-top:8px;color:#94a3b8"></div>`;
 
+    document.getElementById('spWebAppChange')?.addEventListener('click', () => {
+      document.getElementById('spWebAppConnected').style.display = 'none';
+      document.getElementById('spWebAppForm').style.display = 'block';
+      document.getElementById('spWebAppUrl').value = _apiUrl();
+    });
     document.getElementById('spWebAppSave').onclick = () => {
       const url = document.getElementById('spWebAppUrl').value.trim();
       if (!url) { document.getElementById('spWebAppStatus').textContent = '⚠️ Enter a URL first.'; return; }
       localStorage.setItem(_API_KEY, url);
       document.getElementById('spWebAppStatus').textContent = '✅ URL saved.';
+      document.getElementById('spWebAppConnected').style.display = 'flex';
+      document.getElementById('spWebAppForm').style.display = 'none';
       document.getElementById('apiSetupBanner')?.remove();
     };
     document.getElementById('spWebAppTest').onclick = async () => {
@@ -109,8 +122,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const typed = document.getElementById('spWebAppUrl').value.trim();
       if (typed) localStorage.setItem(_API_KEY, typed);
       st.textContent = '⏳ Testing…';
-      try { await _apiCall({ action: 'ping' }); st.textContent = '✅ Connected to Google Sheets.'; document.getElementById('apiSetupBanner')?.remove(); }
+      try {
+        await _apiCall({ action: 'ping' });
+        st.textContent = '✅ Connected to Google Sheets.';
+        document.getElementById('spWebAppConnected').style.display = 'flex';
+        document.getElementById('spWebAppForm').style.display = 'none';
+        document.getElementById('apiSetupBanner')?.remove();
+      }
       catch (e) { st.textContent = '❌ ' + e.message; }
     };
-  }, 200);
+  }
+
+  // Build URL panel whenever settings panel opens (covers all pages including index.html)
+  setTimeout(_buildUrlPanel, 200);
+  document.addEventListener('click', e => {
+    if (e.target.id === 'settingsBtn' || e.target.closest('#settingsBtn')) {
+      setTimeout(_buildUrlPanel, 250);
+    }
+  });
 });

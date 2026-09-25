@@ -36,7 +36,7 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 <body data-no-act-log>
 <div class="launcher">
   <div class="launcher-header">
-    <button class="iconbtn" id="settingsBtn" title="Settings">⚙️</button>
+    <button class="iconbtn" id="settingsBtn" title="Settings" onclick="openSettingsPanel()">⚙️</button>
   </div>
   <div class="logo">🔐</div>
   <h1>VaultOne</h1>
@@ -340,6 +340,13 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
   document.getElementById('migrateBtn').onclick = () => modal.classList.add('open');
   document.getElementById('migrateModalClose').onclick = () => modal.classList.remove('open');
   modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+
+  // Also pre-fill URL input from saved value
+  document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('vaultone_webappurl') || '';
+    const inp = document.getElementById('migrateUrlInput');
+    if (inp && saved) inp.value = saved;
+  });
 
   document.getElementById('migrateTestBtn').onclick = async () => {
     const url = document.getElementById('migrateUrlInput').value.trim();
