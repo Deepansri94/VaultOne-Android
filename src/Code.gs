@@ -526,6 +526,7 @@ function _handle(e) {
       case 'delOne':     return _ok(_delOne(store, body.id));
       case 'clearStore': return _ok(_clearStore(store));
       case 'bulkPut':    return _ok(_bulkPut(store, body.records));
+      case 'resetAllData': return _ok(_resetAllData());
       default:
         return _ok({ error: 'Unknown action: ' + action });
     }
@@ -723,6 +724,17 @@ function _clearStore(store) {
   var last = sh.getLastRow();
   if (last > 1) sh.deleteRows(2, last - 1);
   return { ok: true };
+}
+
+function _resetAllData() {
+  var cleared = [];
+  Object.keys(S).forEach(function(key) {
+    var sh = _ss().getSheetByName(S[key]);
+    if (!sh) return;
+    var last = sh.getLastRow();
+    if (last > 1) { sh.deleteRows(2, last - 1); cleared.push(S[key]); }
+  });
+  return { ok: true, cleared: cleared };
 }
 
 function _bulkPut(store, records) {

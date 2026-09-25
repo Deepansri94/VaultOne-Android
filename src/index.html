@@ -92,6 +92,7 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
     <div class="actions" style="margin-bottom:14px">
       <button class="btn primary" id="migrateStartBtn">Start Migration</button>
       <button class="btn" id="migrateTestBtn">Test Connection</button>
+      <button class="btn danger" id="migrateResetBtn">🗑️ Reset Sheet Data</button>
     </div>
     <div id="migrateLog" style="background:#0b1627;border:1px solid #ffffff14;border-radius:12px;padding:14px;font-size:12px;font-family:monospace;min-height:160px;max-height:320px;overflow-y:auto;white-space:pre-wrap;color:#94a3b8">Ready. Enter your Web App URL and click Start Migration.</div>
   </div>
@@ -262,11 +263,14 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
 /* ===== Migrate Panel ===== */
 (function () {
   const DATABASES = [
+    // Modular split DBs (current architecture)
     { name: 'iVaultDB',       version: 2, stores: ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes','cashWallets'] },
     { name: 'FamilyVaultDB',  version: 1, stores: ['meta','persons','households','vehicles','documents','reminders','activity','notes'] },
-    { name: 'PasswordVaultDB',version: 1, stores: ['meta','passwords','reminders','activity','notes'] }
+    { name: 'PasswordVaultDB',version: 1, stores: ['meta','passwords','reminders','activity','notes'] },
+    // Legacy single-file VaultOne.html DB (schema v7)
+    { name: 'VaultOneDB',     version: 7, stores: ['meta','income','expenses','budgets','investments','gold','goldRates','loans','banks','transactions','persons','households','documents','passwords','reminders','activity','institutions','vehicles','insurances'], legacy: true }
   ];
-  const STORE_MAP = { cashWallets: 'cash_wallets' };
+  const STORE_MAP = { cashWallets: 'cash_wallets', goldRates: 'goldRates', banks: 'banks', transactions: 'transactions', institutions: 'institutions', insurances: 'insurances' };
 
   const modal   = document.getElementById('migrateModal');
   const logEl   = document.getElementById('migrateLog');
@@ -309,10 +313,16 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
     });
   }
 
-  async function migrateDB(url, { name, version, stores }) {
+  async function migrateDB(url, { name, version, stores, legacy }) {
     mprint('\n📦 Opening ' + name + '…');
     let db;
     try { db = await openIDB(name, version, stores); } catch (e) { mprint('❌ Could not open ' + name + ': ' + e.message, 'err'); return; }
+    // Check if DB actually has data (not just freshly created by openIDB)
+    let hasAny = false;
+    for (const store of stores) {
+      try { const rows = await idbGetAll(db, store); if (rows.length) { hasAny = true; break; } } catch {}
+    }
+    if (!hasAny) { mprint('⏭  ' + name + ': no data found, skipped', 'warn'); db.close(); return; }
     mprint('✅ ' + name + ' opened', 'ok');
     for (const store of stores) {
       try {
@@ -321,7 +331,7 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
         if (store === 'meta') {
           const settings = rows.find(r => r.id === 'settings') || rows[0];
           const kvRecords = Object.entries(settings).map(([k, v]) => ({ id: k, key: k, value: typeof v === 'object' ? JSON.stringify(v) : String(v ?? '') }));
-          const sheetsStore = '_Meta_' + name.replace('DB', '');
+          const sheetsStore = legacy ? '_Meta_iVault' : '_Meta_' + name.replace('DB', '');
           await mApiCall(url, { action: 'clearStore', store: sheetsStore });
           await mApiCall(url, { action: 'bulkPut',   store: sheetsStore, records: kvRecords });
           mprint('✅ ' + store + ' (' + name + '): ' + kvRecords.length + ' keys migrated', 'ok');
@@ -353,6 +363,16 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
     if (!url) { mprint('⚠️ Enter a URL first.', 'warn'); return; }
     try { await mApiCall(url, { action: 'ping' }); mprint('✅ Connection OK', 'ok'); }
     catch (e) { mprint('❌ ' + e.message, 'err'); }
+  };
+
+  document.getElementById('migrateResetBtn').onclick = async () => {
+    const url = document.getElementById('migrateUrlInput').value.trim();
+    if (!url) { mprint('⚠️ Enter a URL first.', 'warn'); return; }
+    if (!confirm('This will DELETE all data from every sheet in your Google Sheet. Are you sure?')) return;
+    try {
+      const res = await mApiCall(url, { action: 'resetAllData' });
+      mprint('🗑️ Reset complete. Cleared: ' + (res.cleared || []).join(', '), 'ok');
+    } catch (e) { mprint('❌ Reset failed: ' + e.message, 'err'); }
   };
 
   document.getElementById('migrateStartBtn').onclick = async () => {
