@@ -14,20 +14,69 @@ function _apiUrl() {
   return localStorage.getItem(_API_KEY) || (window.VAULTONE_CONFIG && window.VAULTONE_CONFIG.WEB_APP_URL) || '';
 }
 
-async function _apiCall(payload) {
+const _WRITE_ACTIONS = { putOne: true, delOne: true, clearStore: true, bulkPut: true };
+const _RETRY_DELAY = ms => new Promise(r => setTimeout(r, ms));
+
+async function _apiCall(payload, _attempt = 0) {
   const url = _apiUrl();
   if (!url) throw new Error('Web App URL not set. Open Settings and paste your Apps Script Web App URL.');
-  // POST avoids query-string stripping on the Apps Script /exec → /dev redirect
-  const res = await fetch(url, {
-    method: 'POST',
-    redirect: 'follow',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) throw new Error('Network error: ' + res.status);
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    // Network-level failure (no response at all)
+    if (_attempt < 2) { await _RETRY_DELAY(800); return _apiCall(payload, _attempt + 1); }
+    _notifyWriteError(payload, e.message);
+    throw e;
+  }
+  // Apps Script redirect dropped body — retry writes up to 2 times
+  if ((res.status === 404 || res.status >= 500) && _attempt < 2) {
+    await _RETRY_DELAY(800);
+    return _apiCall(payload, _attempt + 1);
+  }
+  if (!res.ok) {
+    const err = new Error('Network error: ' + res.status);
+    _notifyWriteError(payload, err.message);
+    throw err;
+  }
   const data = await res.json();
-  if (data && data.error) throw new Error(data.error);
+  if (data && data.error && data.error.startsWith('Unknown action') && _attempt < 2) {
+    await _RETRY_DELAY(800);
+    return _apiCall(payload, _attempt + 1);
+  }
+  if (data && data.error) {
+    const err = new Error(data.error);
+    _notifyWriteError(payload, data.error);
+    throw err;
+  }
   return data;
+}
+
+function _notifyWriteError(payload, msg) {
+  if (!_WRITE_ACTIONS[payload.action]) return; // only alert on writes, not reads
+  const label = payload.store ? payload.store + ' / ' + payload.action : payload.action;
+  // Use shared toast if available, otherwise a fixed banner
+  const toastEl = document.getElementById('toast');
+  if (toastEl && typeof toast === 'function') {
+    toast('❌ Save failed (' + label + '). Check connection and retry.', true);
+  } else {
+    // Fallback banner for pages where toast() isn't ready yet
+    let banner = document.getElementById('_apiErrBanner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = '_apiErrBanner';
+      banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#7d2738;color:#fff;font-size:13px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px';
+      banner.innerHTML = '<span id="_apiErrMsg"></span><button style="background:none;border:1px solid #fff9;color:#fff;border-radius:8px;padding:4px 12px;cursor:pointer" onclick="this.parentElement.remove()">✕</button>';
+      document.body.appendChild(banner);
+    }
+    document.getElementById('_apiErrMsg').textContent = '❌ Save failed (' + label + '). Check connection and retry.';
+    setTimeout(() => banner.remove(), 5000);
+  }
 }
 
 // Assigned on window to win over shared.js function-declaration hoisting
@@ -75,7 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
       } catch(e) {
         btn.textContent = 'Save & Connect';
         document.getElementById('bannerUrlInput').style.borderColor = '#f87171';
-        alert('❌ Could not connect: ' + e.message);
+        document.getElementById('bannerUrlInput').title = e.message;
+        const st = document.createElement('div');
+        st.style.cssText = 'color:#f87171;font-size:12px;margin-top:6px;width:100%';
+        st.textContent = '❌ Could not connect: ' + e.message;
+        banner.appendChild(st);
+        setTimeout(() => st.remove(), 4000);
       }
     };
   }
