@@ -131,7 +131,7 @@ jobs:
             echo "ERROR: assets/VaultOne.png not found."
             exit 1
           fi
-          # Use Python Pillow — pre-installed on ubuntu-latest, no apt needed
+          pip install pillow --quiet
           python3 - <<'PYEOF'
           from PIL import Image
           import os
