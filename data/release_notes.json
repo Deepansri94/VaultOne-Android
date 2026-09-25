@@ -1,6 +1,29 @@
 {
   "releases": [
     {
+      "version": "VaultOne 2.83",
+      "sprint": "Sprint 6 — Google Sheets Cloud Sync Backend",
+      "date": "2025-07-14",
+      "highlights": [
+        "New: Code.gs — Apps Script web app backend for all 17 data stores",
+        "New: api.js — POST-only bridge between VaultOne app and Apps Script /exec URL",
+        "New: test.html — browser-based backend test runner with 36 tests, no IndexedDB dependency",
+        "Code.gs: S/COLS definitions with logical column ordering, audit fields (id first, createdAt/updatedAt last)",
+        "Code.gs: _toObjByHeader/_toRowByHeader always use actual sheet header — never rely on COLS index order",
+        "Code.gs: Date suffix stripping for Sheets auto-parsed date columns (month, dob, issueDate, expiryDate, etc.)",
+        "Code.gs: Boolean normalisation for completed field (string 'true'/'false' → JS boolean)",
+        "Code.gs: JSON column serialisation for payments, categories, movements, contributions, valueUpdates",
+        "Code.gs: setupSheets, resetAndRebuildSheets, reorderSheetColumns one-time setup helpers",
+        "Code.gs: _ALIAS map for case-insensitive store name resolution across all 17 stores",
+        "api.js: Switched from GET query-string to POST body — survives Apps Script /exec redirect chain",
+        "api.js: Content-Type: text/plain avoids CORS preflight on cross-origin POST",
+        "test.html: 500ms throttle between calls + retry on 404/5xx to handle Apps Script rate limiting",
+        "test.html: Detects body-lost-on-redirect via 'Unknown action:' response and auto-retries with 3s backoff",
+        "test.html: TriageError class with Step/Expected/Received/Root cause structured triage panel",
+        "test.html: Live progress counter (N/36 — test name) in run button during execution"
+      ]
+    },
+    {
       "version": "VaultOne 2.82",
       "sprint": "Sprint 4 & 5 — Mobile Application Versioning",
       "date": "2026-09-07",

@@ -1,8 +1,8 @@
 # VaultOne 🔐
 
-**Version:** v1.9 · **Schema:** v7 · **Offline-first · No server · No cloud**
+**Version:** v2.83 · **Schema:** v7 · **Offline-first · Optional Google Sheets sync**
 
-VaultOne is a fully offline, single-file personal vault that runs directly in any modern browser or as a native Android APK. All data is stored locally on the device using IndexedDB. Nothing is ever sent to a server.
+VaultOne is a personal vault that runs directly in any modern browser or as a native Android APK. All data is stored locally on the device using IndexedDB. Optionally, data can be synced to a private Google Sheet via the built-in Apps Script backend — no third-party server, no cloud service.
 
 ---
 
@@ -20,6 +20,7 @@ VaultOne is a fully offline, single-file personal vault that runs directly in an
 - [Data Storage](#data-storage)
 - [Backup & Restore](#backup--restore)
 - [Security](#security)
+- [Google Sheets Sync Backend](#google-sheets-sync-backend)
 - [Android APK Build](#android-apk-build)
 - [Self-Test](#self-test)
 - [QA & Test Suite](#qa--test-suite)
@@ -34,6 +35,7 @@ VaultOne is a fully offline, single-file personal vault that runs directly in an
 | Offline-first | Works with no internet connection |
 | Single HTML file | Open `VaultOne.html` directly in any modern browser |
 | IndexedDB storage | Persistent local storage, schema v7 |
+| Google Sheets sync | Optional Apps Script backend — your own private Google Sheet |
 | Encrypted passwords | AES-GCM 256-bit, PIN-derived PBKDF2 key |
 | Family documents | Aadhaar, PAN, Passport, Driving Licence and more |
 | Full finance suite | Income, Expenses, Budget, FD, RD, PPF, SSA, NPS, Demat, Gold, Loans, Banks |
@@ -357,6 +359,54 @@ If IndexedDB is unavailable (e.g. certain browser contexts), VaultOne automatica
 
 ---
 
+## Google Sheets Sync Backend
+
+VaultOne includes an optional Apps Script backend that syncs all data to a private Google Sheet you own. No third-party server is involved — the sheet lives in your own Google account.
+
+### Setup (one-time)
+
+1. Create a new Google Sheet in your Google account.
+2. Open **Extensions → Apps Script** and paste the contents of `src/Code.gs`.
+3. Run `setupSheets()` once — creates all 17 sheet tabs with styled headers.
+4. **Deploy → New deployment → Web App**
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+5. Copy the `/exec` URL.
+6. In VaultOne, open **Settings → Web App URL** and paste the URL.
+
+After any `Code.gs` change: **Deploy → Manage deployments → pencil → New version → Deploy**. The `/exec` URL stays the same.
+
+### Architecture
+
+| File | Role |
+|---|---|
+| `src/Code.gs` | Apps Script web app — full CRUD for all 17 stores |
+| `src/api.js` | POST-only fetch bridge between VaultOne and the `/exec` URL |
+| `src/test.html` | Browser-based backend test runner — 36 tests, no IndexedDB |
+
+### Data Stores (17 sheets)
+
+`Income` · `Expenses` · `Budgets` · `Investments` · `Loans` · `CashWallets` · `Persons` · `Households` · `Vehicles` · `Documents` · `Passwords` · `Reminders` · `Notes` · `ActivityLog` · `_Meta_iVault` · `_Meta_FamilyVault` · `_Meta_PasswordVault`
+
+### Key behaviours
+
+- All requests use **POST body** (`Content-Type: text/plain`) — survives the Apps Script `/exec` redirect chain that strips GET query params.
+- `_toObjByHeader` / `_toRowByHeader` always read the **actual sheet header row** for column mapping — safe against columns added at different times.
+- Google Sheets auto-parses `YYYY-MM` budget months and `YYYY-MM-DD` dates as Date objects — `Code.gs` strips the `T00:00:00Z` suffix on read.
+- The `completed` field (Reminders) is normalised from Sheets string `"true"`/`"false"` back to a JS boolean.
+- JSON columns (`payments`, `categories`, `movements`, `contributions`, `valueUpdates`) are serialised as strings in the sheet and deserialised on read.
+
+### Backend Test Runner
+
+Open `src/test.html` in any browser, paste your `/exec` URL, and click **Run All Tests**.
+
+- 36 tests: positive CRUD for all 17 stores + negative / edge-case tests
+- No IndexedDB, no app UI — tests the Apps Script backend directly via POST
+- 500 ms throttle between calls + auto-retry on `404` / `5xx` / body-lost-on-redirect
+- Triage panel on failures: Step · Expected · Received · Root cause
+
+---
+
 ## Android APK Build
 
 The APK is built automatically on every push to `main` via the `build-vaultone.yml` GitHub Actions workflow. No manual build steps or pre-existing Android project are required.
@@ -401,49 +451,22 @@ PASS  Insurance CRUD
 
 ## QA & Test Suite
 
-The `QA/` folder contains the full test suite for VaultOne.
+### Backend Test Runner (`src/test.html`)
 
-### Test Data & Cases
+Browser-based test runner that validates the Google Sheets Apps Script backend directly via POST. No IndexedDB, no app UI required.
 
-| File | Contents |
+**Run:** Open `src/test.html` in any browser, paste your `/exec` URL, click **Run All Tests**.
+
+| Section | Tests |
 |---|---|
-| `QA/VaultOne_TestCases.json` | All test cases with steps, expected results, and status |
-| `QA/VaultOne_TestData.json` | Seed data used by automated tests |
-| `QA/VaultOne_Defects.json` | Defect log with severity, status, and reproduction steps |
-
-### Selenium Automation (`QA/selenium/`)
-
-Python + Selenium WebDriver tests covering all modules.
-
-**Prerequisites:**
-```
-pip install -r QA/selenium/requirements_vaultone_test.txt
-```
-
-**Run all tests:**
-```
-cd QA/selenium
-pytest
-```
-or on Windows:
-```
-QA\selenium\run_tests.bat
-```
-
-**Test files:**
-
-| File | Coverage |
-|---|---|
-| `conftest.py` | Fixtures, helpers, IndexedDB utilities |
-| `test_home.py` | Home dashboard, nav tabs, bell panel |
-| `test_ivault.py` | Income, Expenses, Budget, Banks, Loans, Transactions |
-| `test_investments.py` | FD, RD, PPF, SSA, NPS, Demat, Gold |
-| `test_family.py` | People, Households, Vehicles, Documents |
-| `test_passwords.py` | PasswordVault lock/unlock, CRUD, generator |
-| `test_misc.py` | Reminders (bell panel), Settings, Activity Log |
-| `test_mobile.py` | Mobile viewport (Pixel 5 emulation) responsive tests |
-
-Test reports are written to `QA/selenium/reports/` (excluded from git via `.gitignore`).
+| Connection | ping |
+| iVault | Income, Expenses, Budgets, Investments, Loans, CashWallets |
+| FamilyVault | Households, Persons, Vehicles, Documents (Person / Vehicle / Household owner) |
+| PasswordVault | Passwords |
+| Shared | Reminders, Notes, ActivityLog |
+| Meta | _Meta_iVault, _Meta_FamilyVault, _Meta_PasswordVault |
+| API | bulkPut, getAll, getOne missing id, delOne idempotent |
+| Negative | Unknown action, unknown store, missing id, empty store, bulkPut edge cases, boolean normalisation, clearStore |
 
 ---
 
@@ -451,36 +474,33 @@ Test reports are written to `QA/selenium/reports/` (excluded from git via `.giti
 
 ```
 VaultOne/
-├── VaultOne.html                    # Main application (v1.9, schema v7)
-├── VaultOne.png                     # App icon
-├── vaultone_seed.json               # Seed data format template
-├── .gitignore                       # Git ignore rules
-├── README.md
-├── README_VaultOne_Selenium.txt     # Selenium setup quick-reference
-├── requirements_vaultone_test.txt   # Python test dependencies
-├── vaultone_selenium_test.py        # Standalone single-file test script
+├── src/
+│   ├── index.html                   # App shell / home dashboard
+│   ├── iVault.html                  # iVault module UI
+│   ├── iVault.js                    # iVault module logic
+│   ├── FamilyVault.html             # FamilyVault module UI
+│   ├── FamilyVault.js               # FamilyVault module logic
+│   ├── PasswordVault.html           # PasswordVault module UI
+│   ├── PasswordVault.js             # PasswordVault module logic
+│   ├── shared.js                    # Shared utilities, IndexedDB, nav
+│   ├── shared.css                   # Global styles
+│   ├── api.js                       # Google Sheets POST bridge
+│   ├── Code.gs                      # Apps Script backend (paste into Google Sheet)
+│   ├── test.html                    # Backend test runner (36 tests)
+│   ├── sw.js                        # Service worker (offline cache)
+│   └── jspdf.umd.min.js             # PDF export library
+├── assets/
+│   └── VaultOne.png                 # App icon
+├── data/
+│   ├── vaultone_seed.json           # Seed data format template
+│   └── release_notes.json           # Release history
 ├── .github/
 │   └── workflows/
 │       └── build-vaultone.yml       # Android APK CI build
-└── QA/
-    ├── VaultOne_TestCases.json
-    ├── VaultOne_TestData.json
-    ├── VaultOne_Defects.json
-    └── selenium/
-        ├── conftest.py
-        ├── pytest.ini
-        ├── run_tests.bat
-        ├── requirements_vaultone_test.txt
-        ├── test_home.py
-        ├── test_ivault.py
-        ├── test_investments.py
-        ├── test_family.py
-        ├── test_passwords.py
-        ├── test_misc.py
-        ├── test_mobile.py
-        └── vaultone_selenium_test.py
+├── .gitignore
+└── README.md
 ```
 
 ---
 
-*VaultOne v1.9 · Offline-first · Schema v7 · All data stays on your device.*
+*VaultOne v2.83 · Offline-first · Optional Google Sheets sync · Schema v7 · All data stays on your device.*
