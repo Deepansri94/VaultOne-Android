@@ -41,7 +41,7 @@ let _budgetEditMode = false; // true only when user explicitly clicks Edit
 (async () => {
   try {
     await openDB(IV_DB, IV_VER, IV_STORES);
-    if (!db) throw new Error('IndexedDB connection failed — db is undefined after openDB');
+    if (!db && !window.db) throw new Error('IndexedDB connection failed — db is undefined after openDB');
     const s = await getOne('meta','settings');
     if (s) {
       state.settings = { ...state.settings, ...s };

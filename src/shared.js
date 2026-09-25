@@ -559,7 +559,7 @@ async function snoozeReminder(reminder, opts) {
       closeSettingsPanel();
     };
     document.getElementById('spActLogBtn')?.addEventListener('click', () => {
-      if (!db) return;
+      if (!db && !window.db) return;
       closeSettingsPanel();
       openModal('\ud83d\udcdc Activity Log', '<div id="spActLogContainer"></div>');
       setTimeout(() => renderActivityLog('spActLogContainer'), 0);
@@ -697,7 +697,7 @@ function swScheduleReminder(r) { _swPost({ type: 'SCHEDULE', reminder: r }); }
 function swCancelReminder(r)   { _swPost({ type: 'CANCEL',   reminder: r }); }
 
 async function swScheduleAll() {
-  if (!db) return;
+  if (!db && !window.db) return;
   try {
     const all = await getAll('reminders');
     const pending = all.filter(r => !r.completed);
@@ -718,7 +718,7 @@ _registerSW().then(() => setTimeout(swScheduleAll, 1500));
 
   async function checkReminders() {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    if (!db) return;
+    if (!db && !window.db) return;
     let rows;
     try { rows = await getAll('reminders'); } catch { return; }
     const now = new Date();
