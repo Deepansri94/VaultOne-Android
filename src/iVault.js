@@ -42,10 +42,12 @@ let _budgetEditMode = false; // true only when user explicitly clicks Edit
   try {
     await openDB(IV_DB, IV_VER, IV_STORES);
     if (!db && !window.db) throw new Error('IndexedDB connection failed — db is undefined after openDB');
-    const s = await getOne('meta','settings');
-    if (s) {
-      state.settings = { ...state.settings, ...s };
-      state.customSubcats = s.customSubcats || {};
+    // In Sheets mode, settings live in localStorage (saved by shared.js settings panel)
+    if (window.db && window.db._sheets) {
+      try { const ls = JSON.parse(localStorage.getItem('vaultone_settings') || '{}'); if (ls.name || ls.currency) state.settings = { ...state.settings, ...ls }; } catch {}
+    } else {
+      const s = await getOne('meta','settings');
+      if (s) { state.settings = { ...state.settings, ...s }; state.customSubcats = s.customSubcats || {}; }
     }
     applySettings();
     wireNav();

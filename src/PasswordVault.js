@@ -13,8 +13,12 @@ let state = { settings: { id: 'settings', name: '', currency: 'INR', pinHash: ''
 (async () => {
   try {
     await openDB(PV_DB, PV_VER, PV_STORES);
-    const s = await getOne('meta', 'settings');
-    if (s) state.settings = { ...state.settings, ...s };
+    if (window.db && window.db._sheets) {
+      try { const ls = JSON.parse(localStorage.getItem('vaultone_settings') || '{}'); if (ls.name || ls.currency || ls.pinHash) state.settings = { ...state.settings, ...ls }; } catch {}
+    } else {
+      const s = await getOne('meta', 'settings');
+      if (s) state.settings = { ...state.settings, ...s };
+    }
     applySettings();
     renderPasswordsLocked();
     renderBellReminders();
