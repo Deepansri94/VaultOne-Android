@@ -571,7 +571,9 @@ async function snoozeReminder(reminder, opts) {
     });
   }
 
+  let _spReady = false;
   function openSettingsPanel() {
+    if (!_spReady) { buildSettingsPanel(); _spReady = true; }
     // refresh values each open
     const s = loadGlobalSettings();
     const nameEl = document.getElementById('spName');
@@ -585,9 +587,11 @@ async function snoozeReminder(reminder, opts) {
 
   // Wire buttons after DOM ready
   document.addEventListener('DOMContentLoaded', () => {
-    buildSettingsPanel();
-    document.getElementById('settingsBtn')?.addEventListener('click', () =>
-      document.getElementById('settingsPanel')?.classList.contains('open') ? closeSettingsPanel() : openSettingsPanel());
+    buildSettingsPanel(); _spReady = true;
+    document.getElementById('settingsBtn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      document.getElementById('settingsPanel')?.classList.contains('open') ? closeSettingsPanel() : openSettingsPanel();
+    });
   });
 
   window.openSettingsPanel = openSettingsPanel;
