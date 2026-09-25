@@ -11,7 +11,7 @@ const _API_KEY = 'vaultone_webappurl';
 function _apiUrl() {
   const param = new URLSearchParams(location.search).get('url');
   if (param) { localStorage.setItem(_API_KEY, param); history.replaceState(null, '', location.pathname); }
-  return localStorage.getItem(_API_KEY) || '';
+  return localStorage.getItem(_API_KEY) || (window.VAULTONE_CONFIG && window.VAULTONE_CONFIG.WEB_APP_URL) || '';
 }
 
 async function _apiCall(payload) {
