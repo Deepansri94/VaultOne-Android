@@ -31,11 +31,18 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
 .app-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
 .footer { margin-top: 32px; color: var(--muted); font-size: 11px; }
 .launcher-header { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 20px; }
+#syncBtn { position:relative; }
+#syncBtn.syncing { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#syncDot { position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;display:none; }
+#syncDot.ok  { background:#34d399;display:block; }
+#syncDot.err { background:#f87171;display:block; }
 </style>
 </head>
 <body data-no-act-log>
 <div class="launcher">
   <div class="launcher-header">
+    <button class="iconbtn" id="syncBtn" title="Sync with Google Sheets">🔄<span id="syncDot"></span></button>
     <button class="iconbtn" id="settingsBtn" title="Settings">⚙️</button>
   </div>
   <div class="logo">🔐</div>
@@ -430,6 +437,67 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
 })();
 
 /* openDB is a no-op in Sheets mode — api.js handles it */
+
+/* ===== Sync Button ===== */
+(function () {
+  const STORES = [
+    { label: 'Income',      store: 'income' },
+    { label: 'Expenses',    store: 'expenses' },
+    { label: 'Investments', store: 'investments' },
+    { label: 'Loans',       store: 'loans' },
+    { label: 'Persons',     store: 'persons' },
+    { label: 'Households',  store: 'households' },
+    { label: 'Documents',   store: 'documents' },
+    { label: 'Reminders',   store: 'reminders' },
+    { label: 'Passwords',   store: 'passwords' },
+  ];
+
+  const btn = document.getElementById('syncBtn');
+  const dot = document.getElementById('syncDot');
+
+  btn.addEventListener('click', async () => {
+    const url = (localStorage.getItem('vaultone_webappurl') || (window.VAULTONE_CONFIG && window.VAULTONE_CONFIG.WEB_APP_URL) || '').trim();
+    if (!url) { toast('No Web App URL set. Open Settings to configure.', true); return; }
+
+    btn.classList.add('syncing');
+    dot.className = '';
+    const lines = [];
+    let hasError = false;
+
+    try {
+      // ping first
+      await fetch(url, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'ping' }) });
+
+      for (const { label, store } of STORES) {
+        try {
+          const res = await fetch(url, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'getAll', store }) });
+          const data = await res.json();
+          const count = Array.isArray(data) ? data.length : (data.error ? '❌ ' + data.error : '?');
+          lines.push(label + ': ' + count + (typeof count === 'number' ? ' records' : ''));
+          if (typeof count === 'string' && count.startsWith('❌')) hasError = true;
+        } catch (e) {
+          lines.push(label + ': ❌ ' + e.message);
+          hasError = true;
+        }
+      }
+
+      dot.className = hasError ? 'err' : 'ok';
+      openModal('🔄 Sync Status', `
+        <div style="margin-bottom:12px;font-size:13px;color:${hasError ? '#f87171' : '#34d399'}">
+          ${hasError ? '⚠️ Sync completed with errors' : '✅ All stores reachable'}
+        </div>
+        <div style="background:#0b1627;border:1px solid #ffffff14;border-radius:10px;padding:12px;font-size:13px;font-family:monospace;line-height:1.8">
+          ${lines.map(l => `<div style="color:${l.includes('❌') ? '#f87171' : '#94a3b8'}">${esc(l)}</div>`).join('')}
+        </div>
+        <div class="actions" style="margin-top:14px"><button class="btn primary" onclick="closeModal()">Close</button></div>`);
+    } catch (e) {
+      dot.className = 'err';
+      toast('Sync failed: ' + e.message, true);
+    } finally {
+      btn.classList.remove('syncing');
+    }
+  });
+})();
 
 /* ===== Quick Add Expense FAB ===== */
 (function(){
