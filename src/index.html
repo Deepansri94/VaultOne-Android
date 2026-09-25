@@ -87,8 +87,7 @@ body { display: flex; align-items: center; justify-content: center; min-height: 
       <button class="iconbtn" id="migrateModalClose">✕</button>
     </div>
     <p style="font-size:13px;color:var(--muted);margin:0 0 14px">One-time migration — copies all IndexedDB data from this device to your Google Sheet.</p>
-    <label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Web App URL</label>
-    <input id="migrateUrlInput" placeholder="https://script.google.com/macros/s/..." style="width:100%;margin-bottom:14px">
+    <div id="migrateUrlSection" style="margin-bottom:14px"></div>
     <div class="actions" style="margin-bottom:14px">
       <button class="btn primary" id="migrateStartBtn">Start Migration</button>
       <button class="btn" id="migrateTestBtn">Test Connection</button>
@@ -348,26 +347,48 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
     db.close();
   }
 
-  document.getElementById('migrateBtn').onclick = () => modal.classList.add('open');
+  function getMigrateUrl() {
+    return (localStorage.getItem('vaultone_webappurl') || '').trim();
+  }
+
+  function buildMigrateUrlSection() {
+    const sec = document.getElementById('migrateUrlSection');
+    const saved = getMigrateUrl();
+    if (saved) {
+      sec.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="color:#34d399;font-size:13px">✅ Connected</span>
+          <span style="color:var(--muted);font-size:12px;word-break:break-all;flex:1">${saved.slice(0,60)}…</span>
+          <button class="btn" id="migrateChangeUrlBtn" style="flex:0 0 auto">Change URL</button>
+        </div>`;
+      document.getElementById('migrateChangeUrlBtn').onclick = () => {
+        sec.innerHTML = `<label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Web App URL</label>
+          <input id="migrateUrlInput" placeholder="https://script.google.com/macros/s/..." style="width:100%;margin-bottom:0" value="${saved}">`;
+      };
+    } else {
+      sec.innerHTML = `<label style="display:block;font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:6px">Web App URL</label>
+        <input id="migrateUrlInput" placeholder="https://script.google.com/macros/s/..." style="width:100%;margin-bottom:0">`;
+    }
+  }
+
+  function getActiveUrl() {
+    const inp = document.getElementById('migrateUrlInput');
+    return inp ? inp.value.trim() : getMigrateUrl();
+  }
+
+  document.getElementById('migrateBtn').onclick = () => { buildMigrateUrlSection(); modal.classList.add('open'); };
   document.getElementById('migrateModalClose').onclick = () => modal.classList.remove('open');
   modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
 
-  // Also pre-fill URL input from saved value
-  document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('vaultone_webappurl') || '';
-    const inp = document.getElementById('migrateUrlInput');
-    if (inp && saved) inp.value = saved;
-  });
-
   document.getElementById('migrateTestBtn').onclick = async () => {
-    const url = document.getElementById('migrateUrlInput').value.trim();
+    const url = getActiveUrl();
     if (!url) { mprint('⚠️ Enter a URL first.', 'warn'); return; }
     try { await mApiCall(url, { action: 'ping' }); mprint('✅ Connection OK', 'ok'); }
     catch (e) { mprint('❌ ' + e.message, 'err'); }
   };
 
   document.getElementById('migrateResetBtn').onclick = async () => {
-    const url = document.getElementById('migrateUrlInput').value.trim();
+    const url = getActiveUrl();
     if (!url) { mprint('⚠️ Enter a URL first.', 'warn'); return; }
     if (!confirm('This will DELETE all data from every sheet in your Google Sheet. Are you sure?')) return;
     try {
@@ -378,10 +399,11 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
 
   document.getElementById('migrateStartBtn').onclick = async () => {
     logEl.innerHTML = '';
-    const url = document.getElementById('migrateUrlInput').value.trim();
+    const url = getActiveUrl();
     if (!url) { mprint('⚠️ Enter your Web App URL first.', 'warn'); return; }
     for (const dbDef of DATABASES) await migrateDB(url, dbDef);
     localStorage.setItem('vaultone_webappurl', url);
+    buildMigrateUrlSection();
     mprint('');
     mprint('🎉 Migration complete! Your Web App URL has been saved.', 'ok');
     mprint('You can now use VaultOne — it will read from Google Sheets.', 'ok');
