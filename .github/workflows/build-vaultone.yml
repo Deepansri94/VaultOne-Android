@@ -6,12 +6,7 @@ on:
   push:
     branches:
       - main
-
-  # Also triggered when the CI workflow completes successfully on main
-  workflow_run:
-    workflows: ["VaultOne CI \u2014 Playwright Tests"]
-    types: [completed]
-    branches: [main]
+      - feature/github-pages
 
 permissions:
     contents: write
@@ -30,12 +25,6 @@ jobs:
   build:
     name: Build VaultOne APK
     runs-on: ubuntu-latest
-    # Skip the direct-push trigger if tests haven't run yet;
-    # only proceed when triggered by workflow_run with a successful conclusion
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
-      github.event_name == 'push'
 
     steps:
 
@@ -142,12 +131,24 @@ jobs:
             echo "ERROR: assets/VaultOne.png not found."
             exit 1
           fi
-          sudo apt-get install -y imagemagick >/dev/null 2>&1
-          convert assets/VaultOne.png -resize 48x48   app/src/main/res/mipmap-mdpi/ic_launcher.png
-          convert assets/VaultOne.png -resize 72x72   app/src/main/res/mipmap-hdpi/ic_launcher.png
-          convert assets/VaultOne.png -resize 96x96   app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          convert assets/VaultOne.png -resize 144x144 app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          convert assets/VaultOne.png -resize 192x192 app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          pip install pillow --quiet
+          python3 - <<'PYEOF'
+          from PIL import Image
+          import os
+          src = 'assets/VaultOne.png'
+          sizes = {
+            'app/src/main/res/mipmap-mdpi/ic_launcher.png':    48,
+            'app/src/main/res/mipmap-hdpi/ic_launcher.png':    72,
+            'app/src/main/res/mipmap-xhdpi/ic_launcher.png':   96,
+            'app/src/main/res/mipmap-xxhdpi/ic_launcher.png':  144,
+            'app/src/main/res/mipmap-xxxhdpi/ic_launcher.png': 192,
+          }
+          img = Image.open(src).convert('RGBA')
+          for path, size in sizes.items():
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            img.resize((size, size), Image.LANCZOS).save(path)
+            print(f'Generated {path} ({size}x{size})')
+          PYEOF
           echo "App icons generated."
 
       # 9. COPY ALL MODULAR APP FILES INTO ASSETS
