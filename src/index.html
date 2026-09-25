@@ -455,39 +455,59 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
   const btn = document.getElementById('syncBtn');
   const dot = document.getElementById('syncDot');
 
+  function _fetchWithTimeout(url, payload, ms = 8000) {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload),
+      signal: ctrl.signal
+    }).finally(() => clearTimeout(tid));
+  }
+
   btn.addEventListener('click', async () => {
     const url = (localStorage.getItem('vaultone_webappurl') || (window.VAULTONE_CONFIG && window.VAULTONE_CONFIG.WEB_APP_URL) || '').trim();
     if (!url) { toast('No Web App URL set. Open Settings to configure.', true); return; }
 
     btn.classList.add('syncing');
     dot.className = '';
-    const lines = [];
-    let hasError = false;
 
     try {
-      // ping first
-      await fetch(url, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'ping' }) });
+      // Fetch all stores in parallel with 8s timeout each, staggered 200ms apart
+      const results = await Promise.allSettled(
+        STORES.map(({ store }, i) =>
+          new Promise(resolve => setTimeout(resolve, i * 200))
+            .then(() => _fetchWithTimeout(url, { action: 'getAll', store }))
+            .then(r => {
+              const ct = r.headers.get('content-type') || '';
+              if (!ct.includes('json')) throw new Error('redirect — retry later');
+              return r.json();
+            })
+        )
+      );
 
-      for (const { label, store } of STORES) {
-        try {
-          const res = await fetch(url, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'getAll', store }) });
-          const data = await res.json();
-          const count = Array.isArray(data) ? data.length : (data.error ? '❌ ' + data.error : '?');
-          lines.push(label + ': ' + count + (typeof count === 'number' ? ' records' : ''));
-          if (typeof count === 'string' && count.startsWith('❌')) hasError = true;
-        } catch (e) {
-          lines.push(label + ': ❌ ' + e.message);
+      let hasError = false;
+      const lines = STORES.map(({ label }, i) => {
+        const r = results[i];
+        if (r.status === 'fulfilled') {
+          const data = r.value;
+          if (Array.isArray(data)) return { label, count: data.length, ok: true };
           hasError = true;
+          return { label, count: '❌ ' + (data.error || 'unknown error'), ok: false };
         }
-      }
+        hasError = true;
+        const msg = r.reason?.name === 'AbortError' ? 'timeout' : (r.reason?.message || 'failed');
+        return { label, count: '❌ ' + msg, ok: false };
+      });
 
       dot.className = hasError ? 'err' : 'ok';
       openModal('🔄 Sync Status', `
         <div style="margin-bottom:12px;font-size:13px;color:${hasError ? '#f87171' : '#34d399'}">
-          ${hasError ? '⚠️ Sync completed with errors' : '✅ All stores reachable'}
+          ${hasError ? '⚠️ Some stores had errors' : '✅ Connected · All stores reachable'}
         </div>
-        <div style="background:#0b1627;border:1px solid #ffffff14;border-radius:10px;padding:12px;font-size:13px;font-family:monospace;line-height:1.8">
-          ${lines.map(l => `<div style="color:${l.includes('❌') ? '#f87171' : '#94a3b8'}">${esc(l)}</div>`).join('')}
+        <div style="background:#0b1627;border:1px solid #ffffff14;border-radius:10px;padding:12px;font-size:13px;font-family:monospace;line-height:1.9">
+          ${lines.map(l => `<div style="color:${l.ok ? '#94a3b8' : '#f87171'}">${esc(l.label)}: ${l.ok ? '<span style="color:#34d399">' + l.count + ' records</span>' : esc(String(l.count))}</div>`).join('')}
         </div>
         <div class="actions" style="margin-top:14px"><button class="btn primary" onclick="closeModal()">Close</button></div>`);
     } catch (e) {
