@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VaultOne — Test Runner</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: ui-monospace, monospace; background: #0b1627; color: #e2e8f0; padding: 20px; font-size: 13px; }
+h1 { font-size: 18px; color: #a78bfa; margin-bottom: 6px; }
+.sub { color: #64748b; margin-bottom: 20px; font-size: 12px; }
+#urlBar { display: flex; gap: 8px; margin-bottom: 20px; }
+#urlBar input { flex: 1; padding: 8px 12px; background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 13px; }
+#urlBar button { padding: 8px 18px; background: #7c3aed; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+#runBtn { padding: 10px 28px; background: #059669; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 700; margin-bottom: 20px; }
+#runBtn:disabled { background: #334155; cursor: not-allowed; }
+#summary { margin-bottom: 16px; font-size: 14px; min-height: 22px; }
+.pass { color: #34d399; } .fail { color: #f87171; }
+#log { display: flex; flex-direction: column; gap: 6px; }
+.row { border-radius: 8px; background: #1e293b; overflow: hidden; }
+.row.pass { border-left: 3px solid #34d399; }
+.row.fail { border-left: 3px solid #f87171; }
+.row-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+.row.fail .row-head { cursor: pointer; user-select: none; }
+.badge { font-size: 11px; font-weight: 700; min-width: 36px; }
+.test-name { flex: 1; font-weight: 600; }
+.chevron { font-size: 10px; color: #64748b; }
+.triage { display: none; padding: 0 12px 12px 58px; border-top: 1px solid #ffffff08; }
+.triage.open { display: block; }
+.triage-grid { display: grid; grid-template-columns: 130px 1fr; gap: 4px 12px; margin-top: 8px; font-size: 12px; line-height: 1.7; }
+.tl { color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 10px; padding-top: 2px; }
+.tv { color: #e2e8f0; word-break: break-all; }
+.tv.green { color: #34d399; } .tv.red { color: #f87171; } .tv.amber { color: #fbbf24; }
+.section { margin: 14px 0 5px; color: #a78bfa; font-weight: 700; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+.warn-banner { background: #7c2d12; border: 1px solid #f97316; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #fed7aa; display: none; }
+</style>
+</head>
+<body>
+<h1>🧪 VaultOne — Test Runner</h1>
+<p class="sub">All tests run exclusively against the Google Sheets Web App via POST. No IndexedDB. No local data.</p>
+
+<div id="urlBar">
+  <input id="urlInput" placeholder="Paste your Apps Script /exec URL here…">
+  <button onclick="saveUrl()">Save URL</button>
+</div>
+<div id="warnBanner" class="warn-banner">
+  ⚠️ <b>No Web App URL set.</b> Tests cannot run without a URL — they will all fail with "No Web App URL set".
+  Paste your <code>/exec</code> URL above and click Save URL before running.
+</div>
+
+<button id="runBtn" onclick="runAll()">▶ Run All Tests</button>
+<div id="summary"></div>
+<div id="log"></div>
+
+<script>
+'use strict';
+
+// ── URL management ────────────────────────────────────────────────────────────
+const _KEY = 'vaultone_webappurl';
+function saveUrl() {
+  const v = document.getElementById('urlInput').value.trim();
+  if (v) { localStorage.setItem(_KEY, v); document.getElementById('warnBanner').style.display = 'none'; }
+}
+function getUrl() { return localStorage.getItem(_KEY) || ''; }
+document.addEventListener('DOMContentLoaded', () => {
+  const s = getUrl();
+  if (s) document.getElementById('urlInput').value = s;
+  else document.getElementById('warnBanner').style.display = 'block';
+});
+
+// ── HTTP layer — POST only, no shared.js, no IndexedDB ───────────────────────
+// Apps Script /exec has rate limits — retry once on 404/5xx with backoff.
+const _DELAY_MS = 500; // ms between every API call to avoid Apps Script quota exhaustion
+let _lastCall = 0;
+async function _throttle() {
+  const wait = _DELAY_MS - (Date.now() - _lastCall);
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  _lastCall = Date.now();
+}
+
+async function _post(payload) {
+  const url = getUrl();
+  if (!url) throw new Error('No Web App URL set — paste your /exec URL and click Save URL');
+  await _throttle();
+  let res = await fetch(url, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload)
+  });
+  // Retry once on 404/5xx or when Apps Script returns {error:"Unknown action:"} (body lost on redirect)
+  let data;
+  if (res.ok) {
+    try { data = await res.clone().json(); } catch(e) { data = null; }
+  }
+  const bodyLost = data && data.error && data.error.startsWith('Unknown action:');
+  if ((!res.ok && (res.status === 404 || res.status >= 500)) || bodyLost) {
+    await new Promise(r => setTimeout(r, 3000));
+    await _throttle();
+    res = await fetch(url, {
+      method: 'POST', redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    });
+    _lastCall = Date.now();
+  }
+  return res;
+}
+
+async function api(payload) {
+  const res = await _post(payload);
+  if (!res.ok) throw new Error('HTTP ' + res.status + ' from Apps Script — check deployment and redeploy if needed');
+  const data = await res.json();
+  if (data && data.error) throw new Error('Apps Script error: ' + data.error);
+  return data;
+}
+
+async function apiExpectError(payload) {
+  const res = await _post(payload);
+  if (!res.ok) return '(HTTP ' + res.status + ')';
+  const data = await res.json();
+  if (data && data.error) return data.error;
+  throw new Error('Expected an error but got success: ' + JSON.stringify(data).slice(0, 120));
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const uid = () => 'test_' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+const now = () => new Date().toISOString();
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, m =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
+
+// ── Structured error for triage panel ────────────────────────────────────────
+class TriageError extends Error {
+  constructor(step, expected, received, why) {
+    super(why);
+    this.step = step; this.expected = expected;
+    this.received = received; this.why = why;
+  }
+}
+function assert(ok, step, expected, received, why) {
+  if (!ok) throw new TriageError(step, expected, received, why);
+}
+
+// ── CRUD helper ───────────────────────────────────────────────────────────────
+async function crud(store, record, updateKey, updateVal) {
+  await api({ action: 'putOne', store, record });
+
+  const got = await api({ action: 'getOne', store, id: record.id });
+  assert(got && got.id === record.id,
+    'getOne after insert',
+    'record.id = ' + record.id,
+    got ? JSON.stringify(got).slice(0, 100) : 'null',
+    'getOne did not return the inserted record — check _putOne and _getOne in Code.gs');
+
+  const updated = { ...record, [updateKey]: updateVal };
+  await api({ action: 'putOne', store, record: updated });
+  const got2 = await api({ action: 'getOne', store, id: record.id });
+  assert(got2 && String(got2[updateKey]).startsWith(String(updateVal)),
+    'getOne after update — field: ' + updateKey,
+    String(updateVal),
+    got2 ? String(got2[updateKey]) : 'null',
+    'Updated field value mismatch — Sheets may be auto-formatting the value (e.g. date parsing)');
+
+  const all = await api({ action: 'getAll', store });
+  assert(Array.isArray(all) && !!all.find(r => r.id === record.id),
+    'getAll includes record',
+    'array containing id=' + record.id,
+    Array.isArray(all) ? all.length + ' records returned, id not found' : typeof all,
+    'getAll did not include the record — check _getAll filter in Code.gs');
+
+  await api({ action: 'delOne', store, id: record.id });
+  const gone = await api({ action: 'getOne', store, id: record.id });
+  assert(!gone,
+    'getOne after delete',
+    'null (record gone)',
+    gone ? JSON.stringify(gone).slice(0, 100) : 'null',
+    'Record still exists after delOne — check _delOne row matching in Code.gs');
+}
+
+// ── Test registry ─────────────────────────────────────────────────────────────
+const TESTS = [];
+function test(section, name, description, fn) {
+  TESTS.push({ section, name, description, fn });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POSITIVE TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('Connection', 'ping',
+  'Verifies the Apps Script Web App is reachable and returns { pong: true }',
+  async () => {
+    const r = await api({ action: 'ping' });
+    assert(r && r.pong === true, 'ping response', '{ pong: true }', JSON.stringify(r),
+      'Web App did not return pong:true — verify /exec URL and deployment');
+  });
+
+test('iVault', 'Income CRUD',
+  'Full insert → read → update amount → getAll → delete on Income sheet',
+  async () => crud('income',
+    { id: uid(), date: '2025-01-01', type: 'Salary', amount: 50000, note: 'Test income', createdAt: now() },
+    'amount', 55000));
+
+test('iVault', 'Expenses CRUD',
+  'Full CRUD on Expenses sheet — verifies category, subcategory, amount',
+  async () => crud('expenses',
+    { id: uid(), date: '2025-01-01', category: 'Household', subcategory: 'Rent', amount: 10000, note: 'Test', createdAt: now() },
+    'amount', 12000));
+
+test('iVault', 'Budgets CRUD — month preserved as YYYY-MM',
+  'Sheets auto-parses YYYY-MM as a date; Code.gs must strip T00:00:00Z and return plain YYYY-MM',
+  async () => crud('budgets',
+    { id: uid(), month: '2025-01', categories: { Household: 10000 }, createdAt: now(), updatedAt: now() },
+    'month', '2025-03'));
+
+test('iVault', 'Investments CRUD',
+  'Full CRUD on Investments; verifies JSON arrays (payments, contributions, valueUpdates) survive round-trip',
+  async () => crud('investments',
+    { id: uid(), type: 'FD', name: 'Test FD', provider: 'SBI', currentValue: 100000, interestRate: 7, payments: [], contributions: [], valueUpdates: [], createdAt: now(), updatedAt: now() },
+    'currentValue', 107000));
+
+test('iVault', 'Loans CRUD',
+  'Full CRUD on Loans sheet — verifies payments JSON array and outstanding balance update',
+  async () => crud('loans',
+    { id: uid(), loanType: 'Personal Loan', name: 'Test Loan', principal: 200000, interestRate: 12, outstanding: 180000, emi: 5000, status: 'Active', payments: [], createdAt: now(), updatedAt: now() },
+    'outstanding', 175000));
+
+test('iVault', 'CashWallets CRUD',
+  'Full CRUD on CashWallets sheet — verifies movements JSON array and balance update',
+  async () => crud('cashWallets',
+    { id: uid(), name: 'Test Wallet', category: 'Other', subcategory: '', balance: 500, movements: [], createdAt: now() },
+    'balance', 300));
+
+test('FamilyVault', 'Households CRUD',
+  'Full CRUD on Households sheet',
+  async () => crud('households',
+    { id: uid(), name: 'Test House', description: 'Desc', address: '123 St', createdAt: now(), modifiedAt: now() },
+    'name', 'Updated House'));
+
+test('FamilyVault', 'Persons CRUD',
+  'Full CRUD on Persons sheet — verifies dob not mangled by Sheets date parsing',
+  async () => crud('persons',
+    { id: uid(), name: 'Test Person', relation: 'Member', householdId: '', householdName: '', dob: '1990-06-15', gender: 'Male', status: 'Active', createdAt: now(), modifiedAt: now() },
+    'name', 'Updated Person'));
+
+test('FamilyVault', 'Vehicles CRUD',
+  'Full CRUD on Vehicles sheet',
+  async () => crud('vehicles',
+    { id: uid(), type: 'Car', name: 'Test Car', registrationNumber: 'KA01AB1234', make: 'Maruti', model: 'Swift', year: '2020', ownerPersonId: '', ownerPersonName: '', notes: '', createdAt: now(), modifiedAt: now() },
+    'name', 'Updated Car'));
+
+test('FamilyVault', 'Documents — Person owner',
+  'Document with ownerType=Person — verifies personId and personName stored in correct columns',
+  async () => crud('documents',
+    { id: uid(), title: 'Test Aadhaar', type: 'Aadhaar', ownerType: 'Person', personId: 'p1', personName: 'Test Person', householdId: '', householdName: '', vehicleId: '', vehicleName: '', documentNumber: '1234-5678-9012', issueDate: '2020-01-01', expiryDate: '', notes: '', createdAt: now(), modifiedAt: now() },
+    'title', 'Updated Aadhaar'));
+
+test('FamilyVault', 'Documents — Vehicle owner',
+  'Document with ownerType=Vehicle — verifies vehicleId and vehicleName stored in correct columns (not overwriting personId)',
+  async () => crud('documents',
+    { id: uid(), title: 'RC Book', type: 'Registration Certificate', ownerType: 'Vehicle', personId: '', personName: '', householdId: '', householdName: '', vehicleId: 'v1', vehicleName: 'Test Car', documentNumber: 'RC123', issueDate: '2020-01-01', expiryDate: '2025-01-01', notes: '', createdAt: now(), modifiedAt: now() },
+    'vehicleName', 'Updated Car'));
+
+test('FamilyVault', 'Documents — Household owner',
+  'Document with ownerType=Household — verifies householdId and householdName round-trip',
+  async () => crud('documents',
+    { id: uid(), title: 'Property Doc', type: 'Property', ownerType: 'Household', personId: '', personName: '', householdId: 'h1', householdName: 'Test House', vehicleId: '', vehicleName: '', documentNumber: 'PROP001', issueDate: '', expiryDate: '', notes: '', createdAt: now(), modifiedAt: now() },
+    'title', 'Updated Property Doc'));
+
+test('PasswordVault', 'Passwords CRUD',
+  'Full CRUD on Passwords sheet — verifies AES-GCM blob fields (salt, iv, cipher) survive unchanged',
+  async () => crud('passwords',
+    { id: uid(), salt: 'dGVzdHNhbHQ=', iv: 'dGVzdGl2MTI=', cipher: 'dGVzdGNpcGhlcg==', createdAt: now(), updatedAt: now() },
+    'cipher', 'dXBkYXRlZA=='));
+
+test('Shared', 'Reminders CRUD',
+  'Full CRUD on Reminders sheet — verifies completed boolean and date fields',
+  async () => crud('reminders',
+    { id: uid(), title: 'Test Reminder', date: '2025-12-01', time: '09:00', priority: 'Normal', description: 'Test', completed: false, createdAt: now() },
+    'title', 'Updated Reminder'));
+
+test('Shared', 'Notes CRUD',
+  'Full CRUD on Notes sheet — verifies body and format fields',
+  async () => crud('notes',
+    { id: uid(), title: 'Test Note', body: 'Hello world', format: 'text', createdAt: now(), updatedAt: now() },
+    'body', 'Updated body'));
+
+test('Shared', 'ActivityLog CRUD',
+  'Full CRUD on ActivityLog — previously returned 404 on GET due to redirect stripping; POST fixes it',
+  async () => crud('activity',
+    { id: uid(), type: 'Test', text: 'Test activity entry', createdAt: now() },
+    'text', 'Updated entry'));
+
+test('Meta', '_Meta_iVault CRUD',
+  'Full CRUD on _Meta_iVault — previously returned 404; POST body survives the /exec redirect',
+  async () => crud('_meta_ivault',
+    { id: uid(), key: 'testKey', value: 'testValue' },
+    'value', 'updatedValue'));
+
+test('Meta', '_Meta_FamilyVault CRUD',
+  'Full CRUD on _Meta_FamilyVault sheet',
+  async () => crud('_meta_familyvault',
+    { id: uid(), key: 'fvKey', value: 'fvValue' },
+    'value', 'fvUpdated'));
+
+test('Meta', '_Meta_PasswordVault CRUD',
+  'Full CRUD on _Meta_PasswordVault sheet',
+  async () => crud('_meta_passwordvault',
+    { id: uid(), key: 'pvKey', value: 'pvValue' },
+    'value', 'pvUpdated'));
+
+test('API', 'bulkPut — 3 records',
+  'Inserts 3 income records in one bulkPut call; verifies ok:true and cleans up all 3',
+  async () => {
+    const ids = [uid(), uid(), uid()];
+    const records = ids.map((id, i) => ({ id, date: '2025-0' + (i+1) + '-01', type: 'Salary', amount: 1000*(i+1), note: 'bulk', createdAt: now() }));
+    const r = await api({ action: 'bulkPut', store: 'income', records });
+    assert(r && r.ok, 'bulkPut response', '{ ok: true }', JSON.stringify(r), 'bulkPut did not return ok:true');
+    for (const id of ids) await api({ action: 'delOne', store: 'income', id });
+  });
+
+test('API', 'getAll returns array',
+  'getAll must always return a JSON array — never null, object, or undefined',
+  async () => {
+    const r = await api({ action: 'getAll', store: 'income' });
+    assert(Array.isArray(r), 'getAll return type', 'Array', typeof r + ': ' + JSON.stringify(r).slice(0,60),
+      'getAll returned non-array — check _getAll in Code.gs');
+  });
+
+test('API', 'getOne with missing id returns null',
+  'getOne for a non-existent id must return null — not throw, not return a wrong record',
+  async () => {
+    const r = await api({ action: 'getOne', store: 'income', id: 'nonexistent_xyz_999' });
+    assert(!r, 'getOne missing id', 'null or empty', JSON.stringify(r),
+      'Expected null for missing id but got a record — check _getOne loop in Code.gs');
+  });
+
+test('API', 'delOne nonexistent id is idempotent',
+  'Deleting a non-existent id must return { ok: true } — idempotent, no error thrown',
+  async () => {
+    const r = await api({ action: 'delOne', store: 'income', id: 'nonexistent_xyz_999' });
+    assert(r && r.ok, 'delOne idempotent', '{ ok: true }', JSON.stringify(r),
+      'delOne should be idempotent but returned error — check _delOne fallback in Code.gs');
+  });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NEGATIVE TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+test('Negative', 'Unknown action returns error',
+  'Sending an unrecognised action must return { error: "..." } — not silently succeed',
+  async () => {
+    const err = await apiExpectError({ action: 'destroyEverything', store: 'income' });
+    assert(!!err, 'error for unknown action', 'error message string', String(err),
+      'Apps Script returned success for an unknown action — check switch default in _handle');
+  });
+
+test('Negative', 'Unknown store name returns error',
+  'A store name not in _ALIAS must return an error — prevents silent writes to wrong sheet',
+  async () => {
+    const err = await apiExpectError({ action: 'getAll', store: 'unicornStore' });
+    assert(!!err, 'error for unknown store', 'error message string', String(err),
+      'Expected _key() to throw for unknown store but got success');
+  });
+
+test('Negative', 'putOne without id returns error',
+  'Every record must have an id; missing id must be rejected by the _putOne guard clause',
+  async () => {
+    const err = await apiExpectError({ action: 'putOne', store: 'income', record: { amount: 100 } });
+    assert(!!err, 'error for putOne no id', '"Record must have an id field"', String(err),
+      '_putOne guard did not reject a record with no id field');
+  });
+
+test('Negative', 'putOne with empty store returns error',
+  'Empty store string must be rejected before any sheet lookup — _key() guard',
+  async () => {
+    const err = await apiExpectError({ action: 'putOne', store: '', record: { id: uid() } });
+    assert(!!err, 'error for empty store', '"store name is required"', String(err),
+      '_key() did not throw for empty store string');
+  });
+
+test('Negative', 'getAll with empty store returns error',
+  'getAll with no store must return an error — not an empty array',
+  async () => {
+    const err = await apiExpectError({ action: 'getAll', store: '' });
+    assert(!!err, 'error for getAll empty store', '"store name is required"', String(err),
+      '_key() did not throw for empty store on getAll');
+  });
+
+test('Negative', 'bulkPut empty array returns ok with count 0',
+  'bulkPut([]) is valid — must return { ok: true, count: 0 } without error',
+  async () => {
+    const r = await api({ action: 'bulkPut', store: 'income', records: [] });
+    assert(r && r.ok, 'bulkPut empty ok', '{ ok: true }', JSON.stringify(r), 'bulkPut([]) should return ok:true');
+    assert(r.count === 0, 'bulkPut empty count', 'count: 0', 'count: ' + r.count, 'bulkPut([]) should return count:0');
+  });
+
+test('Negative', 'bulkPut skips records without id',
+  'Records missing id in a batch must be skipped; valid records in the same batch must still be inserted',
+  async () => {
+    const validId = uid();
+    await api({ action: 'bulkPut', store: 'income', records: [
+      { amount: 999, note: 'no id — skip me' },
+      { id: validId, date: '2025-01-01', type: 'Salary', amount: 1, note: 'valid', createdAt: now() }
+    ]});
+    const got = await api({ action: 'getOne', store: 'income', id: validId });
+    assert(got && got.id === validId,
+      'valid record in mixed bulkPut batch', 'record with id=' + validId,
+      got ? JSON.stringify(got).slice(0,80) : 'null',
+      'Valid record was not inserted — bulkPut may have aborted on the no-id record');
+    await api({ action: 'delOne', store: 'income', id: validId });
+  });
+
+test('Negative', 'JSON array columns default to [] when omitted',
+  'payments/contributions/valueUpdates must default to [] — prevents .map() crash in JS',
+  async () => {
+    const id = uid();
+    await api({ action: 'putOne', store: 'investments', record: { id, type: 'FD', name: 'No Arrays FD', createdAt: now(), updatedAt: now() } });
+    const got = await api({ action: 'getOne', store: 'investments', id });
+    assert(Array.isArray(got.payments),      'payments default',      '[]', JSON.stringify(got.payments),      'payments not defaulting to []');
+    assert(Array.isArray(got.contributions), 'contributions default', '[]', JSON.stringify(got.contributions), 'contributions not defaulting to []');
+    assert(Array.isArray(got.valueUpdates),  'valueUpdates default',  '[]', JSON.stringify(got.valueUpdates),  'valueUpdates not defaulting to []');
+    await api({ action: 'delOne', store: 'investments', id });
+  });
+
+test('Negative', 'categories defaults to {} when omitted',
+  'Budget categories must default to {} not [] — prevents Object.entries() crash',
+  async () => {
+    const id = uid();
+    await api({ action: 'putOne', store: 'budgets', record: { id, month: '2099-01', createdAt: now(), updatedAt: now() } });
+    const got = await api({ action: 'getOne', store: 'budgets', id });
+    assert(typeof got.categories === 'object' && !Array.isArray(got.categories),
+      'categories default', '{}', JSON.stringify(got.categories),
+      'categories not defaulting to {} — check _JSON_COLS default in _toObjByHeader');
+    await api({ action: 'delOne', store: 'budgets', id });
+  });
+
+test('Negative', 'completed=false normalised to boolean',
+  'Sheets stores booleans as strings; _toObjByHeader must return JS boolean false, not string "false"',
+  async () => {
+    const id = uid();
+    await api({ action: 'putOne', store: 'reminders', record: { id, title: 'Bool false', date: '2025-01-01', time: '09:00', priority: 'Normal', completed: false, createdAt: now() } });
+    const got = await api({ action: 'getOne', store: 'reminders', id });
+    assert(got.completed === false, 'completed=false', 'false (boolean)', got.completed + ' (' + typeof got.completed + ')',
+      'completed not normalised to boolean false — check completed branch in _toObjByHeader');
+    await api({ action: 'delOne', store: 'reminders', id });
+  });
+
+test('Negative', 'completed=true normalised to boolean',
+  'Sheets stores booleans as strings; _toObjByHeader must return JS boolean true, not string "true"',
+  async () => {
+    const id = uid();
+    await api({ action: 'putOne', store: 'reminders', record: { id, title: 'Bool true', date: '2025-01-01', time: '09:00', priority: 'Normal', completed: true, createdAt: now() } });
+    const got = await api({ action: 'getOne', store: 'reminders', id });
+    assert(got.completed === true, 'completed=true', 'true (boolean)', got.completed + ' (' + typeof got.completed + ')',
+      'completed not normalised to boolean true — check completed branch in _toObjByHeader');
+    await api({ action: 'delOne', store: 'reminders', id });
+  });
+
+test('Negative', 'clearStore removes all data rows',
+  'clearStore must delete all data rows; getAll must return [] afterwards — header row must survive',
+  async () => {
+    const ids = [uid(), uid()];
+    for (const id of ids) await api({ action: 'putOne', store: 'notes', record: { id, title: 'clear test', body: 'x', format: 'text', createdAt: now(), updatedAt: now() } });
+    await api({ action: 'clearStore', store: 'notes' });
+    const all = await api({ action: 'getAll', store: 'notes' });
+    assert(Array.isArray(all) && all.length === 0,
+      'getAll after clearStore', '[] empty array',
+      Array.isArray(all) ? all.length + ' rows still present' : typeof all,
+      'clearStore did not remove all rows — check _clearStore deleteRows range in Code.gs');
+  });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RUNNER + RENDERER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function runAll() {
+  const url = getUrl();
+  if (!url) {
+    document.getElementById('warnBanner').style.display = 'block';
+    alert('Paste your Apps Script /exec URL and click Save URL first.');
+    return;
+  }
+  const btn = document.getElementById('runBtn');
+  const total = TESTS.length;
+  btn.disabled = true;
+  document.getElementById('log').innerHTML = '';
+  document.getElementById('summary').innerHTML = '';
+
+  let pass = 0, fail = 0, lastSection = '';
+
+  for (let i = 0; i < TESTS.length; i++) {
+    const t = TESTS[i];
+    btn.textContent = `⏳ ${i + 1}/${total} — ${t.name}`;
+    if (t.section !== lastSection) { addSection(t.section); lastSection = t.section; }
+    try {
+      await t.fn();
+      addRow('pass', t.name, t.description, null);
+      pass++;
+    } catch(e) {
+      addRow('fail', t.name, t.description, e);
+      fail++;
+    }
+    document.getElementById('summary').innerHTML =
+      `<span style="color:#64748b">Running ${i+1}/${total} — </span>` +
+      `<span class="pass">${pass} passed</span> · ` +
+      `<span class="${fail ? 'fail' : 'pass'}">${fail} failed</span>`;
+  }
+
+  document.getElementById('summary').innerHTML =
+    `<span class="${fail ? 'fail' : 'pass'}">${pass}/${total} passed</span>` +
+    (fail
+      ? ` · <span class="fail">${fail} failed — click any red row to triage</span>`
+      : ' · <span class="pass">All tests passed ✅</span>');
+
+  btn.disabled = false; btn.textContent = '▶ Run All Tests';
+}
+
+function addSection(name) {
+  const el = document.createElement('div');
+  el.className = 'section';
+  el.textContent = '── ' + name;
+  document.getElementById('log').appendChild(el);
+}
+
+function addRow(status, name, description, err) {
+  const row = document.createElement('div');
+  row.className = 'row ' + status;
+
+  const head = document.createElement('div');
+  head.className = 'row-head';
+  head.innerHTML =
+    `<span class="badge ${status}">${status === 'pass' ? 'PASS' : 'FAIL'}</span>` +
+    `<span class="test-name">${esc(name)}</span>` +
+    (status === 'fail' ? '<span class="chevron">▶ expand</span>' : '');
+  row.appendChild(head);
+
+  if (status === 'fail' && err) {
+    const isTriage = err instanceof TriageError;
+    const triage = document.createElement('div');
+    triage.className = 'triage';
+    triage.innerHTML = '<div class="triage-grid">' + [
+      ['Test',          esc(name),                                              ''],
+      ['What it tests', esc(description),                                       ''],
+      ['Failed step',   esc(isTriage ? err.step     : 'uncaught exception'),   ''],
+      ['Expected',      esc(isTriage ? err.expected : 'no error'),             'green'],
+      ['Received',      esc(isTriage ? err.received : err.message),            'red'],
+      ['Root cause',    esc(isTriage ? err.why      : err.message),            'amber'],
+    ].map(([l, v, c]) =>
+      `<span class="tl">${l}</span><span class="tv ${c}">${v}</span>`
+    ).join('') + '</div>';
+    row.appendChild(triage);
+
+    head.onclick = () => {
+      const open = triage.classList.toggle('open');
+      head.querySelector('.chevron').textContent = open ? '▼ collapse' : '▶ expand';
+    };
+  }
+
+  document.getElementById('log').appendChild(row);
+}
+</script>
+</body>
+</html>
