@@ -515,7 +515,6 @@ jobs:
               // ── Auto-update ──────────────────────────────────────────────
               private static final String RELEASES_API =
                   "https://api.github.com/repos/Deepansri94/VaultOne-Android/releases/latest";
-              private static final int CURRENT_VERSION_CODE = BuildConfig.VERSION_CODE;
 
               private void checkForUpdate() {
                   new Thread(() -> {
@@ -534,27 +533,49 @@ jobs:
                           br.close();
                           conn.disconnect();
                           String json = sb.toString();
-                          // tag_name is "build-{versionCode}"
                           String tag = parseStringField(json, "tag_name");
                           String remoteName = parseStringField(json, "name");
-                          int remoteCode = tag.startsWith("build-")
-                              ? Integer.parseInt(tag.substring(6)) : -1;
-                          // Extract APK browser_download_url from assets array. Fall back to
-                          // the deterministic GitHub release URL if parsing changes upstream.
                           String apkUrl = parseApkUrl(json);
-                          if (!isHttpUrl(apkUrl) && tag.startsWith("build-")) {
+                          if (!isHttpUrl(apkUrl)) {
                               apkUrl = "https://github.com/Deepansri94/VaultOne-Android/releases/download/"
                                   + tag + "/VaultOne.apk";
                           }
-                          if (remoteCode > CURRENT_VERSION_CODE && apkUrl != null) {
+                          if (isNewerVersion(tag, BuildConfig.VERSION_NAME) && isHttpUrl(apkUrl)) {
                               final String finalUrl = apkUrl;
                               final String finalName = remoteName;
                               runOnUiThread(() -> showUpdateDialog(finalName, finalUrl));
                           }
                       } catch (Exception e) {
-                          // No network or token invalid — silently skip
+                          // No network or rate-limited — silently skip
                       }
                   }).start();
+              }
+
+              /** Returns true if remoteTag is a higher semver than currentVersion.
+               *  Strips leading 'v' from both before comparing. */
+              private boolean isNewerVersion(String remoteTag, String currentVersion) {
+                  try {
+                      int[] remote  = parseSemver(remoteTag);
+                      int[] current = parseSemver(currentVersion);
+                      for (int i = 0; i < Math.max(remote.length, current.length); i++) {
+                          int r = i < remote.length  ? remote[i]  : 0;
+                          int c = i < current.length ? current[i] : 0;
+                          if (r > c) return true;
+                          if (r < c) return false;
+                      }
+                      return false; // equal
+                  } catch (Exception e) { return false; }
+              }
+
+              private int[] parseSemver(String v) {
+                  if (v == null) return new int[]{0};
+                  v = v.trim().replaceAll("^[vV]", "");
+                  String[] parts = v.split("[.\\-]");
+                  int[] nums = new int[parts.length];
+                  for (int i = 0; i < parts.length; i++) {
+                      try { nums[i] = Integer.parseInt(parts[i]); } catch (Exception e) { nums[i] = 0; }
+                  }
+                  return nums;
               }
 
               private String parseApkUrl(String json) {
