@@ -1110,8 +1110,9 @@ jobs:
             app/build/outputs/logs/**
           if-no-files-found: ignore
 
-      # 28. CREATE GITHUB RELEASE AND UPLOAD APK
+      # 28. CREATE GITHUB RELEASE AND UPLOAD APK (only on v* tag pushes)
       - name: Create GitHub Release and upload APK
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
