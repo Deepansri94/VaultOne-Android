@@ -468,7 +468,7 @@ const VEHICLE_DOC_TYPES = [
 const GENERAL_DOC_TYPES = [
   'Aadhaar','PAN','Passport','Driving Licence','Ration Card','Insurance',
   'Registration Certificate','Pollution Certificate','Road Tax','Fitness Certificate',
-  'Education','Employment','Property','Vehicle','Certificate','Other'
+  'Education','Employment','Property','Vehicle','Certificate','Bank Account','Other'
 ];
 
 function docModal(existing = null, presetVehicleId = null) {
