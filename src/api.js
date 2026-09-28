@@ -1,7 +1,7 @@
 'use strict';
-// VaultOne — Google Sheets API layer
-// Replaces IndexedDB helpers from shared.js.
-// Must be loaded BEFORE shared.js in every HTML page.
+// VaultOne — Dual-write layer: IndexedDB (fast, local) + Google Sheets (permanent backup)
+// Reads always come from IndexedDB. Writes go to IndexedDB first, then Sheets in background.
+// On first load (per session), if a Sheets URL is set, data is pulled from Sheets → IndexedDB.
 //
 // SETUP: Paste your Web App URL in Settings → Web App URL field.
 // Stored in localStorage under 'vaultone_webappurl'.
@@ -29,18 +29,23 @@ async function _apiCall(payload, _attempt = 0) {
       body: JSON.stringify(payload)
     });
   } catch (e) {
-    // Network-level failure (no response at all)
     if (_attempt < 2) { await _RETRY_DELAY(800); return _apiCall(payload, _attempt + 1); }
     _notifyWriteError(payload, e.message);
     throw e;
   }
-  // Apps Script redirect dropped body — retry writes up to 2 times
   if ((res.status === 404 || res.status >= 500) && _attempt < 2) {
     await _RETRY_DELAY(800);
     return _apiCall(payload, _attempt + 1);
   }
   if (!res.ok) {
     const err = new Error('Network error: ' + res.status);
+    _notifyWriteError(payload, err.message);
+    throw err;
+  }
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('json')) {
+    if (_attempt < 2) { await _RETRY_DELAY(800); return _apiCall(payload, _attempt + 1); }
+    const err = new Error('Non-JSON response from Sheets');
     _notifyWriteError(payload, err.message);
     throw err;
   }
@@ -58,14 +63,12 @@ async function _apiCall(payload, _attempt = 0) {
 }
 
 function _notifyWriteError(payload, msg) {
-  if (!_WRITE_ACTIONS[payload.action]) return; // only alert on writes, not reads
+  if (!_WRITE_ACTIONS[payload.action]) return;
   const label = payload.store ? payload.store + ' / ' + payload.action : payload.action;
-  // Use shared toast if available, otherwise a fixed banner
   const toastEl = document.getElementById('toast');
   if (toastEl && typeof toast === 'function') {
-    toast('❌ Save failed (' + label + '). Check connection and retry.', true);
+    toast('❌ Sheets sync failed (' + label + '). Data saved locally.', true);
   } else {
-    // Fallback banner for pages where toast() isn't ready yet
     let banner = document.getElementById('_apiErrBanner');
     if (!banner) {
       banner = document.createElement('div');
@@ -74,31 +77,94 @@ function _notifyWriteError(payload, msg) {
       banner.innerHTML = '<span id="_apiErrMsg"></span><button style="background:none;border:1px solid #fff9;color:#fff;border-radius:8px;padding:4px 12px;cursor:pointer" onclick="this.parentElement.remove()">✕</button>';
       document.body.appendChild(banner);
     }
-    document.getElementById('_apiErrMsg').textContent = '❌ Save failed (' + label + '). Check connection and retry.';
+    document.getElementById('_apiErrMsg').textContent = '❌ Sheets sync failed (' + label + '). Data saved locally.';
     setTimeout(() => banner.remove(), 5000);
   }
 }
 
-// Assigned on window to win over shared.js function-declaration hoisting
-window.openDB     = async function(_d, _v, _s) {};
-window.getAll     = async function(store)         { return _apiCall({ action: 'getAll',     store }); };
-window.getOne     = async function(store, id)     { return _apiCall({ action: 'getOne',     store, id }); };
-window.putOne     = async function(store, record) { return _apiCall({ action: 'putOne',     store, record }); };
-window.delOne     = async function(store, id)     { return _apiCall({ action: 'delOne',     store, id }); };
-window.clearStore = async function(store)         { return _apiCall({ action: 'clearStore', store }); };
-window.bulkPut    = async function(store, records){ return _apiCall({ action: 'bulkPut',    store, records }); };
+// ── Background Sheets write (fire-and-forget, never blocks the UI) ──────────
+function _sheetsWrite(payload) {
+  if (!_apiUrl()) return; // no URL configured — skip silently
+  _apiCall(payload).catch(() => {}); // errors already shown by _notifyWriteError
+}
 
-// Re-apply after all scripts load to guarantee we win over shared.js hoisting.
-// Also set window.db sentinel so shared.js `if (!db) return` guards don't block.
+// ── Session hydration: pull Sheets → IndexedDB once per session ─────────────
+const _HYDRATED_KEY = 'vaultone_hydrated_session';
+const _hydrated = new Set();
+
+async function _hydrateStore(store) {
+  if (_hydrated.has(store)) return;
+  _hydrated.add(store);
+  try {
+    const rows = await _apiCall({ action: 'getAll', store });
+    if (!Array.isArray(rows) || !rows.length) return;
+    // Write each row into IndexedDB without triggering another Sheets write
+    for (const row of rows) {
+      await _idbPutOne(store, row);
+    }
+  } catch { /* offline or URL not set — silently skip */ }
+}
+
+// ── Raw IndexedDB helpers (bypass the dual-write wrappers) ──────────────────
+function _idbTxStore(store, mode) { return db.transaction(store, mode).objectStore(store); }
+function _idbReq(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+async function _idbGetAll(store)          { return _idbReq(_idbTxStore(store).getAll()); }
+async function _idbGetOne(store, id)      { return _idbReq(_idbTxStore(store).get(id)); }
+async function _idbPutOne(store, obj)     { return _idbReq(_idbTxStore(store, 'readwrite').put(obj)); }
+async function _idbDelOne(store, id)      { return _idbReq(_idbTxStore(store, 'readwrite').delete(id)); }
+async function _idbClearStore(store)      { return _idbReq(_idbTxStore(store, 'readwrite').clear()); }
+
+// ── Dual-write CRUD overrides ────────────────────────────────────────────────
+// These replace the shared.js window.* assignments after DOMContentLoaded.
+// Reads: IndexedDB only (fast).
+// Writes: IndexedDB first (immediate), then Sheets in background.
+
+function _installDualWrite() {
+  window.getAll = async function(store) {
+    await _hydrateStore(store);
+    return _idbGetAll(store);
+  };
+
+  window.getOne = async function(store, id) {
+    await _hydrateStore(store);
+    return _idbGetOne(store, id);
+  };
+
+  window.putOne = async function(store, obj) {
+    const result = await _idbPutOne(store, obj);
+    _sheetsWrite({ action: 'putOne', store, record: obj });
+    return result;
+  };
+
+  window.delOne = async function(store, id) {
+    const result = await _idbDelOne(store, id);
+    _sheetsWrite({ action: 'delOne', store, id });
+    return result;
+  };
+
+  window.clearStore = async function(store) {
+    const result = await _idbClearStore(store);
+    _sheetsWrite({ action: 'clearStore', store });
+    return result;
+  };
+
+  window.bulkPut = async function(store, records) {
+    for (const r of records) await _idbPutOne(store, r);
+    _sheetsWrite({ action: 'bulkPut', store, records });
+  };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  window.db         = { _sheets: true };
-  window.openDB     = async function(_d, _v, _s) {};
-  window.getAll     = async function(store)         { return _apiCall({ action: 'getAll',     store }); };
-  window.getOne     = async function(store, id)     { return _apiCall({ action: 'getOne',     store, id }); };
-  window.putOne     = async function(store, record) { return _apiCall({ action: 'putOne',     store, record }); };
-  window.delOne     = async function(store, id)     { return _apiCall({ action: 'delOne',     store, id }); };
-  window.clearStore = async function(store)         { return _apiCall({ action: 'clearStore', store }); };
-  window.bulkPut    = async function(store, records){ return _apiCall({ action: 'bulkPut',    store, records }); };
+  // Wait for openDB to finish (shared.js sets db synchronously in onsuccess)
+  // Use a small poll to ensure db is ready before installing overrides
+  const _tryInstall = () => {
+    if (typeof db !== 'undefined' && db) {
+      _installDualWrite();
+    } else {
+      setTimeout(_tryInstall, 50);
+    }
+  };
+  _tryInstall();
 });
 
 // ── Settings UI ───────────────────────────────────────────────────────────────
@@ -108,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
     banner.id = 'apiSetupBanner';
     banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;background:#1e1040;border-bottom:2px solid #7c3aed;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center';
     banner.innerHTML = `
-      <span style="font-size:13px;color:#e2e8f0;flex:1;min-width:200px">☁️ Paste your Google Sheets Web App URL to get started</span>
+      <span style="font-size:13px;color:#e2e8f0;flex:1;min-width:200px">☁️ Paste your Google Sheets Web App URL to enable cloud backup</span>
       <input id="bannerUrlInput" placeholder="https://script.google.com/macros/s/..." style="flex:2;min-width:220px;padding:8px 12px;border-radius:10px;border:1px solid #7c3aed;background:#0b1627;color:#e2e8f0;font-size:13px">
       <button id="bannerSaveBtn" style="padding:8px 16px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:13px;cursor:pointer;white-space:nowrap">Save &amp; Connect</button>`;
     document.body.prepend(banner);
@@ -120,11 +186,10 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.textContent = '⏳ Testing…';
       try {
         await _apiCall({ action: 'ping' });
-        banner.remove(); location.reload();
+        banner.remove();
       } catch(e) {
         btn.textContent = 'Save & Connect';
         document.getElementById('bannerUrlInput').style.borderColor = '#f87171';
-        document.getElementById('bannerUrlInput').title = e.message;
         const st = document.createElement('div');
         st.style.cssText = 'color:#f87171;font-size:12px;margin-top:6px;width:100%';
         st.textContent = '❌ Could not connect: ' + e.message;
@@ -140,7 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const saved = _apiUrl();
     extra.innerHTML = `
       <hr style="border-color:#ffffff12;margin:16px 0">
-      <h4 style="margin:0 0 6px;font-size:14px;color:#94a3b8">☁️ Google Sheets Sync</h4>
+      <h4 style="margin:0 0 6px;font-size:14px;color:#94a3b8">☁️ Google Sheets Backup</h4>
+      <p style="font-size:12px;color:#64748b;margin:0 0 10px">Data saves locally first, then syncs to Sheets in the background.</p>
       <div id="spWebAppConnected" style="display:${saved ? 'flex' : 'none'};align-items:center;gap:8px;margin-bottom:10px;font-size:13px;color:#34d399">
         ✅ Connected
         <button class="btn" id="spWebAppChange" style="font-size:11px;padding:4px 10px">Change URL</button>
@@ -187,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // Build URL panel whenever settings panel opens (covers all pages including index.html)
   setTimeout(_buildUrlPanel, 200);
   document.addEventListener('click', e => {
     if (e.target.id === 'settingsBtn' || e.target.closest('#settingsBtn')) {

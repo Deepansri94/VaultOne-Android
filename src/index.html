@@ -474,7 +474,7 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
     dot.className = '';
 
     try {
-      // Fetch all stores in parallel with 8s timeout each, staggered 200ms apart
+      // Check Sheets connectivity + get record counts from Sheets, staggered 200ms apart
       const results = await Promise.allSettled(
         STORES.map(({ store }, i) =>
           new Promise(resolve => setTimeout(resolve, i * 200))
@@ -488,28 +488,37 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
       );
 
       let hasError = false;
-      const lines = STORES.map(({ label }, i) => {
+      const lines = STORES.map(({ label, store }, i) => {
         const r = results[i];
         if (r.status === 'fulfilled') {
           const data = r.value;
-          if (Array.isArray(data)) return { label, count: data.length, ok: true };
+          if (Array.isArray(data)) return { label, store, sheetsCount: data.length, ok: true };
           hasError = true;
-          return { label, count: '❌ ' + (data.error || 'unknown error'), ok: false };
+          return { label, store, sheetsCount: '❌ ' + (data.error || 'unknown error'), ok: false };
         }
         hasError = true;
         const msg = r.reason?.name === 'AbortError' ? 'timeout' : (r.reason?.message || 'failed');
-        return { label, count: '❌ ' + msg, ok: false };
+        return { label, store, sheetsCount: '❌ ' + msg, ok: false };
       });
 
       dot.className = hasError ? 'err' : 'ok';
       openModal('🔄 Sync Status', `
-        <div style="margin-bottom:12px;font-size:13px;color:${hasError ? '#f87171' : '#34d399'}">
-          ${hasError ? '⚠️ Some stores had errors' : '✅ Connected · All stores reachable'}
+        <div style="margin-bottom:8px;font-size:13px;color:${hasError ? '#f87171' : '#34d399'}">
+          ${hasError ? '⚠️ Some stores had errors' : '✅ Local + Sheets both active'}
         </div>
+        <div style="font-size:11px;color:#64748b;margin-bottom:10px">Reads: IndexedDB (instant) · Writes: IndexedDB first, then Sheets in background</div>
         <div style="background:#0b1627;border:1px solid #ffffff14;border-radius:10px;padding:12px;font-size:13px;font-family:monospace;line-height:1.9">
-          ${lines.map(l => `<div style="color:${l.ok ? '#94a3b8' : '#f87171'}">${esc(l.label)}: ${l.ok ? '<span style="color:#34d399">' + l.count + ' records</span>' : esc(String(l.count))}</div>`).join('')}
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:0 12px;color:#64748b;font-size:11px;padding-bottom:6px;border-bottom:1px solid #ffffff10;margin-bottom:6px">
+            <span>Store</span><span>Sheets</span>
+          </div>
+          ${lines.map(l => `<div style="display:grid;grid-template-columns:1fr auto;gap:0 12px;color:${l.ok ? '#94a3b8' : '#f87171'}">
+            <span>${esc(l.label)}</span>
+            <span style="color:${l.ok ? '#34d399' : '#f87171'}">${l.ok ? l.sheetsCount : esc(String(l.sheetsCount))}</span>
+          </div>`).join('')}
         </div>
-        <div class="actions" style="margin-top:14px"><button class="btn primary" onclick="closeModal()">Close</button></div>`);
+        <div class="actions" style="margin-top:14px">
+          <button class="btn primary" onclick="closeModal()">Close</button>
+        </div>`);
     } catch (e) {
       dot.className = 'err';
       toast('Sync failed: ' + e.message, true);
