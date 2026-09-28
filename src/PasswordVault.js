@@ -14,7 +14,18 @@ let state = { settings: { id: 'settings', name: '', currency: 'INR', pinHash: ''
   try {
     await openDB(PV_DB, PV_VER, PV_STORES);
     const s = await getOne('meta', 'settings');
-    if (s) state.settings = { ...state.settings, ...s };
+    if (s) {
+      state.settings = { ...state.settings, ...s };
+    } else {
+      // Fallback: read pinHash + autoLock from localStorage (survives across sessions)
+      try {
+        const ls = JSON.parse(localStorage.getItem('vaultone_settings') || '{}');
+        if (ls.pinHash) state.settings.pinHash = ls.pinHash;
+        if (ls.autoLock !== undefined) state.settings.autoLock = ls.autoLock;
+        if (ls.name) state.settings.name = ls.name;
+        if (ls.currency) state.settings.currency = ls.currency;
+      } catch {}
+    }
     applySettings();
     renderPasswordsLocked();
     renderBellReminders();
@@ -75,6 +86,8 @@ let state = { settings: { id: 'settings', name: '', currency: 'INR', pinHash: ''
         }
         state.settings.autoLock = Number(document.getElementById('spAutoLock').value);
         await putOne('meta', state.settings);
+        // Mirror security settings to localStorage so pinHash survives across sessions
+        try { const ls = JSON.parse(localStorage.getItem('vaultone_settings') || '{}'); localStorage.setItem('vaultone_settings', JSON.stringify({ ...ls, pinHash: state.settings.pinHash, autoLock: state.settings.autoLock })); } catch {}
         await logActivity('Settings', 'Security settings saved');
         toast('Security settings saved'); applySettings(); scheduleAutoLock();
       });
@@ -218,6 +231,8 @@ async function setPinAndUnlock() {
     if (pin !== pin2) { toast('PINs do not match', true); return; }
     state.settings.pinHash = await hashPin(pin);
     await putOne('meta', state.settings);
+    // Mirror to localStorage so pinHash persists across sessions
+    try { const ls = JSON.parse(localStorage.getItem('vaultone_settings') || '{}'); localStorage.setItem('vaultone_settings', JSON.stringify({ ...ls, pinHash: state.settings.pinHash })); } catch {}
     passwordKey = pin; passwordUnlocked = true;
     closeModal(); toast('Vault PIN set');
     await renderPasswords(); scheduleAutoLock();
