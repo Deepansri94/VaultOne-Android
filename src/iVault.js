@@ -1131,26 +1131,25 @@ async function renderBudget() {
 
     const subCards = activeSubs.map(s => {
       const sb = Number(cats[c + '.' + s] || 0);
-      let sa = mExp.filter(x => x.category === c && x.subcategory === s).reduce((t, x) => t + Number(x.amount || 0), 0);
-      // For Loans & Financial: also count loan payments whose budget sub-cat maps to this sub
+      let sa = 0;
       if (c === 'Loans & Financial') {
+        // Source of truth: loan.payments (expense record subcategory = loan name, not budget subcat)
         const LOAN_TYPE_TO_SUBCAT = { 'Home Loan': 'Home Loan EMI', 'Vehicle Loan': 'Car / Bike Loan', 'Personal Loan': 'Personal Loan', 'Gold Loan': 'Personal Loan', 'Education Loan': 'Personal Loan', 'Other': 'Personal Loan' };
         loans.forEach(loan => {
           if (LOAN_TYPE_TO_SUBCAT[loan.loanType] === s) {
             (loan.payments || []).forEach(p => { if ((p.date || '').startsWith(month)) sa += Number(p.emi || 0); });
           }
         });
-        // subtract any expense rows already counted that came from loan payments (category=Loans & Financial, subcategory=loan.name)
-        // those are already excluded since they won't match sub-cat name 's'
-      }
-      // For Savings & Investments: also count inv payments whose type maps to this sub
-      if (c === 'Savings & Investments') {
+      } else if (c === 'Savings & Investments') {
+        // Source of truth: inv.payments (expense record subcategory = budget subcat, would double-count)
         const INV_TYPE_TO_SUBCAT = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund', 'Other Saving': 'Other Savings' };
         invs.forEach(inv => {
           if (INV_TYPE_TO_SUBCAT[inv.type] === s) {
             (inv.payments || []).forEach(p => { if ((p.date || '').startsWith(month)) sa += Number(p.amount || 0); });
           }
         });
+      } else {
+        sa = mExp.filter(x => x.category === c && x.subcategory === s).reduce((t, x) => t + Number(x.amount || 0), 0);
       }
       const sp = sb > 0 ? sa / sb * 100 : (sa > 0 ? 101 : 0);
       const barColor = sp > 100 ? '#f87171' : sp >= 80 ? '#f59e0b' : CAT_COLORS[i];
