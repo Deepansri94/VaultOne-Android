@@ -1118,14 +1118,41 @@ async function renderBudget() {
   const catCards = BUDGET_CATS.map((c, i) => {
     const subs = getSubcats(c);
     // collect sub-cats that have a budget or actual spend
-    const activeSubs = subs.filter(s => Number(cats[c + '.' + s] || 0) > 0 || mExp.some(x => x.category === c && x.subcategory === s));
+    const LOAN_SUB_MAP = { 'Home Loan': 'Home Loan EMI', 'Vehicle Loan': 'Car / Bike Loan', 'Personal Loan': 'Personal Loan', 'Gold Loan': 'Personal Loan', 'Education Loan': 'Personal Loan', 'Other': 'Personal Loan' };
+    const INV_SUB_MAP = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund' };
+    const loanSubsWithPayments = new Set(loans.flatMap(loan => (loan.payments || []).some(p => (p.date||'').startsWith(month)) ? [LOAN_SUB_MAP[loan.loanType]].filter(Boolean) : []));
+    const invSubsWithPayments = new Set(invs.flatMap(inv => (inv.payments || []).some(p => (p.date||'').startsWith(month)) ? [INV_SUB_MAP[inv.type]].filter(Boolean) : []));
+    const activeSubs = subs.filter(s => Number(cats[c + '.' + s] || 0) > 0
+      || mExp.some(x => x.category === c && x.subcategory === s)
+      || (c === 'Loans & Financial' && loanSubsWithPayments.has(s))
+      || (c === 'Savings & Investments' && invSubsWithPayments.has(s)));
     // also include unmatched expenses under this category (no sub-cat)
     const untagged = mExp.filter(x => x.category === c && !x.subcategory).reduce((t, x) => t + Number(x.amount || 0), 0);
     if (!activeSubs.length && !untagged) return '';
 
     const subCards = activeSubs.map(s => {
       const sb = Number(cats[c + '.' + s] || 0);
-      const sa = mExp.filter(x => x.category === c && x.subcategory === s).reduce((t, x) => t + Number(x.amount || 0), 0);
+      let sa = mExp.filter(x => x.category === c && x.subcategory === s).reduce((t, x) => t + Number(x.amount || 0), 0);
+      // For Loans & Financial: also count loan payments whose budget sub-cat maps to this sub
+      if (c === 'Loans & Financial') {
+        const LOAN_TYPE_TO_SUBCAT = { 'Home Loan': 'Home Loan EMI', 'Vehicle Loan': 'Car / Bike Loan', 'Personal Loan': 'Personal Loan', 'Gold Loan': 'Personal Loan', 'Education Loan': 'Personal Loan', 'Other': 'Personal Loan' };
+        loans.forEach(loan => {
+          if (LOAN_TYPE_TO_SUBCAT[loan.loanType] === s) {
+            (loan.payments || []).forEach(p => { if ((p.date || '').startsWith(month)) sa += Number(p.emi || 0); });
+          }
+        });
+        // subtract any expense rows already counted that came from loan payments (category=Loans & Financial, subcategory=loan.name)
+        // those are already excluded since they won't match sub-cat name 's'
+      }
+      // For Savings & Investments: also count inv payments whose type maps to this sub
+      if (c === 'Savings & Investments') {
+        const INV_TYPE_TO_SUBCAT = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund' };
+        invs.forEach(inv => {
+          if (INV_TYPE_TO_SUBCAT[inv.type] === s) {
+            (inv.payments || []).forEach(p => { if ((p.date || '').startsWith(month)) sa += Number(p.amount || 0); });
+          }
+        });
+      }
       const sp = sb > 0 ? sa / sb * 100 : (sa > 0 ? 101 : 0);
       const barColor = sp > 100 ? '#f87171' : sp >= 80 ? '#f59e0b' : CAT_COLORS[i];
       const diff = sb - sa;
