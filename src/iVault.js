@@ -518,10 +518,11 @@ async function renderOverview() {
 async function cashPosition() {
   const [wallets, income, expenses] = await Promise.all([getAll('cashWallets'), getAll('income'), getAll('expenses')]);
   const N = v => Number.isFinite(Number(v)) ? Number(v) : 0;
-  const withdrawals = wallets.reduce((sum, wallet) => sum + (wallet.movements || []).filter(m => m.type === 'withdrawal').reduce((s, m) => s + N(m.amount), 0), 0);
-  const regularExpenses = expenses.filter(expense => !expense.walletId).reduce((sum, expense) => sum + N(expense.amount), 0);
-  const account = income.reduce((sum, row) => sum + N(row.amount), 0) - regularExpenses - withdrawals;
-  const wallet = wallets.reduce((sum, row) => sum + N(row.balance), 0);
+  // All expenses except wallet-spend ones count against account
+  const regularExpenses = expenses.filter(e => !e.walletId).reduce((s, e) => s + N(e.amount), 0);
+  const totalIncome = income.reduce((s, r) => s + N(r.amount), 0);
+  const account = totalIncome - regularExpenses;
+  const wallet = wallets.reduce((s, w) => s + N(w.balance), 0);
   return { wallets, account, wallet };
 }
 
@@ -582,7 +583,6 @@ async function addCashToWallet() {
   openModal('Add Cash to Wallet', `<form class="grid"><label>Amount <span class="req-star">*</span><input name="amount" type="number" min="0.01" step="0.01" required></label><label>Cash Wallet<select name="walletId" required>${walletOptions(position.wallets)}</select></label><label style="grid-column:1/-1">Purpose<input name="purpose" placeholder="Temple, medicine, milk..."></label><div class="actions" style="grid-column:1/-1"><button type="submit" class="btn primary">Add Cash</button></div></form>`, async fd => {
     const amount = Number(fd.get('amount')); const wallet = position.wallets.find(row => row.id === fd.get('walletId'));
     if (amount <= 0 || !wallet) { toast('Enter a valid amount and wallet', true); return; }
-    if (amount > position.account) { toast('Add amount exceeds available account balance', true); return; }
     wallet.balance = Number(wallet.balance || 0) + amount;
     wallet.movements = [...(wallet.movements || []), { id: uid(), type: 'withdrawal', amount, purpose: fd.get('purpose') || '', date: today(), createdAt: new Date().toISOString() }];
     await putOne('cashWallets', wallet); await logActivity('Cash Wallet', `Cash added to ${wallet.name}`);
@@ -600,8 +600,7 @@ async function spendFromCashWallet() {
     wallet.balance = Number(wallet.balance || 0) - amount;
     wallet.movements = [...(wallet.movements || []), { id: uid(), type: 'spend', amount, purpose, date: today(), createdAt: new Date().toISOString() }];
     await putOne('cashWallets', wallet);
-    await putOne('expenses', { id: uid(), category: wallet.category || 'Other', subcategory: wallet.subcategory || '', amount, date: today(), note: `${purpose} · Cash wallet: ${wallet.name}`, walletId: wallet.id, createdAt: new Date().toISOString() });
-    await logActivity('Expense', `Cash spent from ${wallet.name}`);
+    await logActivity('Cash Wallet', `Cash spent from ${wallet.name}: ${purpose}`);
     closeModal(); toast('Cash expense recorded'); await renderOverview();
   });
 }
