@@ -1131,10 +1131,14 @@ async function renderBudget() {
       const diff = sb - sa;
       const diffColor = diff >= 0 ? '#10b981' : '#f87171';
       const statusBorder = sp > 100 ? '3px solid #f87171' : sp >= 80 ? '3px solid #f59e0b' : '3px solid #10b981';
+      const txIds = mExp.filter(x => x.category === c && x.subcategory === s).map(x => x.id).join(',');
       return `<div class="bud-cat-bar-card" style="cursor:default;margin-bottom:6px;border-left:${statusBorder}">
         <div class="bud-cat-bar-header">
           <span class="bud-cat-bar-title">${esc(s)}</span>
-          <span class="bud-cat-bar-amounts">${money(sa, state.settings.currency)}${sb ? ' / ' + money(sb, state.settings.currency) : ''}</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <span class="bud-cat-bar-amounts">${money(sa, state.settings.currency)}${sb ? ' / ' + money(sb, state.settings.currency) : ''}</span>
+            ${sa > 0 ? `<button class="btn-icon" style="width:22px;height:22px;font-size:11px;padding:0;flex-shrink:0" data-bud-txview data-cat="${esc(c)}" data-sub="${esc(s)}" title="View transactions">🔍</button>` : ''}
+          </span>
         </div>
         <div class="bud-cat-bar-track" style="background:${diff >= 0 ? '#10b98122' : '#ffffff0d'}"><div class="bud-cat-bar-fill" style="width:${Math.min(100,sp).toFixed(1)}%;background:${barColor}"></div></div>
         <span class="bud-cat-bar-remaining" style="color:${diffColor}">${diff >= 0 ? '✅ ' + money(diff, state.settings.currency) + ' left' : '🔴 ' + money(Math.abs(diff), state.settings.currency) + ' over'}</span>
@@ -1165,6 +1169,20 @@ async function renderBudget() {
   </div>` : '';
 
   $('budgetDashContent').innerHTML = summaryHtml + donutHtml + catCards + wnsHtml;
+
+  // Wire 🔍 transaction view buttons
+  $('budgetDashContent').querySelectorAll('[data-bud-txview]').forEach(btn => {
+    btn.onclick = () => {
+      const cat = btn.dataset.cat, sub = btn.dataset.sub;
+      const txs = mExp.filter(x => x.category === cat && x.subcategory === sub).sort(historySort);
+      const rows = txs.map(x => `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #ffffff08">
+        <div><div style="font-size:13px;color:#e2e8f0">${esc(x.note || sub)}</div><div style="font-size:11px;color:#64748b">${esc(x.date)}</div></div>
+        <b style="color:#f87171;font-size:13px">-${money(x.amount, state.settings.currency)}</b>
+      </div>`).join('');
+      openModal(`${esc(sub)} — ${new Date(_budgetMonth+'-01').toLocaleString('default',{month:'long',year:'numeric'})}`,
+        `<div style="margin-bottom:10px;font-size:12px;color:#64748b">${txs.length} transaction${txs.length!==1?'s':''} · Total: ${money(txs.reduce((t,x)=>t+Number(x.amount||0),0), state.settings.currency)}</div>${rows || '<div class="empty">No transactions.</div>'}`);
+    };
+  });
 }
 
 function _renderBudgetForm(cats) {
