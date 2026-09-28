@@ -1947,9 +1947,10 @@ async function renderLoans() {
     const payments = (x.payments || []).slice().reverse();
     const payHtml = payments.length
       ? `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">Payment History (${payments.length})</summary>
-          <div style="margin-top:6px">${payments.map(p =>
-            `<div style="font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid #ffffff08">
-              Paid ${money(p.emi, state.settings.currency)} on ${esc(p.date)} · Principal: ${money(p.principal, state.settings.currency)} · Interest: ${money(p.interest, state.settings.currency)} · Balance: ${money(p.outstanding, state.settings.currency)}
+          <div style="margin-top:6px">${payments.map((p, pi) =>
+            `<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #ffffff08">
+              <span style="flex:1;font-size:12px;color:var(--muted)">Paid ${money(p.emi, state.settings.currency)} on ${esc(p.date)} · Principal: ${money(p.principal, state.settings.currency)} · Interest: ${money(p.interest, state.settings.currency)} · Balance: ${money(p.outstanding, state.settings.currency)}</span>
+              <button class="btn-icon danger" style="width:24px;height:24px;min-height:24px;font-size:11px;flex-shrink:0" data-loan-pay-del="${x.id}" data-pay-idx="${payments.length - 1 - pi}" title="Delete this payment">🗑️</button>
             </div>`).join('')}
           </div></details>` : '';
     return `<div class="loan-item">
@@ -1971,6 +1972,23 @@ async function renderLoans() {
     if (!confirm('Delete this loan?')) return;
     await delOne('loans', b.dataset.ldel);
     await logActivity('Loan', 'Loan deleted');
+    await renderLoans(); await renderOverview();
+  });
+  $('loanList').querySelectorAll('[data-loan-pay-del]').forEach(b => b.onclick = async () => {
+    const loan = await getOne('loans', b.dataset.loanPayDel);
+    if (!loan) return;
+    const idx = Number(b.dataset.payIdx);
+    const payments = loan.payments || [];
+    if (!confirm(`Delete payment of ${money(payments[idx]?.emi, state.settings.currency)} on ${payments[idx]?.date}? This will restore the outstanding balance.`)) return;
+    // Restore outstanding to the balance before this payment
+    const restored = idx > 0 ? payments[idx - 1].outstanding : loan.principal;
+    payments.splice(idx, 1);
+    loan.payments = payments;
+    loan.outstanding = payments.length > 0 ? payments[payments.length - 1].outstanding : restored;
+    loan.status = loan.outstanding > 0 ? 'Active' : 'Settled';
+    await putOne('loans', loan);
+    await logActivity('Loan', `Payment entry deleted for ${loan.name || loan.loanType}`);
+    toast('Payment removed · Outstanding restored');
     await renderLoans(); await renderOverview();
   });
 }
