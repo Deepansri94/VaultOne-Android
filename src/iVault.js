@@ -1126,17 +1126,17 @@ async function renderBudget() {
     const subCards = activeSubs.map(s => {
       const sb = Number(cats[c + '.' + s] || 0);
       const sa = mExp.filter(x => x.category === c && x.subcategory === s).reduce((t, x) => t + Number(x.amount || 0), 0);
-      const sp = sb > 0 ? Math.min(100, sa / sb * 100) : (sa > 0 ? 100 : 0);
+      const sp = sb > 0 ? sa / sb * 100 : (sa > 0 ? 101 : 0);
       const barColor = sp > 100 ? '#f87171' : sp >= 80 ? '#f59e0b' : CAT_COLORS[i];
       const diff = sb - sa;
       const diffColor = diff >= 0 ? '#10b981' : '#f87171';
-      const statusBorder = sp >= 100 ? '3px solid #f87171' : sp >= 80 ? '3px solid #f59e0b' : '3px solid #10b981';
+      const statusBorder = sp > 100 ? '3px solid #f87171' : sp >= 80 ? '3px solid #f59e0b' : '3px solid #10b981';
       return `<div class="bud-cat-bar-card" style="cursor:default;margin-bottom:6px;border-left:${statusBorder}">
         <div class="bud-cat-bar-header">
           <span class="bud-cat-bar-title">${esc(s)}</span>
           <span class="bud-cat-bar-amounts">${money(sa, state.settings.currency)}${sb ? ' / ' + money(sb, state.settings.currency) : ''}</span>
         </div>
-        <div class="bud-cat-bar-track" style="background:${diff >= 0 ? '#10b98122' : '#ffffff0d'}"><div class="bud-cat-bar-fill" style="width:${sp.toFixed(1)}%;background:${barColor}"></div></div>
+        <div class="bud-cat-bar-track" style="background:${diff >= 0 ? '#10b98122' : '#ffffff0d'}"><div class="bud-cat-bar-fill" style="width:${Math.min(100,sp).toFixed(1)}%;background:${barColor}"></div></div>
         <span class="bud-cat-bar-remaining" style="color:${diffColor}">${diff >= 0 ? '✅ ' + money(diff, state.settings.currency) + ' left' : '🔴 ' + money(Math.abs(diff), state.settings.currency) + ' over'}</span>
       </div>`;
     }).join('');
