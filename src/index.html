@@ -537,7 +537,55 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
         </div>
         <div class="actions" style="margin-top:14px">
           <button class="btn primary" onclick="closeModal()">Close</button>
+          ${sheetsOk ? `<button class="btn" id="syncPullBtn">⬇️ Pull from Sheets</button>` : ''}
         </div>`);
+
+      if (sheetsOk) {
+        document.getElementById('syncPullBtn')?.addEventListener('click', async () => {
+          closeModal();
+          btn.classList.add('syncing');
+          dot.className = '';
+          const PULL_MAP = [
+            { db: 'iVaultDB',        ver: 2,  allStores: ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes','cashWallets'], pullStores: ['income','expenses','budgets','investments','loans','reminders','activity','notes','cashWallets'] },
+            { db: 'FamilyVaultDB',   ver: 1,  allStores: ['meta','persons','households','vehicles','documents','reminders','activity','notes'], pullStores: ['persons','households','vehicles','documents','reminders','activity','notes'] },
+            { db: 'PasswordVaultDB', ver: 1,  allStores: ['meta','passwords','reminders','activity','notes'], pullStores: ['passwords','reminders','activity','notes'] }
+          ];
+          let pulled = 0, failed = 0;
+          for (const { db: dbName, ver, allStores, pullStores } of PULL_MAP) {
+            let idb;
+            try {
+              idb = await new Promise((res, rej) => {
+                const r = indexedDB.open(dbName, ver);
+                r.onsuccess = () => res(r.result);
+                r.onerror = () => rej(r.error);
+                r.onupgradeneeded = e => { const d = e.target.result; allStores.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); }); };
+              });
+            } catch { failed += pullStores.length; continue; }
+            for (const store of pullStores) {
+              try {
+                const res = await _fetchWithTimeout(url, { action: 'getAll', store }, 15000);
+                const ct = res.headers.get('content-type') || '';
+                if (!ct.includes('json')) throw new Error('non-JSON');
+                const rows = await res.json();
+                if (!Array.isArray(rows)) throw new Error(rows.error || 'bad response');
+                await new Promise((res, rej) => {
+                  const tx = idb.transaction(store, 'readwrite');
+                  tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+                  const os = tx.objectStore(store);
+                  os.clear();
+                  rows.forEach(row => os.put(row));
+                });
+                pulled += rows.length;
+              } catch { failed++; }
+              await new Promise(r => setTimeout(r, 150)); // stagger
+            }
+            idb.close();
+          }
+          btn.classList.remove('syncing');
+          dot.className = failed ? 'err' : 'ok';
+          toast(failed ? `Pull done — ${pulled} records pulled, ${failed} stores failed` : `✅ Pulled ${pulled} records from Sheets into IndexedDB`);
+        });
+      }
     } catch (e) {
       dot.className = 'err';
       toast('Sync check failed: ' + e.message, true);
