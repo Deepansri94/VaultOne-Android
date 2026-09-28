@@ -486,13 +486,36 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
         sheetsMsg = e.name === 'AbortError' ? 'timeout (>10s)' : e.message;
       }
 
-      // 2. Read local IndexedDB counts (instant)
+      // 2. Read local IndexedDB counts directly (launcher has no openDB)
+      const DB_STORES = [
+        { db: 'iVaultDB',        ver: 2, stores: ['income','expenses','investments','loans','reminders'] },
+        { db: 'FamilyVaultDB',   ver: 1, stores: ['persons','households','documents'] },
+        { db: 'PasswordVaultDB', ver: 1, stores: ['passwords'] }
+      ];
       const idbCounts = {};
-      for (const { store } of STORES) {
+      for (const { db: dbName, ver, stores: dbStores } of DB_STORES) {
         try {
-          const rows = await window.getAll(store);
-          idbCounts[store] = Array.isArray(rows) ? rows.length : 0;
-        } catch { idbCounts[store] = '?'; }
+          const idb = await new Promise((res, rej) => {
+            const r = indexedDB.open(dbName, ver);
+            r.onsuccess = () => res(r.result);
+            r.onerror = () => rej(r.error);
+            r.onupgradeneeded = e => {
+              const d = e.target.result;
+              dbStores.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); });
+            };
+          });
+          for (const s of dbStores) {
+            try {
+              const count = await new Promise((res, rej) => {
+                const req = idb.transaction(s, 'readonly').objectStore(s).count();
+                req.onsuccess = () => res(req.result);
+                req.onerror = () => rej(req.error);
+              });
+              idbCounts[s] = count;
+            } catch { idbCounts[s] = '?'; }
+          }
+          idb.close();
+        } catch { dbStores.forEach(s => { idbCounts[s] = '?'; }); }
       }
 
       dot.className = sheetsOk ? 'ok' : 'err';
