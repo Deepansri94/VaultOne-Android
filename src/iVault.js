@@ -1127,7 +1127,7 @@ async function renderBudget() {
       const sb = Number(cats[c + '.' + s] || 0);
       const sa = mExp.filter(x => x.category === c && x.subcategory === s).reduce((t, x) => t + Number(x.amount || 0), 0);
       const sp = sb > 0 ? Math.min(100, sa / sb * 100) : (sa > 0 ? 100 : 0);
-      const barColor = sp >= 100 ? '#f87171' : sp >= 80 ? '#f59e0b' : CAT_COLORS[i];
+      const barColor = sp > 100 ? '#f87171' : sp >= 80 ? '#f59e0b' : CAT_COLORS[i];
       const diff = sb - sa;
       const diffColor = diff >= 0 ? '#10b981' : '#f87171';
       const statusBorder = sp >= 100 ? '3px solid #f87171' : sp >= 80 ? '3px solid #f59e0b' : '3px solid #10b981';
