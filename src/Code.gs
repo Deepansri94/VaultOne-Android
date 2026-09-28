@@ -264,7 +264,7 @@ var COLS = {
   ],
 
   // ── Per-app settings (one row per key) — kept last ──────────────────────────
-  META_IVAULT:   ['id', 'key', 'value'],
+  META_IVAULT:   ['id', 'name', 'currency', 'currentGoldPricePerGram', 'currentDematPortfolioValue', 'customSubcats', 'updatedAt'],
   META_FAMILY:   ['id', 'key', 'value'],
   META_PASSWORD: ['id', 'key', 'value'],
 
@@ -316,6 +316,7 @@ var _JSON_COLS = {
   'contributions':true,
   'valueUpdates': true,
   'movements':    true,
+  'customSubcats':true,
 };
 
 // ── Spreadsheet accessor ──────────────────────────────────────────────────────
