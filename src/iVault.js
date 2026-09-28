@@ -12,7 +12,7 @@ const BUDGET_SUBCATS = {
   'Health & Emergency':['Medicine / Pharmacy','Doctor / Hospital','Emergency Fund'],
   'Loans & Financial':['Home Loan EMI','Car / Bike Loan','Personal Loan','Credit Card'],
   'Family / Religious / Social':['Festivals / Pooja','Gifts / Events','Donations','School / Tuition'],
-  'Savings & Investments':['SIP / Mutual Fund','PPF','RD','SSA','Insurance Premium','FD'],
+  'Savings & Investments':['SIP / Mutual Fund','PPF','RD','SSA','Insurance Premium','FD','Other Savings'],
   'Other':['Miscellaneous','Subscriptions','Clothing','Home Maintenance']
 };
 
@@ -780,7 +780,7 @@ async function populateExpLinked(category) {
       budgetSubcatLabel.style.display = '';
     }
     // Auto-select budget subcat when investment is picked
-    const INV_TYPE_TO_SUBCAT = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund' };
+    const INV_TYPE_TO_SUBCAT = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund', 'Other Saving': 'Other Savings' };
     linkedSel.addEventListener('change', async () => {
       const inv = invs.find(x => x.id === linkedSel.value);
       if (inv && budgetSubcatSel) {
@@ -1118,7 +1118,7 @@ async function renderBudget() {
     const subs = getSubcats(c);
     // collect sub-cats that have a budget or actual spend
     const LOAN_SUB_MAP = { 'Home Loan': 'Home Loan EMI', 'Vehicle Loan': 'Car / Bike Loan', 'Personal Loan': 'Personal Loan', 'Gold Loan': 'Personal Loan', 'Education Loan': 'Personal Loan', 'Other': 'Personal Loan' };
-    const INV_SUB_MAP = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund' };
+    const INV_SUB_MAP = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund', 'Other Saving': 'Other Savings' };
     const loanSubsWithPayments = new Set(loans.flatMap(loan => (loan.payments || []).some(p => (p.date||'').startsWith(month)) ? [LOAN_SUB_MAP[loan.loanType]].filter(Boolean) : []));
     const invSubsWithPayments = new Set(invs.flatMap(inv => (inv.payments || []).some(p => (p.date||'').startsWith(month)) ? [INV_SUB_MAP[inv.type]].filter(Boolean) : []));
     const activeSubs = subs.filter(s => Number(cats[c + '.' + s] || 0) > 0
@@ -1145,7 +1145,7 @@ async function renderBudget() {
       }
       // For Savings & Investments: also count inv payments whose type maps to this sub
       if (c === 'Savings & Investments') {
-        const INV_TYPE_TO_SUBCAT = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund' };
+        const INV_TYPE_TO_SUBCAT = { PPF: 'PPF', RD: 'RD', SSA: 'SSA', FD: 'FD', Insurance: 'Insurance Premium', NPS: 'SIP / Mutual Fund', Demat: 'SIP / Mutual Fund', 'Other Saving': 'Other Savings' };
         invs.forEach(inv => {
           if (INV_TYPE_TO_SUBCAT[inv.type] === s) {
             (inv.payments || []).forEach(p => { if ((p.date || '').startsWith(month)) sa += Number(p.amount || 0); });
