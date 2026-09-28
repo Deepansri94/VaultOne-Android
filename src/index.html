@@ -477,13 +477,16 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
       // 1. Ping Sheets to check connectivity (single fast request)
       let sheetsOk = false;
       let sheetsMsg = '';
-      try {
-        const r = await _fetchWithTimeout(url, { action: 'ping' }, 10000);
-        const ct = r.headers.get('content-type') || '';
-        if (ct.includes('json')) { await r.json(); sheetsOk = true; }
-        else sheetsMsg = 'redirect / not JSON';
-      } catch(e) {
-        sheetsMsg = e.name === 'AbortError' ? 'timeout (>10s)' : e.message;
+      for (let attempt = 0; attempt < 3 && !sheetsOk; attempt++) {
+        try {
+          const r = await _fetchWithTimeout(url, { action: 'ping' }, 25000);
+          const ct = r.headers.get('content-type') || '';
+          if (ct.includes('json')) { await r.json(); sheetsOk = true; }
+          else sheetsMsg = 'redirect / not JSON';
+        } catch(e) {
+          sheetsMsg = e.name === 'AbortError' ? 'timeout (>25s)' : e.message;
+          if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
+        }
       }
 
       // 2. Read local IndexedDB counts directly (launcher has no openDB)
