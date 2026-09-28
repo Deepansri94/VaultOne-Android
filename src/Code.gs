@@ -79,11 +79,15 @@ var COLS = {
     'createdAt'
   ],
 
-  // Monthly budgets — one row per YYYY-MM
+  // Monthly budgets — one row per sub-category entry (tall format)
+  // Each budget record is exploded: one sheet row per category/subcategory amount.
+  // On read, rows for the same month are collapsed back into { id, month, categories:{} }.
   BUDGETS: [
-    'id',
+    'id',          // budget record id (same for all rows of the same month)
     'month',       // YYYY-MM
-    'categories',  // JSON object { "Household": 5000, "Household.Rent": 3000, … }
+    'category',    // e.g. Household
+    'subcategory', // e.g. Rent  (empty string = category-level total)
+    'amount',
     'createdAt',
     'updatedAt'
   ],
@@ -311,7 +315,6 @@ var _ALIAS = {
 
 // ── Columns whose values are serialised as JSON strings in the sheet ──────────
 var _JSON_COLS = {
-  'categories':   true,
   'payments':     true,
   'contributions':true,
   'valueUpdates': true,
@@ -611,14 +614,89 @@ function _toRow(cols, obj) {
   });
 }
 
+// ── Budget tall-format helpers ────────────────────────────────────────────────
+// Each budget JS object { id, month, categories:{}, createdAt, updatedAt }
+// is stored as N rows (one per non-zero category/subcategory entry).
+// Key format in categories: "Category.Subcategory" or just "Category".
+
+function _budgetGetAll() {
+  var sh = _sh('budgets');
+  var last = sh.getLastRow();
+  if (last <= 1) return [];
+  var sheetCols = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+    .map(function(v) { return String(v).trim(); });
+  var rows = sh.getRange(2, 1, last - 1, sheetCols.length).getValues();
+  var byId = {}, order = [];
+  rows.forEach(function(row) {
+    var obj = {};
+    sheetCols.forEach(function(col, i) { obj[col] = row[i]; });
+    var id = String(obj.id || '').trim();
+    if (!id) return;
+    if (!byId[id]) {
+      var month = String(obj.month || '').replace(/T\d{2}:\d{2}:\d{2}Z?$/, '').slice(0, 7);
+      byId[id] = { id: id, month: month, categories: {}, createdAt: String(obj.createdAt || ''), updatedAt: String(obj.updatedAt || '') };
+      order.push(id);
+    }
+    var cat = String(obj.category || '').trim();
+    var sub = String(obj.subcategory || '').trim();
+    var amt = Number(obj.amount) || 0;
+    if (!cat || amt === 0) return;
+    byId[id].categories[sub ? cat + '.' + sub : cat] = amt;
+  });
+  return order.map(function(id) { return byId[id]; });
+}
+
+function _budgetPutOne(record) {
+  if (!record || !record.id) throw new Error('Budget record must have an id');
+  // Delete all existing rows for this id first
+  _budgetDelRows(record.id);
+  var sh = _sh('budgets');
+  var cols = COLS.BUDGETS;
+  var cats = record.categories || {};
+  var keys = Object.keys(cats).filter(function(k) { return Number(cats[k]) > 0; });
+  if (!keys.length) keys = [''];
+  var rowsToAppend = keys.map(function(key) {
+    var parts = key ? key.split('.') : ['', ''];
+    var cat = parts[0] || '';
+    var sub = parts.slice(1).join('.') || '';
+    var amt = key ? (Number(cats[key]) || 0) : 0;
+    return cols.map(function(col) {
+      if (col === 'id')          return record.id;
+      if (col === 'month')       return record.month || '';
+      if (col === 'category')    return cat;
+      if (col === 'subcategory') return sub;
+      if (col === 'amount')      return amt;
+      if (col === 'createdAt')   return record.createdAt || '';
+      if (col === 'updatedAt')   return record.updatedAt || '';
+      return '';
+    });
+  });
+  if (rowsToAppend.length === 1) {
+    sh.appendRow(rowsToAppend[0]);
+  } else {
+    sh.getRange(sh.getLastRow() + 1, 1, rowsToAppend.length, cols.length).setValues(rowsToAppend);
+  }
+  return { ok: true };
+}
+
+function _budgetDelRows(id) {
+  var sh = _sh('budgets');
+  var last = sh.getLastRow();
+  if (last <= 1) return;
+  var ids = sh.getRange(2, 1, last - 1, 1).getValues();
+  for (var i = ids.length - 1; i >= 0; i--) {
+    if (String(ids[i][0]) === String(id)) sh.deleteRow(i + 2);
+  }
+}
+
 // ── CRUD ──────────────────────────────────────────────────────────────────────
 
 function _getAll(store) {
+  if (store === 'budgets') return _budgetGetAll();
   var sh   = _sh(store);
   var cols = _cols(store);
   var last = sh.getLastRow();
   if (last <= 1) return [];
-  // Read actual header to handle sheets that have fewer columns than COLS definition
   var sheetCols = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
     .map(function(v) { return String(v).trim(); });
   return sh.getRange(2, 1, last - 1, sheetCols.length)
@@ -671,6 +749,7 @@ function _getOne(store, id) {
 }
 
 function _putOne(store, record) {
+  if (store === 'budgets') return _budgetPutOne(record);
   if (!record || !record.id) throw new Error('Record must have an id field');
   var sh   = _sh(store);
   var last = sh.getLastRow();
@@ -707,6 +786,7 @@ function _toRowByHeader(sheetCols, obj) {
 }
 
 function _delOne(store, id) {
+  if (store === 'budgets') { _budgetDelRows(id); return { ok: true }; }
   var sh   = _sh(store);
   var last = sh.getLastRow();
   if (last <= 1) return { ok: true };
@@ -721,6 +801,12 @@ function _delOne(store, id) {
 }
 
 function _clearStore(store) {
+  if (store === 'budgets') {
+    var sh = _sh('budgets');
+    var last = sh.getLastRow();
+    if (last > 1) sh.deleteRows(2, last - 1);
+    return { ok: true };
+  }
   var sh   = _sh(store);
   var last = sh.getLastRow();
   if (last > 1) sh.deleteRows(2, last - 1);
@@ -740,6 +826,10 @@ function _resetAllData() {
 
 function _bulkPut(store, records) {
   if (!records || !records.length) return { ok: true, count: 0 };
+  if (store === 'budgets') {
+    records.forEach(function(r) { if (r && r.id) _budgetPutOne(r); });
+    return { ok: true, count: records.length };
+  }
   var sh   = _sh(store);
   var last = sh.getLastRow();
   // Use actual sheet header for column order
