@@ -440,22 +440,38 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
 
 /* ===== Sync Button ===== */
 (function () {
-  const STORES = [
-    { label: 'Income',      store: 'income' },
-    { label: 'Expenses',    store: 'expenses' },
-    { label: 'Investments', store: 'investments' },
-    { label: 'Loans',       store: 'loans' },
-    { label: 'Persons',     store: 'persons' },
-    { label: 'Households',  store: 'households' },
-    { label: 'Documents',   store: 'documents' },
-    { label: 'Reminders',   store: 'reminders' },
-    { label: 'Passwords',   store: 'passwords' },
+
+  // Store → which IndexedDB it lives in
+  const STORE_DB_MAP = [
+    { db: 'iVaultDB',        ver: 2, allStores: ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes','cashWallets'],
+      syncStores: [
+        { label: 'Income',      store: 'income' },
+        { label: 'Expenses',    store: 'expenses' },
+        { label: 'Investments', store: 'investments' },
+        { label: 'Loans',       store: 'loans' },
+        { label: 'Reminders',   store: 'reminders' },
+        { label: 'Budgets',     store: 'budgets' },
+      ]
+    },
+    { db: 'FamilyVaultDB',   ver: 1, allStores: ['meta','persons','households','vehicles','documents','reminders','activity','notes'],
+      syncStores: [
+        { label: 'Persons',     store: 'persons' },
+        { label: 'Households',  store: 'households' },
+        { label: 'Documents',   store: 'documents' },
+        { label: 'Vehicles',    store: 'vehicles' },
+      ]
+    },
+    { db: 'PasswordVaultDB', ver: 1, allStores: ['meta','passwords','reminders','activity','notes'],
+      syncStores: [
+        { label: 'Passwords',   store: 'passwords' },
+      ]
+    },
   ];
 
   const btn = document.getElementById('syncBtn');
   const dot = document.getElementById('syncDot');
 
-  function _fetchWithTimeout(url, payload, ms = 8000) {
+  function _fetchJSON(url, payload, ms = 20000) {
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), ms);
     return fetch(url, {
@@ -463,9 +479,188 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify(payload),
       signal: ctrl.signal
-    }).finally(() => clearTimeout(tid));
+    }).finally(() => clearTimeout(tid)).then(async r => {
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) throw new Error('non-JSON response');
+      const data = await r.json();
+      if (data && data.error) throw new Error(data.error);
+      return data;
+    });
   }
 
+  // Open a module IndexedDB directly (launcher has no openDB)
+  function _openIDB(dbName, ver, allStores) {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open(dbName, ver);
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+      r.onupgradeneeded = e => {
+        const d = e.target.result;
+        allStores.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); });
+      };
+    });
+  }
+
+  function _idbGetAllIds(idb, store) {
+    return new Promise((res, rej) => {
+      const req = idb.transaction(store, 'readonly').objectStore(store).getAllKeys();
+      req.onsuccess = () => res(req.result);
+      req.onerror = () => rej(req.error);
+    });
+  }
+
+  function _idbPutRows(idb, store, rows) {
+    return new Promise((res, rej) => {
+      const tx = idb.transaction(store, 'readwrite');
+      tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+      const os = tx.objectStore(store);
+      rows.forEach(row => os.put(row));
+    });
+  }
+
+  // ── Label helper: pick a human-readable title from a record ──
+  function _recordLabel(store, rec) {
+    const r = rec || {};
+    if (store === 'income')      return r.type || r.note || r.date || r.id;
+    if (store === 'expenses')    return (r.category || '') + (r.subcategory ? ' / ' + r.subcategory : '') || r.date || r.id;
+    if (store === 'investments') return r.name || r.type || r.id;
+    if (store === 'loans')       return r.name || r.loanType || r.id;
+    if (store === 'budgets')     return r.month || r.id;
+    if (store === 'persons')     return r.name || r.id;
+    if (store === 'households')  return r.name || r.id;
+    if (store === 'documents')   return r.title || r.type || r.id;
+    if (store === 'vehicles')    return r.name || r.registrationNumber || r.id;
+    if (store === 'reminders')   return r.title || r.date || r.id;
+    if (store === 'passwords')   return '🔒 encrypted';
+    return r.id;
+  }
+
+  // ── Main verify flow ──
+  async function runVerify(url) {
+    const results = []; // { label, store, localCount, sheetsCount, missing: [{id,label}], error }
+
+    for (const { db: dbName, ver, allStores, syncStores } of STORE_DB_MAP) {
+      let idb;
+      try { idb = await _openIDB(dbName, ver, allStores); }
+      catch(e) { syncStores.forEach(({ label, store }) => results.push({ label, store, error: 'IDB open failed' })); continue; }
+
+      for (const { label, store } of syncStores) {
+        await new Promise(r => setTimeout(r, 150)); // stagger Sheets requests
+        try {
+          // Get local IDs
+          const localIds = new Set(await _idbGetAllIds(idb, store));
+
+          // Get all records from Sheets (source of truth)
+          const sheetsRows = await _fetchJSON(url, { action: 'getAll', store });
+          if (!Array.isArray(sheetsRows)) throw new Error('bad response');
+
+          // Find records in Sheets but missing locally
+          const missing = sheetsRows
+            .filter(r => !localIds.has(r.id))
+            .map(r => ({ id: r.id, label: _recordLabel(store, r), record: r }));
+
+          results.push({
+            label, store,
+            localCount: localIds.size,
+            sheetsCount: sheetsRows.length,
+            missing
+          });
+        } catch(e) {
+          results.push({ label, store, localCount: '?', sheetsCount: '?', missing: [], error: e.message });
+        }
+      }
+      idb.close();
+    }
+    return results;
+  }
+
+  // ── Pull only missing records into IndexedDB ──
+  async function pullMissing(url, missingByStore) {
+    // missingByStore: { store → [{ id, record }] }
+    let pulled = 0, failed = 0;
+    for (const { db: dbName, ver, allStores, syncStores } of STORE_DB_MAP) {
+      const storesToPull = syncStores.filter(({ store }) => (missingByStore[store] || []).length > 0);
+      if (!storesToPull.length) continue;
+      let idb;
+      try { idb = await _openIDB(dbName, ver, allStores); }
+      catch { failed += storesToPull.length; continue; }
+      for (const { store } of storesToPull) {
+        const rows = (missingByStore[store] || []).map(m => m.record);
+        try {
+          await _idbPutRows(idb, store, rows);
+          pulled += rows.length;
+        } catch { failed++; }
+      }
+      idb.close();
+    }
+    return { pulled, failed };
+  }
+
+  // ── Render verify results modal ──
+  function renderVerifyModal(results, url) {
+    const anyMissing = results.some(r => !r.error && r.missing && r.missing.length > 0);
+    const anyError   = results.some(r => r.error);
+
+    // Build missingByStore map for pull action
+    const missingByStore = {};
+    results.forEach(r => { if (r.missing && r.missing.length) missingByStore[r.store] = r.missing; });
+
+    const tableRows = results.map(r => {
+      if (r.error) return `
+        <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 10px;align-items:center;padding:5px 0;border-bottom:1px solid #ffffff08">
+          <span style="color:#94a3b8">${esc(r.label)}</span>
+          <span style="color:#64748b">?</span><span style="color:#64748b">?</span>
+          <span style="color:#f87171;font-size:11px">❌ ${esc(r.error)}</span>
+        </div>`;
+
+      const inSync = r.missing.length === 0;
+      const missingHtml = !inSync ? r.missing.slice(0, 3).map(m =>
+        `<div style="font-size:10px;color:#fbbf24;padding-left:8px">↳ ${esc(String(m.label).slice(0,40))}</div>`
+      ).join('') + (r.missing.length > 3 ? `<div style="font-size:10px;color:#64748b;padding-left:8px">↳ …and ${r.missing.length - 3} more</div>` : '') : '';
+
+      return `
+        <div style="padding:5px 0;border-bottom:1px solid #ffffff08">
+          <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 10px;align-items:center">
+            <span style="color:#94a3b8">${esc(r.label)}</span>
+            <span style="color:#64748b;font-size:11px">${r.localCount}</span>
+            <span style="color:#64748b;font-size:11px">${r.sheetsCount}</span>
+            <span style="color:${inSync ? '#34d399' : '#fbbf24'};font-size:11px">${inSync ? '✅' : '⚠️ ' + r.missing.length + ' missing'}</span>
+          </div>
+          ${missingHtml}
+        </div>`;
+    }).join('');
+
+    openModal('🔍 Verify Sync', `
+      <div style="font-size:12px;color:${anyMissing ? '#fbbf24' : anyError ? '#f87171' : '#34d399'};margin-bottom:10px">
+        ${anyMissing ? '⚠️ Some records are missing locally — Sheets has more data' : anyError ? '❌ Errors checking some stores' : '✅ IndexedDB is in sync with Sheets'}
+      </div>
+      <div style="background:#0b1627;border:1px solid #ffffff14;border-radius:10px;padding:10px 12px;font-size:12px;font-family:monospace">
+        <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:0 10px;color:#475569;font-size:10px;padding-bottom:6px;border-bottom:1px solid #ffffff10;margin-bottom:4px">
+          <span>Store</span><span>Local</span><span>Sheets</span><span>Status</span>
+        </div>
+        ${tableRows}
+      </div>
+      <div class="actions" style="margin-top:14px">
+        <button class="btn primary" onclick="closeModal()">Close</button>
+        ${anyMissing ? '<button class="btn" id="pullMissingBtn">⬇️ Pull Missing Records</button>' : ''}
+      </div>`);
+
+    if (anyMissing) {
+      document.getElementById('pullMissingBtn')?.addEventListener('click', async () => {
+        closeModal();
+        btn.classList.add('syncing');
+        dot.className = '';
+        const { pulled, failed } = await pullMissing(url, missingByStore);
+        btn.classList.remove('syncing');
+        dot.className = failed ? 'err' : 'ok';
+        toast(failed
+          ? `⚠️ Pulled ${pulled} records, ${failed} stores failed`
+          : `✅ ${pulled} missing record${pulled !== 1 ? 's' : ''} pulled from Sheets`);
+      });
+    }
+  }
+
+  // ── Button click ──
   btn.addEventListener('click', async () => {
     const url = (localStorage.getItem('vaultone_webappurl') || (window.VAULTONE_CONFIG && window.VAULTONE_CONFIG.WEB_APP_URL) || '').trim();
     if (!url) { toast('No Web App URL set. Open Settings to configure.', true); return; }
@@ -474,121 +669,25 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
     dot.className = '';
 
     try {
-      // 1. Ping Sheets to check connectivity (single fast request)
-      let sheetsOk = false;
-      let sheetsMsg = '';
-      for (let attempt = 0; attempt < 3 && !sheetsOk; attempt++) {
-        try {
-          const r = await _fetchWithTimeout(url, { action: 'ping' }, 25000);
-          const ct = r.headers.get('content-type') || '';
-          if (ct.includes('json')) { await r.json(); sheetsOk = true; }
-          else sheetsMsg = 'redirect / not JSON';
-        } catch(e) {
-          sheetsMsg = e.name === 'AbortError' ? 'timeout (>25s)' : e.message;
-          if (attempt < 2) await new Promise(r => setTimeout(r, 1000));
-        }
+      // Ping first (with retries for cold start)
+      let sheetsOk = false, sheetsMsg = '';
+      for (let i = 0; i < 3 && !sheetsOk; i++) {
+        try { await _fetchJSON(url, { action: 'ping' }, 25000); sheetsOk = true; }
+        catch(e) { sheetsMsg = e.name === 'AbortError' ? 'timeout (>25s)' : e.message; if (i < 2) await new Promise(r => setTimeout(r, 1000)); }
       }
 
-      // 2. Read local IndexedDB counts directly (launcher has no openDB)
-      const DB_STORES = [
-        { db: 'iVaultDB',        ver: 2, stores: ['income','expenses','investments','loans','reminders'] },
-        { db: 'FamilyVaultDB',   ver: 1, stores: ['persons','households','documents'] },
-        { db: 'PasswordVaultDB', ver: 1, stores: ['passwords'] }
-      ];
-      const idbCounts = {};
-      for (const { db: dbName, ver, stores: dbStores } of DB_STORES) {
-        try {
-          const idb = await new Promise((res, rej) => {
-            const r = indexedDB.open(dbName, ver);
-            r.onsuccess = () => res(r.result);
-            r.onerror = () => rej(r.error);
-            r.onupgradeneeded = e => {
-              const d = e.target.result;
-              dbStores.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); });
-            };
-          });
-          for (const s of dbStores) {
-            try {
-              const count = await new Promise((res, rej) => {
-                const req = idb.transaction(s, 'readonly').objectStore(s).count();
-                req.onsuccess = () => res(req.result);
-                req.onerror = () => rej(req.error);
-              });
-              idbCounts[s] = count;
-            } catch { idbCounts[s] = '?'; }
-          }
-          idb.close();
-        } catch { dbStores.forEach(s => { idbCounts[s] = '?'; }); }
+      if (!sheetsOk) {
+        dot.className = 'err';
+        toast('⚠️ Sheets unreachable: ' + sheetsMsg, true);
+        return;
       }
 
-      dot.className = sheetsOk ? 'ok' : 'err';
-      openModal('🔄 Sync Status', `
-        <div style="margin-bottom:8px;font-size:13px">
-          <span style="color:${sheetsOk ? '#34d399' : '#f87171'}">
-            ${sheetsOk ? '✅ Sheets connected' : '⚠️ Sheets unreachable' + (sheetsMsg ? ': ' + esc(sheetsMsg) : '')}
-          </span>
-        </div>
-        <div style="font-size:11px;color:#64748b;margin-bottom:10px">Reads: IndexedDB (instant) · Writes: IndexedDB first, then Sheets in background</div>
-        <div style="background:#0b1627;border:1px solid #ffffff14;border-radius:10px;padding:12px;font-size:13px;font-family:monospace;line-height:1.9">
-          <div style="display:grid;grid-template-columns:1fr auto;gap:0 12px;color:#64748b;font-size:11px;padding-bottom:6px;border-bottom:1px solid #ffffff10;margin-bottom:6px">
-            <span>Store</span><span>Local records</span>
-          </div>
-          ${STORES.map(({ label, store }) => `<div style="display:grid;grid-template-columns:1fr auto;gap:0 12px;color:#94a3b8">
-            <span>${esc(label)}</span>
-            <span style="color:#34d399">${idbCounts[store]}</span>
-          </div>`).join('')}
-        </div>
-        <div class="actions" style="margin-top:14px">
-          <button class="btn primary" onclick="closeModal()">Close</button>
-          ${sheetsOk ? `<button class="btn" id="syncPullBtn">⬇️ Pull from Sheets</button>` : ''}
-        </div>`);
+      toast('🔍 Verifying sync…');
+      const results = await runVerify(url);
+      const anyMissing = results.some(r => r.missing && r.missing.length > 0);
+      dot.className = anyMissing ? 'err' : 'ok';
+      renderVerifyModal(results, url);
 
-      if (sheetsOk) {
-        document.getElementById('syncPullBtn')?.addEventListener('click', async () => {
-          closeModal();
-          btn.classList.add('syncing');
-          dot.className = '';
-          const PULL_MAP = [
-            { db: 'iVaultDB',        ver: 2,  allStores: ['meta','income','expenses','budgets','investments','loans','reminders','activity','notes','cashWallets'], pullStores: ['income','expenses','budgets','investments','loans','reminders','activity','notes','cashWallets'] },
-            { db: 'FamilyVaultDB',   ver: 1,  allStores: ['meta','persons','households','vehicles','documents','reminders','activity','notes'], pullStores: ['persons','households','vehicles','documents','reminders','activity','notes'] },
-            { db: 'PasswordVaultDB', ver: 1,  allStores: ['meta','passwords','reminders','activity','notes'], pullStores: ['passwords','reminders','activity','notes'] }
-          ];
-          let pulled = 0, failed = 0;
-          for (const { db: dbName, ver, allStores, pullStores } of PULL_MAP) {
-            let idb;
-            try {
-              idb = await new Promise((res, rej) => {
-                const r = indexedDB.open(dbName, ver);
-                r.onsuccess = () => res(r.result);
-                r.onerror = () => rej(r.error);
-                r.onupgradeneeded = e => { const d = e.target.result; allStores.forEach(s => { if (!d.objectStoreNames.contains(s)) d.createObjectStore(s, { keyPath: 'id' }); }); };
-              });
-            } catch { failed += pullStores.length; continue; }
-            for (const store of pullStores) {
-              try {
-                const res = await _fetchWithTimeout(url, { action: 'getAll', store }, 15000);
-                const ct = res.headers.get('content-type') || '';
-                if (!ct.includes('json')) throw new Error('non-JSON');
-                const rows = await res.json();
-                if (!Array.isArray(rows)) throw new Error(rows.error || 'bad response');
-                await new Promise((res, rej) => {
-                  const tx = idb.transaction(store, 'readwrite');
-                  tx.oncomplete = res; tx.onerror = () => rej(tx.error);
-                  const os = tx.objectStore(store);
-                  os.clear();
-                  rows.forEach(row => os.put(row));
-                });
-                pulled += rows.length;
-              } catch { failed++; }
-              await new Promise(r => setTimeout(r, 150)); // stagger
-            }
-            idb.close();
-          }
-          btn.classList.remove('syncing');
-          dot.className = failed ? 'err' : 'ok';
-          toast(failed ? `Pull done — ${pulled} records pulled, ${failed} stores failed` : `✅ Pulled ${pulled} records from Sheets into IndexedDB`);
-        });
-      }
     } catch (e) {
       dot.className = 'err';
       toast('Sync check failed: ' + e.message, true);
