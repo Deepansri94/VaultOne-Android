@@ -34,8 +34,9 @@ let state = { settings: { id:'settings', name:'', currency:'INR' } };
 let _currentSV = 'overview';
 let _budgetMonth = new Date().toISOString().slice(0,7);
 
-let _budgetLocked = false;
-let _budgetEditMode = false; // true only when user explicitly clicks Edit
+let _budgetEditScope = 'month'; // 'month' | 'upcoming'
+let _lastBudRec = null;
+const CAT_COLORS = ['#7c3aed','#2563eb','#059669','#d97706','#dc2626','#0891b2','#7c3aed','#64748b'];
 
 /* ===== Boot ===== */
 (async () => {
@@ -809,11 +810,46 @@ const _expCatSel = document.querySelector('#expenseForm [name="category"]');
 _expCatSel?.addEventListener('change', () => populateExpLinked(_expCatSel.value));
 if (_expCatSel) populateExpLinked(_expCatSel.value);
 
+function _openBudgetEditForm(month, cats) {
+  $('budgetDashboard').style.display = 'none';
+  $('budgetEditPanel').style.display = '';
+  $('budgetEditTitle').textContent = 'Edit Budget — ' + new Date(month + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
+  $('budgetMonthInput').value = month;
+  _renderBudgetForm(cats);
+}
+
 $('budgetEditBtn').addEventListener('click', () => {
-  _budgetLocked = false;
-  _budgetEditMode = true;
-  $('budgetEditBtn').style.display = 'none';
-  renderBudget();
+  const bud = _lastBudRec;
+  if (!bud) return;
+  // Ask scope: this month only or upcoming months too
+  openModal('Edit Budget', `
+    <p style="color:#94a3b8;font-size:13px;margin:0 0 16px">How do you want to apply the changes?</p>
+    <div class="actions" style="flex-direction:column;gap:10px">
+      <button class="btn primary" id="budEditThisMonth">This month only</button>
+      <button class="btn" id="budEditUpcoming">This &amp; upcoming months</button>
+    </div>`);
+  setTimeout(() => {
+    document.getElementById('budEditThisMonth')?.addEventListener('click', () => {
+      closeModal();
+      _budgetEditScope = 'month';
+      _openBudgetEditForm(_budgetMonth, bud.categories || {});
+    });
+    document.getElementById('budEditUpcoming')?.addEventListener('click', () => {
+      closeModal();
+      _budgetEditScope = 'upcoming';
+      _openBudgetEditForm(_budgetMonth, bud.categories || {});
+    });
+  }, 0);
+});
+
+$('budgetNewBtn').addEventListener('click', () => {
+  _budgetEditScope = 'month';
+  _openBudgetEditForm(_budgetMonth, {});
+});
+
+$('budgetEditCancelBtn').addEventListener('click', () => {
+  $('budgetEditPanel').style.display = 'none';
+  $('budgetDashboard').style.display = '';
 });
 
 $('incomeForm').onsubmit = async e => {
@@ -997,134 +1033,177 @@ async function renderBudget() {
   const month = _budgetMonth;
   const [y, m] = month.split('-');
   $('budgetMonthLabel').textContent = new Date(+y, +m - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
-  $('budgetMonthInput').value = month;
 
   const bud = await getAll('budgets');
   const rec = bud.find(b => b.month === month);
+  _lastBudRec = rec || null;
   const cats = rec?.categories || {};
 
-  // Lock if a saved record exists and user hasn't explicitly clicked Edit
-  if (rec && !_budgetEditMode) _budgetLocked = true;
-  else if (!rec) _budgetLocked = false;
+  // Always show dashboard; hide edit panel
+  $('budgetDashboard').style.display = '';
+  $('budgetEditPanel').style.display = 'none';
+  $('budgetEditBtn').style.display = rec ? 'inline-flex' : 'none';
+  $('budgetNewBtn').style.display = rec ? 'none' : 'inline-flex';
 
+  const [exp, loans, invs] = await Promise.all([getAll('expenses'), getAll('loans'), getAll('investments')]);
+  const mExp = exp.filter(x => (x.date || '').startsWith(month));
+  const actuals = {};
+  BUDGET_CATS.forEach(c => { actuals[c] = mExp.filter(x => x.category === c).reduce((a, b) => a + Number(b.amount || 0), 0); });
+  loans.forEach(loan => {
+    (loan.payments || []).forEach(p => {
+      if ((p.date || '').startsWith(month)) actuals['Loans & Financial'] = (actuals['Loans & Financial'] || 0) + Number(p.emi || 0);
+    });
+  });
+  invs.forEach(inv => {
+    (inv.payments || []).forEach(p => {
+      if ((p.date || '').startsWith(month)) actuals['Savings & Investments'] = (actuals['Savings & Investments'] || 0) + Number(p.amount || 0);
+    });
+  });
+
+  const bt = BUDGET_CATS.reduce((t, c) => t + budgetCategoryTotal(cats, c), 0);
+  const totalActual = BUDGET_CATS.reduce((t, c) => t + (actuals[c] || 0), 0);
+  const remaining = bt - totalActual;
+
+  if (!rec && !mExp.length) {
+    $('budgetDashContent').innerHTML = `<div class="empty" style="padding:30px 0;text-align:center">
+      <div style="font-size:40px;margin-bottom:10px">🧮</div>
+      <p style="color:#64748b;margin:0 0 16px;font-size:14px">No budget set for this month.</p>
+    </div>`;
+    return;
+  }
+
+  // Summary strip
+  const pct = bt > 0 ? Math.min(100, Math.round(totalActual / bt * 100)) : 0;
+  const pctColor = pct >= 100 ? '#f87171' : pct >= 80 ? '#f59e0b' : '#10b981';
+  const summaryHtml = `<div class="bud-summary-strip">
+    <div class="bud-summary-tile"><div class="bst-label">Budget</div><div class="bst-val">${money(bt, state.settings.currency)}</div></div>
+    <div class="bud-summary-tile"><div class="bst-label">Spent</div><div class="bst-val" style="color:${pctColor}">${money(totalActual, state.settings.currency)}</div></div>
+    <div class="bud-summary-tile" style="border-color:${remaining >= 0 ? '#10b98140' : '#f8717140'};background:${remaining >= 0 ? '#10b98110' : '#f8717110'}"><div class="bst-label">Remaining</div><div class="bst-val" style="color:${remaining >= 0 ? '#10b981' : '#f87171'}">${remaining >= 0 ? '✅ ' : '🔴 '}${money(Math.abs(remaining), state.settings.currency)}</div></div>
+  </div>`;
+
+  // Donut SVG — slices per sub-category
+  let donutHtml = '';
+  if (bt > 0) {
+    const R = 54, cx = 70, cy = 70, stroke = 14;
+    const circ = 2 * Math.PI * R;
+    // collect all sub-cat budgets
+    const allSubs = [];
+    BUDGET_CATS.forEach((c, i) => {
+      getSubcats(c).forEach(s => {
+        const v = Number(cats[c + '.' + s] || 0);
+        if (v > 0) allSubs.push({ label: s, val: v, color: CAT_COLORS[i] });
+      });
+    });
+    let cumAngle = 0;
+    const slices = allSubs.map(sub => {
+      const frac = sub.val / bt;
+      const dash = frac * circ;
+      const offset = circ / 4 - cumAngle;
+      const s = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${sub.color}" stroke-width="${stroke}" stroke-dasharray="${dash.toFixed(2)} ${(circ - dash).toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" />`;
+      cumAngle += dash;
+      return s;
+    }).join('');
+    donutHtml = `<div class="bud-donut-wrap">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#ffffff0d" stroke-width="${stroke}"/>
+        ${slices}
+        <text x="${cx}" y="${cy - 6}" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="800">${pct}%</text>
+        <text x="${cx}" y="${cy + 12}" text-anchor="middle" fill="#64748b" font-size="10">spent</text>
+      </svg>
+    </div>`;
+  }
+
+  // Sub-category bar cards — one card per sub-category, grouped under a category header
+  let cardIdx = 0;
+  const catCards = BUDGET_CATS.map((c, i) => {
+    const subs = getSubcats(c);
+    // collect sub-cats that have a budget or actual spend
+    const activeSubs = subs.filter(s => Number(cats[c + '.' + s] || 0) > 0 || mExp.some(x => x.category === c && x.subcategory === s));
+    // also include unmatched expenses under this category (no sub-cat)
+    const untagged = mExp.filter(x => x.category === c && !x.subcategory).reduce((t, x) => t + Number(x.amount || 0), 0);
+    if (!activeSubs.length && !untagged) return '';
+
+    const subCards = activeSubs.map(s => {
+      const sb = Number(cats[c + '.' + s] || 0);
+      const sa = mExp.filter(x => x.category === c && x.subcategory === s).reduce((t, x) => t + Number(x.amount || 0), 0);
+      const sp = sb > 0 ? Math.min(100, sa / sb * 100) : (sa > 0 ? 100 : 0);
+      const barColor = sp >= 100 ? '#f87171' : sp >= 80 ? '#f59e0b' : CAT_COLORS[i];
+      const diff = sb - sa;
+      const diffColor = diff >= 0 ? '#10b981' : '#f87171';
+      const statusBorder = sp >= 100 ? '3px solid #f87171' : sp >= 80 ? '3px solid #f59e0b' : '3px solid #10b981';
+      return `<div class="bud-cat-bar-card" style="cursor:default;margin-bottom:6px;border-left:${statusBorder}">
+        <div class="bud-cat-bar-header">
+          <span class="bud-cat-bar-title">${esc(s)}</span>
+          <span class="bud-cat-bar-amounts">${money(sa, state.settings.currency)}${sb ? ' / ' + money(sb, state.settings.currency) : ''}</span>
+        </div>
+        <div class="bud-cat-bar-track" style="background:${diff >= 0 ? '#10b98122' : '#ffffff0d'}"><div class="bud-cat-bar-fill" style="width:${sp.toFixed(1)}%;background:${barColor}"></div></div>
+        <span class="bud-cat-bar-remaining" style="color:${diffColor}">${diff >= 0 ? '✅ ' + money(diff, state.settings.currency) + ' left' : '🔴 ' + money(Math.abs(diff), state.settings.currency) + ' over'}</span>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:4px">
+      <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;padding:8px 2px 4px;display:flex;align-items:center;gap:6px">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${CAT_COLORS[i]}"></span>${esc(c)}
+      </div>
+      ${subCards}
+    </div>`;
+  }).join('');
+
+  // Want/Need/Save
+  const wantBudget = ['Transport','Food & Personal','Family / Religious / Social','Other'].reduce((t, c) => t + budgetCategoryTotal(cats, c), 0);
+  const needBudget = ['Household','Health & Emergency','Loans & Financial'].reduce((t, c) => t + budgetCategoryTotal(cats, c), 0);
+  const saveBudget = budgetCategoryTotal(cats, 'Savings & Investments');
+  const pct2 = v => bt ? Math.round(v / bt * 100) : 0;
+  const wnsHtml = bt > 0 ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid #ffffff0a">
+    <div style="font-size:12px;color:#64748b;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Distribution</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div style="text-align:center"><div style="font-size:11px;color:#64748b">Want</div><div style="font-size:16px;font-weight:800;color:#f59e0b">${pct2(wantBudget)}%</div></div>
+      <div style="text-align:center"><div style="font-size:11px;color:#64748b">Need</div><div style="font-size:16px;font-weight:800;color:#2563eb">${pct2(needBudget)}%</div></div>
+      <div style="text-align:center"><div style="font-size:11px;color:#64748b">Save</div><div style="font-size:16px;font-weight:800;color:#10b981">${pct2(saveBudget)}%</div></div>
+    </div>
+    <div style="font-size:12px;color:#64748b;margin-top:8px;text-align:center">${pct2(saveBudget) >= 20 ? '✅ Great saving discipline.' : pct2(needBudget) <= 50 ? '👍 Good balance.' : '⚠️ Needs taking a large share.'}</div>
+  </div>` : '';
+
+  $('budgetDashContent').innerHTML = summaryHtml + donutHtml + catCards + wnsHtml;
+}
+
+function _renderBudgetForm(cats) {
   $('budgetCategoryFields').innerHTML = BUDGET_CATS.map(c => {
     const safeId = c.replace(/[^a-z0-9]/gi, '_');
     const subs = getSubcats(c);
     const subRows = subs.map(s => {
       const safeSub = (c + '_' + s).replace(/[^a-z0-9]/gi, '_');
-      return `<div style="display:grid;grid-template-columns:1fr auto 120px;gap:6px;align-items:center;margin-bottom:4px;padding-left:16px">
-        <span class="budget-sublabel" data-cat="${esc(c)}" data-sub="${esc(s)}" style="font-size:12px;color:#94a3b8;cursor:pointer" title="Click to rename">${esc(s)}</span>
-        <button type="button" class="btn-icon" data-rensub data-cat="${esc(c)}" data-sub="${esc(s)}" title="Rename">✏️</button>
-        <input name="sub_${safeSub}" type="number" min="0" step="1" value="${Number(cats[c + '.' + s] || 0)}" data-budget-sub="${esc(c)}" style="margin-top:0;font-size:12px;padding:5px 8px">
+      return `<div class="bud-sub-row">
+        <span class="bud-sub-label">${esc(s)}</span>
+        <div class="bud-sub-actions">
+          <button type="button" class="btn-icon" data-rensub data-cat="${esc(c)}" data-sub="${esc(s)}" title="Rename" style="width:26px;height:26px;font-size:11px">✏️</button>
+        </div>
+        <input name="sub_${safeSub}" type="number" min="0" step="1" placeholder="0" value="${Number(cats[c + '.' + s] || 0) || ''}" data-budget-sub="${esc(c)}" class="bud-sub-input">
       </div>`;
     }).join('');
-    return `<div style="margin-bottom:12px;border:1px solid #ffffff10;border-radius:10px;padding:10px">
-      <div style="display:grid;grid-template-columns:1fr 120px;gap:8px;align-items:center;margin-bottom:${subs.length ? '8px' : '0'}">
-        <label style="margin:0;font-size:13px;font-weight:700">${esc(c)}</label>
-        <input name="cat_${safeId}" type="number" min="0" step="1" value="${Number(cats[c] || 0)}" style="margin-top:0">
+    return `<div class="bud-cat-card">
+      <div class="bud-cat-header">
+        <span class="bud-cat-title" style="color:${CAT_COLORS[BUDGET_CATS.indexOf(c)]}">${esc(c)}</span>
+        <input name="cat_${safeId}" type="number" min="0" step="1" value="0" data-budget-cat-hidden style="display:none">
       </div>
       ${subRows}
-      <button type="button" class="btn" data-addsubcat="${esc(c)}" style="margin-top:6px;font-size:12px;padding:4px 10px">+ Add Sub-category</button>
+      <button type="button" class="btn bud-add-sub" data-addsubcat="${esc(c)}">+ Add sub-category</button>
     </div>`;
   }).join('');
 
-  // Keep each category amount synchronized with entered subcategory amounts.
   BUDGET_CATS.forEach(c => {
     const categoryInput = $('budgetCategoryFields').querySelector(`[name="cat_${c.replace(/[^a-z0-9]/gi, '_')}"]`);
     const subInputs = [...$('budgetCategoryFields').querySelectorAll(`[data-budget-sub="${c}"]`)];
     if (!categoryInput || !subInputs.length) return;
     const syncCategoryTotal = () => {
       const values = subInputs.map(input => Number(input.value) || 0);
-      if (values.some(value => value > 0)) categoryInput.value = values.reduce((total, value) => total + value, 0);
+      if (values.some(v => v > 0)) categoryInput.value = values.reduce((t, v) => t + v, 0);
     };
     subInputs.forEach(input => input.addEventListener('input', syncCategoryTotal));
     syncCategoryTotal();
   });
-
-  // Wire rename sub-category buttons
-  $('budgetCategoryFields').querySelectorAll('[data-rensub]').forEach(btn => {
-    btn.onclick = () => renameSubcat(btn.dataset.cat, btn.dataset.sub);
-  });
-  // Wire add sub-category buttons
-  $('budgetCategoryFields').querySelectorAll('[data-addsubcat]').forEach(btn => {
-    btn.onclick = () => addSubcat(btn.dataset.addsubcat);
-  });
-
-  // Apply lock state AFTER rendering inputs
-  const budgetEditBtn = $('budgetEditBtn');
-  if (_budgetLocked) {
-    $('budgetForm').querySelectorAll('input[type="number"]').forEach(el => el.disabled = true);
-    $('budgetForm').querySelector('button[type="submit"]').disabled = true;
-    $('budgetCategoryFields').querySelectorAll('button').forEach(el => el.disabled = true);
-    if (budgetEditBtn) budgetEditBtn.style.display = 'inline-flex';
-  } else {
-    $('budgetForm').querySelectorAll('input[type="number"]').forEach(el => el.disabled = false);
-    $('budgetForm').querySelector('button[type="submit"]').disabled = false;
-    $('budgetCategoryFields').querySelectorAll('button').forEach(el => el.disabled = false);
-    if (budgetEditBtn) budgetEditBtn.style.display = 'none';
-  }
-
-  // Actuals — query expenses + loan EMI payments + investment contributions
-  const [exp, loans, invs] = await Promise.all([getAll('expenses'), getAll('loans'), getAll('investments')]);
-  const mExp = exp.filter(x => (x.date || '').startsWith(month));
-  const actuals = {};
-  BUDGET_CATS.forEach(c => { actuals[c] = mExp.filter(x => x.category === c).reduce((a, b) => a + Number(b.amount || 0), 0); });
-  // VO-11: Add loan EMI payments made this month to 'Loans & Financial'
-  loans.forEach(loan => {
-    (loan.payments || []).forEach(p => {
-      if ((p.date || '').startsWith(month)) actuals['Loans & Financial'] = (actuals['Loans & Financial'] || 0) + Number(p.emi || 0);
-    });
-  });
-  // VO-11: Add investment contributions made this month to 'Savings & Investments'
-  invs.forEach(inv => {
-    (inv.payments || []).forEach(p => {
-      if ((p.date || '').startsWith(month)) actuals['Savings & Investments'] = (actuals['Savings & Investments'] || 0) + Number(p.amount || 0);
-    });
-  });
-  const bt = BUDGET_CATS.reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
-  const wantBudget = ['Transport', 'Food & Personal', 'Family / Religious / Social', 'Other']
-    .reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
-  const needBudget = ['Household', 'Health & Emergency', 'Loans & Financial']
-    .reduce((total, category) => total + budgetCategoryTotal(cats, category), 0);
-  const saveBudget = budgetCategoryTotal(cats, 'Savings & Investments');
-  const percent = value => bt ? Math.round(value / bt * 100) : 0;
-  $('budgetWantPercent').textContent = percent(wantBudget) + '%';
-  $('budgetNeedPercent').textContent = percent(needBudget) + '%';
-  $('budgetSavePercent').textContent = percent(saveBudget) + '%';
-  $('budgetDistributionMessage').textContent = bt
-    ? percent(saveBudget) >= 20
-      ? 'Great saving discipline. Your distribution is building a strong buffer.'
-      : percent(needBudget) <= 50
-        ? 'Good balance. Keep your needs controlled and grow your savings when possible.'
-        : 'Your needs are taking a large share. Review wants and protect a regular saving amount.'
-    : 'Set a budget to see your Want, Need, and Save distribution.';
-
-  if (bt > 0 || mExp.length) {
-    $('budgetActualsCard').style.display = 'block';
-    const rows = BUDGET_CATS.map(c => {
-      const budgeted = budgetCategoryTotal(cats, c);
-      const actual = actuals[c] || 0;
-      const diff = budgeted - actual;
-      const cls = diff >= 0 ? 'good' : 'bad';
-      const categoryRow = `<tr><td>${esc(c)}</td><td>${money(budgeted, state.settings.currency)}</td><td>${money(actual, state.settings.currency)}</td><td class="${cls}">${money(diff, state.settings.currency)}</td></tr>`;
-      const subcategoryRows = getSubcats(c).map(s => {
-        const subBudgeted = Number(cats[c + '.' + s] || 0);
-        const subActual = mExp
-          .filter(x => x.category === c && x.subcategory === s)
-          .reduce((total, x) => total + Number(x.amount || 0), 0);
-        const subDiff = subBudgeted - subActual;
-        const subCls = subDiff >= 0 ? 'good' : 'bad';
-        return `<tr><td style="padding-left:24px;color:#94a3b8">${esc(s)}</td><td>${money(subBudgeted, state.settings.currency)}</td><td>${money(subActual, state.settings.currency)}</td><td class="${subCls}">${money(subDiff, state.settings.currency)}</td></tr>`;
-      }).join('');
-      return categoryRow + subcategoryRows;
-    }).join('');
-    $('budgetActuals').innerHTML = `<div class="table-wrap"><table class="comparison">
-      <thead><tr><th>Category</th><th>Budgeted</th><th>Actual</th><th>Remaining</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>`;
-  } else {
-    $('budgetActualsCard').style.display = 'none';
-  }
+  $('budgetCategoryFields').querySelectorAll('[data-rensub]').forEach(btn => { btn.onclick = () => renameSubcat(btn.dataset.cat, btn.dataset.sub); });
+  $('budgetCategoryFields').querySelectorAll('[data-addsubcat]').forEach(btn => { btn.onclick = () => addSubcat(btn.dataset.addsubcat); });
 }
 
 function addSubcat(category) {
@@ -1141,7 +1220,7 @@ function addSubcat(category) {
     await putOne('meta', { ...state.settings, id: 'settings', customSubcats: state.customSubcats });
     closeModal(); toast('Sub-category added');
     await renderBudget();
-    // also refresh expense sub-cat dropdown if on expenses tab
+    if ($('budgetEditPanel').style.display !== 'none') _openBudgetEditForm(_budgetMonth, (await getAll('budgets')).find(b => b.month === _budgetMonth)?.categories || {});
     const cat = document.querySelector('#expenseForm [name="category"]');
     if (cat) populateExpLinked(cat.value);
   });
@@ -1169,6 +1248,7 @@ function renameSubcat(category, oldName) {
     await putOne('meta', { ...state.settings, id: 'settings', customSubcats: state.customSubcats });
     closeModal(); toast('Sub-category renamed');
     await renderBudget();
+    if ($('budgetEditPanel').style.display !== 'none') _openBudgetEditForm(_budgetMonth, (await getAll('budgets')).find(b => b.month === _budgetMonth)?.categories || {});
     const cat = document.querySelector('#expenseForm [name="category"]');
     if (cat) populateExpLinked(cat.value);
   });
@@ -1189,12 +1269,25 @@ $('budgetForm').onsubmit = async e => {
     });
   });
   const bud = await getAll('budgets');
+  // Save this month
   const existing = bud.find(b => b.month === month);
   await putOne('budgets', { id: existing?.id || uid(), month, categories, createdAt: existing?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
-  await logActivity('Budget', 'Budget saved for ' + month);
-  toast('Budget saved');
-  _budgetLocked = true;
-  _budgetEditMode = false;
+  // If scope = upcoming, copy to all future months that have no budget yet (or overwrite)
+  if (_budgetEditScope === 'upcoming') {
+    const [y, m] = month.split('-').map(Number);
+    for (let i = 1; i <= 11; i++) {
+      const d = new Date(y, m - 1 + i, 1);
+      const futureMonth = d.toISOString().slice(0, 7);
+      const futureRec = bud.find(b => b.month === futureMonth);
+      await putOne('budgets', { id: futureRec?.id || uid(), month: futureMonth, categories, createdAt: futureRec?.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() });
+    }
+    toast('Budget saved for this & upcoming 11 months');
+  } else {
+    toast('Budget saved');
+  }
+  await logActivity('Budget', 'Budget saved for ' + month + (_budgetEditScope === 'upcoming' ? ' (+ upcoming)' : ''));
+  $('budgetEditPanel').style.display = 'none';
+  $('budgetDashboard').style.display = '';
   await renderBudget(); await renderOverview();
 };
 
@@ -1202,16 +1295,12 @@ $('budgetPrev').onclick = () => {
   const d = new Date(_budgetMonth + '-01');
   d.setMonth(d.getMonth() - 1);
   _budgetMonth = d.toISOString().slice(0, 7);
-  _budgetLocked = false;
-  _budgetEditMode = false;
   renderBudget();
 };
 $('budgetNext').onclick = () => {
   const d = new Date(_budgetMonth + '-01');
   d.setMonth(d.getMonth() + 1);
   _budgetMonth = d.toISOString().slice(0, 7);
-  _budgetLocked = false;
-  _budgetEditMode = false;
   renderBudget();
 };
 
