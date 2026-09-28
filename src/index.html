@@ -474,46 +474,42 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
     dot.className = '';
 
     try {
-      // Check Sheets connectivity + get record counts from Sheets, staggered 200ms apart
-      const results = await Promise.allSettled(
-        STORES.map(({ store }, i) =>
-          new Promise(resolve => setTimeout(resolve, i * 200))
-            .then(() => _fetchWithTimeout(url, { action: 'getAll', store }))
-            .then(r => {
-              const ct = r.headers.get('content-type') || '';
-              if (!ct.includes('json')) throw new Error('redirect — retry later');
-              return r.json();
-            })
-        )
-      );
+      // 1. Ping Sheets to check connectivity (single fast request)
+      let sheetsOk = false;
+      let sheetsMsg = '';
+      try {
+        const r = await _fetchWithTimeout(url, { action: 'ping' }, 10000);
+        const ct = r.headers.get('content-type') || '';
+        if (ct.includes('json')) { await r.json(); sheetsOk = true; }
+        else sheetsMsg = 'redirect / not JSON';
+      } catch(e) {
+        sheetsMsg = e.name === 'AbortError' ? 'timeout (>10s)' : e.message;
+      }
 
-      let hasError = false;
-      const lines = STORES.map(({ label, store }, i) => {
-        const r = results[i];
-        if (r.status === 'fulfilled') {
-          const data = r.value;
-          if (Array.isArray(data)) return { label, store, sheetsCount: data.length, ok: true };
-          hasError = true;
-          return { label, store, sheetsCount: '❌ ' + (data.error || 'unknown error'), ok: false };
-        }
-        hasError = true;
-        const msg = r.reason?.name === 'AbortError' ? 'timeout' : (r.reason?.message || 'failed');
-        return { label, store, sheetsCount: '❌ ' + msg, ok: false };
-      });
+      // 2. Read local IndexedDB counts (instant)
+      const idbCounts = {};
+      for (const { store } of STORES) {
+        try {
+          const rows = await window.getAll(store);
+          idbCounts[store] = Array.isArray(rows) ? rows.length : 0;
+        } catch { idbCounts[store] = '?'; }
+      }
 
-      dot.className = hasError ? 'err' : 'ok';
+      dot.className = sheetsOk ? 'ok' : 'err';
       openModal('🔄 Sync Status', `
-        <div style="margin-bottom:8px;font-size:13px;color:${hasError ? '#f87171' : '#34d399'}">
-          ${hasError ? '⚠️ Some stores had errors' : '✅ Local + Sheets both active'}
+        <div style="margin-bottom:8px;font-size:13px">
+          <span style="color:${sheetsOk ? '#34d399' : '#f87171'}">
+            ${sheetsOk ? '✅ Sheets connected' : '⚠️ Sheets unreachable' + (sheetsMsg ? ': ' + esc(sheetsMsg) : '')}
+          </span>
         </div>
         <div style="font-size:11px;color:#64748b;margin-bottom:10px">Reads: IndexedDB (instant) · Writes: IndexedDB first, then Sheets in background</div>
         <div style="background:#0b1627;border:1px solid #ffffff14;border-radius:10px;padding:12px;font-size:13px;font-family:monospace;line-height:1.9">
-          <div style="display:grid;grid-template-columns:1fr auto auto;gap:0 12px;color:#64748b;font-size:11px;padding-bottom:6px;border-bottom:1px solid #ffffff10;margin-bottom:6px">
-            <span>Store</span><span>Sheets</span>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:0 12px;color:#64748b;font-size:11px;padding-bottom:6px;border-bottom:1px solid #ffffff10;margin-bottom:6px">
+            <span>Store</span><span>Local records</span>
           </div>
-          ${lines.map(l => `<div style="display:grid;grid-template-columns:1fr auto;gap:0 12px;color:${l.ok ? '#94a3b8' : '#f87171'}">
-            <span>${esc(l.label)}</span>
-            <span style="color:${l.ok ? '#34d399' : '#f87171'}">${l.ok ? l.sheetsCount : esc(String(l.sheetsCount))}</span>
+          ${STORES.map(({ label, store }) => `<div style="display:grid;grid-template-columns:1fr auto;gap:0 12px;color:#94a3b8">
+            <span>${esc(label)}</span>
+            <span style="color:#34d399">${idbCounts[store]}</span>
           </div>`).join('')}
         </div>
         <div class="actions" style="margin-top:14px">
@@ -521,7 +517,7 @@ const CACHED_RELEASES_KEY = 'vaultone_releases_cache';
         </div>`);
     } catch (e) {
       dot.className = 'err';
-      toast('Sync failed: ' + e.message, true);
+      toast('Sync check failed: ' + e.message, true);
     } finally {
       btn.classList.remove('syncing');
     }
