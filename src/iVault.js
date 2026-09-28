@@ -1135,9 +1135,9 @@ async function renderBudget() {
       return `<div class="bud-cat-bar-card" style="cursor:default;margin-bottom:6px;border-left:${statusBorder}">
         <div class="bud-cat-bar-header">
           <span class="bud-cat-bar-title">${esc(s)}</span>
-          <span style="display:flex;align-items:center;gap:6px">
+          <span style="display:flex;align-items:center;gap:6px;flex-shrink:0">
             <span class="bud-cat-bar-amounts">${money(sa, state.settings.currency)}${sb ? ' / ' + money(sb, state.settings.currency) : ''}</span>
-            ${sa > 0 ? `<button class="btn-icon" style="width:22px;height:22px;font-size:11px;padding:0;flex-shrink:0" data-bud-txview data-cat="${esc(c)}" data-sub="${esc(s)}" title="View transactions">🔍</button>` : ''}
+            ${sa > 0 ? `<button class="btn-icon" style="width:28px;height:28px;min-height:28px;font-size:14px;padding:0;flex-shrink:0;line-height:1" data-bud-txview data-cat="${esc(c)}" data-sub="${esc(s)}" title="View transactions">🔍</button>` : ''}
           </span>
         </div>
         <div class="bud-cat-bar-track" style="background:${diff >= 0 ? '#10b98122' : '#ffffff0d'}"><div class="bud-cat-bar-fill" style="width:${Math.min(100,sp).toFixed(1)}%;background:${barColor}"></div></div>
