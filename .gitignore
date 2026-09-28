@@ -21,6 +21,9 @@ local.properties
 vaultone-release.jks
 keystore_b64.txt
 
+# Secrets
+src/config.js
+
 # OS
 .DS_Store
 Thumbs.db
