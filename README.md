@@ -25,6 +25,7 @@ VaultOne is a personal vault that runs directly in any modern browser or as a na
 - [Self-Test](#self-test)
 - [QA & Test Suite](#qa--test-suite)
 - [Project Structure](#project-structure)
+- [Release History](#release-history)
 
 ---
 
@@ -33,16 +34,19 @@ VaultOne is a personal vault that runs directly in any modern browser or as a na
 | Feature | Detail |
 |---|---|
 | Offline-first | Works with no internet connection |
-| Single HTML file | Open `VaultOne.html` directly in any modern browser |
+| Modular architecture | `index.html` entry point with separate module files per section |
 | IndexedDB storage | Persistent local storage, schema v7 |
 | Google Sheets sync | Optional Apps Script backend — your own private Google Sheet |
+| Dual-write layer | Writes go to IndexedDB first (instant), then Sheets in background |
 | Encrypted passwords | AES-GCM 256-bit, PIN-derived PBKDF2 key |
 | Family documents | Aadhaar, PAN, Passport, Driving Licence and more |
 | Full finance suite | Income, Expenses, Budget, FD, RD, PPF, SSA, NPS, Demat, Gold, Loans, Banks |
 | Reminders | Manual, auto-generated (loan / insurance / investment due dates), birthday reminders |
 | Android notifications | Native AlarmManager notifications via JavaScript bridge |
+| Auto-update | APK checks GitHub Releases on launch and prompts to install newer builds |
 | Responsive | Desktop browsers and Android mobile (390 px – 1280 px+) |
 | Export / Import | Full JSON backup and restore |
+| GitHub Pages | `src/` deployed automatically on every push to `main` |
 
 ---
 
@@ -50,21 +54,26 @@ VaultOne is a personal vault that runs directly in any modern browser or as a na
 
 ### Browser
 
-1. Download `VaultOne.html`.
-2. Open it in any modern browser (Chrome, Edge, Firefox, Safari).
+1. Clone or download the repository.
+2. Open `src/index.html` in any modern browser (Chrome, Edge, Firefox, Safari).
 3. All data is saved automatically to the browser's IndexedDB.
 
 > **Note:** Using a private / incognito window will clear IndexedDB when the window closes. Use a normal browser window for persistent storage.
 
+### GitHub Pages
+
+The app is deployed automatically to GitHub Pages on every push to `main` via `deploy-pages.yml`. The `src/` folder is served as the site root — open `index.html` to launch.
+
 ### Android APK
 
-Download the latest `VaultOne.apk` from the [GitHub Actions artifacts](../../actions/workflows/build-vaultone.yml). The APK is built automatically from `VaultOne.html` on every push to `main` — no separate Android project is needed.
+Download the latest `VaultOne.apk` from the [GitHub Releases](../../releases) page. The APK is built and published automatically from the `src/` files on every push to `main` via `build-vaultone.yml` — no separate Android project is needed.
 
-The APK wraps `VaultOne.html` in a WebView and adds:
+The APK wraps the modular web app in a WebView (served via `WebViewAssetLoader`) and adds:
 - Native AlarmManager-based reminder notifications (fire even when the app is closed or the device is idle)
 - Battery optimization exemption request for reliable alarm delivery
-- Native Downloads folder integration for JSON export
+- Native Downloads folder integration for JSON and PDF export
 - Native file picker for JSON import
+- Auto-update check against GitHub Releases on every launch
 
 ---
 
@@ -103,6 +112,7 @@ Accessed via the **₹ iVault** bottom nav tab. Contains a collapsible Quick Men
 - Add, edit, delete expense transactions.
 - Each entry is linked to a bank account; the balance decreases automatically.
 - A transaction record is created automatically on save.
+- Budget actuals include Loan EMI and Investment payments.
 
 #### Budget
 - Create a monthly budget per category: Household, Transport, Food & Personal, Health & Emergency, Loans & Financial, Family/Religious/Social, Savings & Investments, Other.
@@ -128,6 +138,7 @@ Accessed via the **₹ iVault** bottom nav tab. Contains a collapsible Quick Men
 - Sector breakdown pie chart for Demat holdings.
 - Sortable data tables with expandable detail rows.
 - FD/RD maturity reminders created automatically.
+- Inline contribution history on investment cards (same as Loan payment history).
 - Contribution history tracked for PPF, SSA, NPS, RD.
 - Insurance policies (Term, Health, Vehicle) with premium payment tracking.
 
@@ -308,7 +319,7 @@ VaultOne uses **IndexedDB** (`VaultOneDB`, version 7) with the following object 
 
 | Store | Contents |
 |---|---|
-| `meta` | App settings, schema version |
+| `meta` | App settings, schema version, Web App URL |
 | `income` | Income transactions |
 | `expenses` | Expense transactions |
 | `budgets` | Monthly budget records |
@@ -354,7 +365,7 @@ If IndexedDB is unavailable (e.g. certain browser contexts), VaultOne automatica
 | PIN storage | SHA-256 hash only — plaintext PIN never stored |
 | PIN change | Requires current PIN verification before accepting new PIN |
 | Auto-lock | Configurable timeout; also triggers on browser tab hide |
-| Data isolation | All data stays on-device; no network requests |
+| Data isolation | All data stays on-device; no network requests except optional Sheets sync |
 | Clear data | Requires explicit user confirmation |
 
 ---
@@ -363,7 +374,26 @@ If IndexedDB is unavailable (e.g. certain browser contexts), VaultOne automatica
 
 VaultOne includes an optional Apps Script backend that syncs all data to a private Google Sheet you own. No third-party server is involved — the sheet lives in your own Google account.
 
-### Setup (one-time)
+### Architecture
+
+| File | Role |
+|---|---|
+| `src/Code.gs` | Apps Script web app — full CRUD for all 17 stores |
+| `src/api.js` | Dual-write bridge — IndexedDB first, Sheets in background |
+| `src/config.js` | Runtime config — pre-set `WEB_APP_URL` for APK builds |
+| `src/config.template.js` | Template to copy to `config.js` |
+| `src/test.html` | Browser-based backend test runner — 36 tests, no IndexedDB |
+| `scripts/setup-google-sheets.js` | Interactive Node.js setup helper (see below) |
+
+### Automated Setup (recommended)
+
+Run the setup helper — it opens your browser at the right moments, copies `Code.gs` to your clipboard, and writes the `/exec` URL directly into `src/config.js`:
+
+```bash
+node scripts/setup-google-sheets.js
+```
+
+### Manual Setup (one-time)
 
 1. Create a new Google Sheet in your Google account.
 2. Open **Extensions → Apps Script** and paste the contents of `src/Code.gs`.
@@ -372,29 +402,30 @@ VaultOne includes an optional Apps Script backend that syncs all data to a priva
    - Execute as: **Me**
    - Who has access: **Anyone**
 5. Copy the `/exec` URL.
-6. In VaultOne, open **Settings → Web App URL** and paste the URL.
+6. In VaultOne, open **Settings → Google Sheets Backup** and paste the URL.
 
 After any `Code.gs` change: **Deploy → Manage deployments → pencil → New version → Deploy**. The `/exec` URL stays the same.
 
-### Architecture
+### How the Dual-Write Layer Works
 
-| File | Role |
-|---|---|
-| `src/Code.gs` | Apps Script web app — full CRUD for all 17 stores |
-| `src/api.js` | POST-only fetch bridge between VaultOne and the `/exec` URL |
-| `src/test.html` | Browser-based backend test runner — 36 tests, no IndexedDB |
+- **Reads** always come from IndexedDB (instant, offline-capable).
+- **Writes** go to IndexedDB first (immediate), then fire a background POST to Sheets.
+- On first load per session, if a Sheets URL is configured, data is pulled from Sheets → IndexedDB (hydration).
+- The Web App URL is stored in both `localStorage` and the IndexedDB `meta` store so it survives cache clears.
+- Failed Sheets writes show a non-blocking toast — local data is never lost.
 
 ### Data Stores (17 sheets)
 
 `Income` · `Expenses` · `Budgets` · `Investments` · `Loans` · `CashWallets` · `Persons` · `Households` · `Vehicles` · `Documents` · `Passwords` · `Reminders` · `Notes` · `ActivityLog` · `_Meta_iVault` · `_Meta_FamilyVault` · `_Meta_PasswordVault`
 
-### Key behaviours
+### Key Behaviours
 
 - All requests use **POST body** (`Content-Type: text/plain`) — survives the Apps Script `/exec` redirect chain that strips GET query params.
 - `_toObjByHeader` / `_toRowByHeader` always read the **actual sheet header row** for column mapping — safe against columns added at different times.
 - Google Sheets auto-parses `YYYY-MM` budget months and `YYYY-MM-DD` dates as Date objects — `Code.gs` strips the `T00:00:00Z` suffix on read.
 - The `completed` field (Reminders) is normalised from Sheets string `"true"`/`"false"` back to a JS boolean.
 - JSON columns (`payments`, `categories`, `movements`, `contributions`, `valueUpdates`) are serialised as strings in the sheet and deserialised on read.
+- Retries automatically on `404` / `5xx` / body-lost-on-redirect (up to 2 retries, 800 ms apart).
 
 ### Backend Test Runner
 
@@ -409,15 +440,30 @@ Open `src/test.html` in any browser, paste your `/exec` URL, and click **Run All
 
 ## Android APK Build
 
-The APK is built automatically on every push to `main` via the `build-vaultone.yml` GitHub Actions workflow. No manual build steps or pre-existing Android project are required.
+The APK is built and published to GitHub Releases automatically on every push to `main` via `build-vaultone.yml`. No manual build steps or pre-existing Android project are required.
 
-The workflow:
-1. Checks out the repository and locates `VaultOne.html`.
-2. Generates a complete Android project in-memory.
-3. Compiles and packages a debug APK using Gradle 8.7 / AGP 8.6.1 / Java 17 / Android API 35.
-4. Uploads `VaultOne.apk` as a GitHub Actions artifact.
+### Build Stack
 
-The APK exposes a `window.VaultOneAndroid` JavaScript bridge:
+| Component | Version |
+|---|---|
+| Java | 17 (Temurin) |
+| Gradle | 8.7 |
+| Android Gradle Plugin | 8.6.1 |
+| Compile / Target SDK | 35 (Android 15) |
+| Min SDK | 24 (Android 7.0) |
+
+### What the Workflow Does
+
+1. Checks out the repository and validates all required `src/` files.
+2. Generates a complete Android project in-memory (no committed Android project).
+3. Resizes `assets/VaultOne.png` to all mipmap densities using Pillow.
+4. Copies all modular web files into `app/src/main/assets/`.
+5. Decodes the release keystore from `vaultone-release.jks.b64` and signs the APK.
+6. Compiles and packages a **signed release APK**.
+7. Uploads `VaultOne.apk` as a GitHub Actions artifact.
+8. Creates a GitHub Release tagged `build-{versionCode}` with release notes from `data/release_notes.json` and attaches the APK.
+
+### JavaScript Bridge (`window.VaultOneAndroid`)
 
 | Method | Purpose |
 |---|---|
@@ -427,8 +473,13 @@ The APK exposes a `window.VaultOneAndroid` JavaScript bridge:
 | `requestNotificationPermission()` | Request Android notification permission |
 | `isIgnoringBatteryOptimizations()` | Check battery optimization exemption status |
 | `requestIgnoreBatteryOptimizations()` | Open system dialog to request exemption |
+| `saveExport(data, fileName)` | Save JSON or PDF to the native Downloads folder |
 
 VaultOne detects the bridge automatically and uses native paths where available, falling back to browser APIs otherwise.
+
+### Auto-Update
+
+On every launch the APK checks the GitHub Releases API for a newer build. If one is found, a dialog prompts the user to download and install it directly within the app.
 
 ---
 
@@ -475,7 +526,7 @@ Browser-based test runner that validates the Google Sheets Apps Script backend d
 ```
 VaultOne/
 ├── src/
-│   ├── index.html                   # App shell / home dashboard
+│   ├── index.html                   # App shell / home dashboard (entry point)
 │   ├── iVault.html                  # iVault module UI
 │   ├── iVault.js                    # iVault module logic
 │   ├── FamilyVault.html             # FamilyVault module UI
@@ -484,7 +535,9 @@ VaultOne/
 │   ├── PasswordVault.js             # PasswordVault module logic
 │   ├── shared.js                    # Shared utilities, IndexedDB, nav
 │   ├── shared.css                   # Global styles
-│   ├── api.js                       # Google Sheets POST bridge
+│   ├── api.js                       # Dual-write bridge (IndexedDB + Google Sheets)
+│   ├── config.js                    # Runtime config (WEB_APP_URL)
+│   ├── config.template.js           # Template — copy to config.js and set URL
 │   ├── Code.gs                      # Apps Script backend (paste into Google Sheet)
 │   ├── test.html                    # Backend test runner (36 tests)
 │   ├── sw.js                        # Service worker (offline cache)
@@ -494,12 +547,50 @@ VaultOne/
 ├── data/
 │   ├── vaultone_seed.json           # Seed data format template
 │   └── release_notes.json           # Release history
+├── scripts/
+│   └── setup-google-sheets.js       # Interactive Google Sheets setup helper
 ├── .github/
 │   └── workflows/
-│       └── build-vaultone.yml       # Android APK CI build
+│       ├── build-vaultone.yml       # Android APK CI build + GitHub Release
+│       └── deploy-pages.yml         # GitHub Pages deployment
+├── vaultone-release.jks             # Android release keystore
+├── vaultone-release.jks.b64         # Base64-encoded keystore (used by CI)
 ├── .gitignore
 └── README.md
 ```
+
+---
+
+## Release History
+
+### v2.83 — Sprint 6: Google Sheets Cloud Sync Backend *(2025-07-14)*
+
+- New: `Code.gs` — Apps Script web app backend for all 17 data stores
+- New: `api.js` — dual-write bridge (IndexedDB first, Sheets in background)
+- New: `test.html` — browser-based backend test runner with 36 tests, no IndexedDB dependency
+- New: `scripts/setup-google-sheets.js` — interactive Node.js setup helper
+- `Code.gs`: `_toObjByHeader` / `_toRowByHeader` always use actual sheet header — never rely on COLS index order
+- `Code.gs`: Date suffix stripping for Sheets auto-parsed date columns
+- `Code.gs`: Boolean normalisation for `completed` field (`"true"`/`"false"` → JS boolean)
+- `Code.gs`: JSON column serialisation for `payments`, `categories`, `movements`, `contributions`, `valueUpdates`
+- `Code.gs`: `setupSheets`, `resetAndRebuildSheets`, `reorderSheetColumns` one-time setup helpers
+- `api.js`: POST body instead of GET query-string — survives Apps Script `/exec` redirect chain
+- `api.js`: `Content-Type: text/plain` avoids CORS preflight on cross-origin POST
+- `api.js`: Session hydration — pulls Sheets → IndexedDB once per session
+- `api.js`: Web App URL persisted to both `localStorage` and IndexedDB `meta` store
+- `test.html`: 500 ms throttle + retry on `404`/`5xx`/body-lost-on-redirect
+- `test.html`: `TriageError` class with Step / Expected / Received / Root cause panel
+
+### v2.82 — Sprint 4 & 5: Mobile Application Versioning
+
+- VO-11: Budget actuals now include Loan EMI and Investment payments
+- VO-12: Inline contribution history on investment cards
+- VO-13: Fixed expense save crash from launcher FAB (db guard + DB version mismatch)
+- VO-14: App version shown in footer with live release notes modal (fetched from GitHub Releases)
+- VO-15: CI/CD pipeline — APK build + GitHub Release published on every push to `main`
+- VO-15: Signed release APK (keystore stored as base64 in repo, decoded at build time)
+- VO-15: Auto-update check in APK — prompts user to install newer build from GitHub Releases
+- Fix: Cash wallet subcategory dropdown race condition resolved
 
 ---
 
